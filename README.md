@@ -83,4 +83,5 @@ Pure-logic checks (layout, expansion planner, placement bounds, colliders, persi
 ## Notes
 Payments are not implemented (`purchasePlot()` claims instantly). Seed businesses are merged client-side so the city is never empty.
 #   T h e - C i t y  
+ #   T h e - C i t y  
  
