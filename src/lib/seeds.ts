@@ -614,10 +614,22 @@ const DISTRICT_CATALOG: Record<string, {
   },
 };
 
+const CODE_MAP: Record<string, string> = {
+  SAS: 'FIN',
+  AIM: 'AIM',
+  DEV: 'TEC',
+  WIN: 'EDU',
+  MAC: 'CRE',
+  MOB: 'HLT',
+  GAM: 'REA',
+  DES: 'RET',
+  MKT: 'FNB',
+};
+
 /** Builds an unclaimed, distinctly styled building on any market plot. */
 export function createMarketBuilding(plot: Plot, indexInDistrict: number): Store {
   const code = plot.id.split('-')[0];
-  const catData = DISTRICT_CATALOG[code];
+  const catData = DISTRICT_CATALOG[code] || DISTRICT_CATALOG[CODE_MAP[code] || 'TEC'];
   const idx = indexInDistrict % (catData?.names.length || 56);
   const [name, tagline] = catData?.names[idx] || [`${plot.district} Studio ${indexInDistrict + 1}`, `Premier location on Plot ${plot.id}`];
 

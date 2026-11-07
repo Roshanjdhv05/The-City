@@ -13,9 +13,9 @@ import { World } from './World';
 import { Player } from './Player';
 import { Effects } from './Lighting';
 
-const K = [ // landing fly-through: whole circular city from above -> plaza level in front of J Enterprise
-  { p: [330, 360, 420], l: [0, 0, 0] }, { p: [170, 150, 230], l: [0, 10, 0] }, { p: [70, 55, 110], l: [0, 10, 0] },
-  { p: [20, 14, 62], l: [0, 9, 0] }, { p: [-4.4, 3.4, 39.5], l: [0, 6.5, 0] },
+const K = [ // landing fly-through: zoomed circular city (as in hero view) -> plaza level in front of J Enterprise
+  { p: [0, 95, 145], l: [0, 8, -5] }, { p: [0, 52, 98], l: [0, 9, 5] }, { p: [0, 24, 68], l: [0, 8, 15] },
+  { p: [-2, 10, 50], l: [0, 7, 18] }, { p: [-4.4, 3.4, 39.5], l: [0, 6.5, 0] },
 ];
 const ease = (x: number) => x * x * (3 - 2 * x);
 function LandingRig() {
@@ -45,7 +45,7 @@ export default function CityCanvas({ stores, layout, mode, paused = false }: { s
   const bounds = useMemo(() => ({ x0: cx - half, x1: cx + half, z0: cz - half, z1: cz + half }), [cx, cz, half]);
   useEffect(() => { useUI.getState().init(); useUI.getState().setInv(loadInventory()); }, []);
   return (
-    <Canvas key={quality + mode} frameloop={paused ? 'never' : 'always'} shadows={Q.shadow > 0} dpr={Q.dpr} camera={{ fov: mode === 'city' ? 58 : 40, near: 0.1, far: 2200, position: mode === 'city' ? [-4.4, 3.4, 39.5] : [330, 360, 420] }}
+    <Canvas key={quality} frameloop={paused ? 'never' : 'always'} shadows={Q.shadow > 0} dpr={Q.dpr} camera={{ fov: mode === 'city' ? 58 : 42, near: 0.1, far: 2200, position: mode === 'city' ? [-4.4, 3.4, 39.5] : [0, 95, 145] }}
       gl={{ antialias: !Q.post, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.toneMapping = THREE.NoToneMapping; }}>
       <World stores={stores} layout={layout} quality={quality} />
       {mode === 'city' ? <Player colliders={colliders} doors={doors} bounds={bounds} terrain={terrain} resources={props.resources} /> : <LandingRig />}

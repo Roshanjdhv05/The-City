@@ -8,6 +8,8 @@ create table if not exists public.stores (
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
+-- Enforce 1 building claimed per owner email
+create unique index if not exists stores_one_per_owner_idx on public.stores(owner_id);
 alter table public.stores enable row level security;
 
 create policy "stores are public to read" on public.stores for select using (true);

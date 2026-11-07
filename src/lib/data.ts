@@ -8,16 +8,20 @@ import type { ExpansionPlan } from './expansion';
 import { create } from 'zustand';
 
 export { SEED_STORES };
-const LS = 'thecity.stores', LU = 'thecity.user', LSV = 'thecity.seeded13', LSL = 'thecity.layout';
+const LS = 'thecity.stores', LU = 'thecity.user', LSV = 'thecity.seeded17', LSL = 'thecity.layout';
 export const DEMO_ADMIN = process.env.NEXT_PUBLIC_DEMO_ADMIN_EMAIL || 'admin@thecity.local';
 
 // ---------------- local (demo) backend ----------------
 function local(): Store[] { try { return JSON.parse(localStorage.getItem(LS) || '[]'); } catch { return []; } }
 function writeLocal(s: Store[]) { localStorage.setItem(LS, JSON.stringify(s)); }
 function ensureSeeded() {
-  if (localStorage.getItem('thecity.layoutv') !== '3') { localStorage.removeItem(LSL); localStorage.setItem('thecity.layoutv', '3'); } // circular master plan replaced the grid layout
+  if (localStorage.getItem('thecity.layoutv') !== '6') {
+    localStorage.removeItem(LSL);
+    localStorage.removeItem(LSV);
+    localStorage.setItem('thecity.layoutv', '6');
+  } // circular master plan with 25 locked + free buildings per market
   if (localStorage.getItem(LSV)) return;
-  // platform-owned seeds are refreshed to the current design (e.g. Central District bungalows); visit counters and user-owned stores are kept
+  // platform-owned seeds are refreshed to the current design; visit counters and user-owned stores are kept
   const ids = new Set(BASE_PLOTS.map(p => p.id)), keep = local().filter(s => ids.has(s.plotId) || s.ownerId);
   const merged = keep.map(s => { const seed = SEED_STORES.find(x => x.plotId === s.plotId); return seed && !s.ownerId ? { ...seed, visits: s.visits, clicks: s.clicks } : s; }), have = new Set(merged.map(s => s.plotId));
   writeLocal([...SEED_STORES.filter(s => !have.has(s.plotId)), ...merged]); localStorage.setItem(LSV, '1');
@@ -59,11 +63,31 @@ export async function loadWorld(): Promise<{ layout: Layout; stores: Store[] }> 
 export async function listStores(): Promise<Store[]> { return (await loadWorld()).stores; }
 
 export async function purchasePlot(plotId: string, user: User, template = 'tech', over: Partial<StoreConfig> = {}): Promise<Store> {
+  if (!user || !user.id) {
+    throw new Error('You must be signed in with an email account to claim a building.');
+  }
   const store: Store = { plotId, ownerId: user.id, visits: 0, clicks: 0, createdAt: new Date().toISOString(), config: defaultConfig(template, { name: 'Your Store', ...over }) };
   if (supabase) {
+    // 1 building per email limit check in Supabase
+    const { data: existing } = await supabase.from('stores').select('plot_id').eq('owner_id', user.id);
+    if (existing && existing.length > 0) {
+      throw new Error(`You can only claim 1 building per email (${user.email}). You already own building ${existing[0].plot_id}.`);
+    }
     const { error } = await supabase.from('stores').insert({ plot_id: plotId, owner_id: user.id, config: store.config });
     if (error) throw new Error(error.message);
-  } else { ensureSeeded(); const l = local(); if (l.some(s => s.plotId === plotId && s.ownerId)) throw new Error('Plot already owned'); writeLocal([...l.filter(s => s.plotId !== plotId), store]); }
+  } else {
+    ensureSeeded();
+    const l = local();
+    if (l.some(s => s.plotId === plotId && s.ownerId)) {
+      throw new Error('Plot already owned by another user.');
+    }
+    // 1 building per email limit check in local demo mode
+    const existing = l.find(s => s.ownerId === user.id);
+    if (existing) {
+      throw new Error(`You can only claim 1 building per email (${user.email}). You already own building ${existing.plotId}.`);
+    }
+    writeLocal([...l.filter(s => s.plotId !== plotId), store]);
+  }
   return store;
 }
 export async function saveStore(plotId: string, config: StoreConfig) {

@@ -1,7 +1,9 @@
 'use client';
 import * as THREE from 'three';
 import { useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
+import { cityTime, getTimePhase } from '@/lib/time';
 import { getPlace } from '@/lib/plots';
 import { Layout, layoutBounds } from '@/lib/layout';
 import { genProps } from '@/lib/props';
@@ -15,6 +17,8 @@ import { SceneLighting, SkyDome } from './Lighting';
 import { TerrainMesh, Water, Pines, Rocks, Hedges, ResourceMeshes } from './Scenery';
 import { CityRoads, Plaza } from './CityRoads';
 import { EmptyPlots } from './EmptyPlots';
+import { PlazaDecorations } from './PlazaDecor';
+import { MarketPropsManager } from './MarketProps';
 import { Inst, Item, UBOX, UCYL } from './Inst';
 import { AdvertPlane, BirdFlock } from './CityLife';
 
@@ -45,8 +49,51 @@ function Furniture({ props }: { props: Props }) {
   const seat = useMemo(() => benches.map(b => off(b, 0.9, 0, 0.5, [1.8, 0.07, 0.5])), [benches]);
   const back = useMemo(() => benches.map(b => off(b, 0.9, 0.24, 0.8, [1.8, 0.45, 0.06])), [benches]);
   const legs = useMemo(() => benches.flatMap(b => [off(b, 0.1, 0, 0.25, [0.08, 0.5, 0.45]), off(b, 1.7, 0, 0.25, [0.08, 0.5, 0.45])]), [benches]);
+
+  // Street light ground glow pools for night
+  const poolGeo = useMemo(() => {
+    const g = new THREE.PlaneGeometry(8, 8);
+    g.rotateX(-Math.PI / 2);
+    return g;
+  }, []);
+  const [poolTex, poolMat] = useMemo(() => {
+    const c = document.createElement('canvas');
+    c.width = 128;
+    c.height = 128;
+    const g = c.getContext('2d')!;
+    const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(255, 235, 140, 0.7)');
+    gr.addColorStop(0.35, 'rgba(255, 205, 80, 0.35)');
+    gr.addColorStop(0.7, 'rgba(255, 180, 40, 0.1)');
+    gr.addColorStop(1, 'rgba(255, 160, 20, 0.0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 128, 128);
+    const t = new THREE.CanvasTexture(c);
+    const m = new THREE.MeshBasicMaterial({
+      map: t,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -3,
+    });
+    return [t, m];
+  }, []);
+
+  useFrame(() => {
+    const { darkness } = getTimePhase(cityTime.hour);
+    poolMat.opacity = Math.max(0, darkness * 0.75);
+    poolMat.visible = darkness > 0.05;
+  });
+
+  const pools = useMemo<Item[]>(
+    () => lamps.map(l => ({ p: [l.x + l.dx * 1.35, 0.08, l.z + l.dz * 1.35], s: [1, 1, 1] })),
+    [lamps]
+  );
+
   return <>
     <Inst geo={UCYL} material={solid('steel')} items={pole} cast /><Inst geo={UBOX} material={solid('steel')} items={arm} /><Inst geo={UBOX} material={solid('lampHead')} items={head} />
+    <Inst geo={poolGeo} material={poolMat} items={pools} recv />
     <Inst geo={UBOX} material={mat('wood')} items={seat} cast recv /><Inst geo={UBOX} material={mat('wood')} items={back} cast /><Inst geo={UBOX} material={solid('dark')} items={legs} cast />
   </>;
 }
@@ -68,6 +115,8 @@ export function World({ stores, layout, quality }: { stores: Store[]; layout: La
       <SceneLighting q={quality} span={span} center={[cx, cz]} />
       <TerrainMesh terrain={terrain} seg={Q.seg} /><Water terrain={terrain} />
       <CityRoads layout={layout} /><Plaza />
+      <PlazaDecorations />
+      <MarketPropsManager layout={layout} />
       <Furniture props={props} /><Trees trees={props.trees} /><Pines pines={props.pines} /><Rocks rocks={props.rocks} /><Hedges bushes={props.bushes} flowers={props.flowers} /><ResourceMeshes nodes={props.resources} />
       <EmptyPlots plots={empty} />
       {/* ── Sky: advert plane + bird flock ── */}

@@ -9,11 +9,17 @@ import { Pt, bearingDir, polar, plotPoly, polysOverlap, polyRadialRange, box, D2
    A ring's inner edge must clear 1/cos(20°) x the far radius of the last row, because rings curve in at the sides of a sector. */
 export const CITY = { plazaR: 40, R0: 52, R1: 90, R2: 208, Ro: 334, ringW: [10, 12, 12, 14], radialW: 12, crossW: 10, sw: 3, crossU: [120.6, 164.6, 238.6, 282.6], rowD: 13.6, innerR: 71 };
 export const DISTRICTS = [
-  { code: 'FIN', name: 'Finance District', cat: 'Finance' }, { code: 'RET', name: 'Retail District', cat: 'Retail' }, { code: 'FNB', name: 'Food & Beverage District', cat: 'Food & Beverage' },
-  { code: 'CRE', name: 'Creative District', cat: 'Creative' }, { code: 'EDU', name: 'Education District', cat: 'Education' }, { code: 'HLT', name: 'Health & Wellness District', cat: 'Health & Wellness' },
-  { code: 'AIM', name: 'AI District', cat: 'AI' }, { code: 'REA', name: 'Real Estate District', cat: 'Real Estate' }, { code: 'TEC', name: 'Technology District', cat: 'Technology' },
+  { code: 'SAS', name: 'SAAS', cat: 'SAAS' },
+  { code: 'AIM', name: 'AI', cat: 'AI' },
+  { code: 'DEV', name: 'DEVELOPMENT', cat: 'DEVELOPMENT' },
+  { code: 'WIN', name: 'WINDOWS APPS', cat: 'WINDOWS APPS' },
+  { code: 'MAC', name: 'MAC APPS', cat: 'MAC APPS' },
+  { code: 'MOB', name: 'MOBILE APPS', cat: 'MOBILE APPS' },
+  { code: 'GAM', name: 'GAMING', cat: 'GAMING' },
+  { code: 'DES', name: 'DESIGN', cat: 'DESIGN' },
+  { code: 'MKT', name: 'MARKETING', cat: 'MARKETING' },
 ];
-export const PRICE: Record<Tier, number> = { free: 0, premium: 299, featured: 499, corner: 799 };
+export const PRICE: Record<Tier, number> = { free: 0, premium: 0, featured: 0, corner: 0 };
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const WS = [12, 14, 12, 16, 12, 14];
 
@@ -58,7 +64,20 @@ export function generateCity(): { plots: Plot[]; roads: Road[] } {
           }
           if (!placed) break;
           const isCorner = placed.w <= 10;
-          placed.id = `${D.code}-${String(n++).padStart(3, '0')}`; placed.tier = tierOf(i, j * 2 + ri, ri, isCorner); placed.price = PRICE[placed.tier]; plots.push(placed); off += placed.w + 1.5; i++;
+          const plotNum = n++;
+          placed.id = `${D.code}-${String(plotNum).padStart(3, '0')}`;
+          
+          // Exactly 25 buildings in each market permanently locked; all others free to claim
+          if (plotNum <= 25) {
+            placed.status = 'reserved';
+            placed.tier = 'featured';
+            placed.price = 0;
+          } else {
+            placed.status = 'available';
+            placed.tier = 'free';
+            placed.price = 0;
+          }
+          plots.push(placed); off += placed.w + 1.5; i++;
         }
       }
     }));

@@ -11,7 +11,6 @@ function Explore() {
   const { stores, layout } = useStores(), store = useSearchParams().get('store');
   return (
     <div className="fullscreen">
-      <Nav overlay floating />
       <CityCanvas stores={stores} layout={layout} mode="city" />
       <HUD stores={stores} layout={layout} initialStore={store} />
     </div>

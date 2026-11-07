@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import Nav from '@/components/Nav';
+import HUD from '@/components/HUD';
 import { useStores } from '@/components/useStores';
 import { landing } from '@/lib/state';
 
@@ -34,7 +35,6 @@ export default function Home() {
       // When completely scrolled — enter city
       if (p >= 0.995 && !entered.current) {
         entered.current = true;
-        // Short delay so the camera reaches street level first
         setTimeout(() => {
           setCityMode(true);
           requestAnimationFrame(() => setCityVisible(true));
@@ -49,83 +49,174 @@ export default function Home() {
     };
   }, [cityMode]);
 
-  // Copy visibility: fade out as you scroll down (gone by 60% scroll)
-  const copyAlpha = Math.max(0, 1 - scrollP * 2.5);
-  // Tag visibility: fade in mid-scroll, fade out at the end
+  const copyAlpha = Math.max(0, 1 - scrollP * 2.8);
   const tagAlpha  = Math.max(0, Math.min(1, scrollP * 3 - 0.2) * (1 - scrollP * 2));
-  // Scroll cue fades quickly
-  const cueAlpha  = Math.max(0, 1 - scrollP * 8);
-
-  // Bottom gradient: intensifies as you approach the city
-  const shadeBot = Math.round(scrollP * 100);
+  const cueAlpha  = Math.max(0, 1 - scrollP * 6);
 
   return (
     <>
-      {/* Nav stays fixed on top; in city mode it goes floating */}
-      <Nav overlay />
+      {!cityMode && <Nav overlay />}
 
-      {!cityMode ? (
-        /* ═══════════════════════════════════════════════════════════════
-           SCROLL SECTION — 240 vh so there is plenty of room to scroll
-           The 3D canvas is pinned (sticky) at the top.
-        ═══════════════════════════════════════════════════════════════ */
+      {/* Persistent Single 3D City Canvas Instance */}
+      <div
+        className={cityMode ? 'fullscreen' : ''}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: cityMode ? 50 : 0,
+          opacity: !cityMode || cityVisible ? 1 : 0,
+          transition: 'opacity 0.6s ease',
+          pointerEvents: 'auto',
+        }}
+      >
+        <CityCanvas stores={stores} layout={layout} mode={cityMode ? 'city' : 'landing'} paused={false} />
+        {cityMode && <HUD stores={stores} layout={layout} />}
+      </div>
+
+      {!cityMode && (
         <section
           ref={heroRef}
-          style={{ position: 'relative', height: '240vh' }}
+          style={{ position: 'relative', height: '240vh', pointerEvents: 'none', zIndex: 10 }}
         >
-          {/* Sticky full-viewport 3D canvas */}
+          {/* Sticky full-viewport landing copy & fog */}
           <div style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }}>
-            {/* 3D World */}
-            <div style={{ position: 'absolute', inset: 0 }}>
-              <CityCanvas stores={stores} layout={layout} mode="landing" paused={false} />
-            </div>
-
-            {/* Bottom gradient — deepens as city approaches */}
+            {/* Subtle soft white & green atmosphere fog gradient */}
             <div
               style={{
                 position: 'absolute',
                 inset: 0,
                 pointerEvents: 'none',
                 background: `linear-gradient(
-                  90deg,
-                  rgba(5,11,26,${0.88 - scrollP * 0.6}) 0%,
-                  rgba(5,11,26,${0.4 - scrollP * 0.35}) 42%,
-                  rgba(5,11,26,0) 72%
+                  100deg,
+                  rgba(240, 248, 242, ${0.92 - scrollP * 0.7}) 0%,
+                  rgba(240, 248, 242, ${0.55 - scrollP * 0.5}) 36%,
+                  rgba(240, 248, 242, 0) 65%
                 ),
                 linear-gradient(
                   0deg,
-                  rgba(8,18,38,1) 0%,
-                  rgba(8,18,38,${Math.max(0, 0.25 - scrollP * 0.25)}) ${20 + shadeBot}%
+                  rgba(235, 246, 238, ${Math.max(0, 0.85 - scrollP * 0.85)}) 0%,
+                  rgba(235, 246, 238, 0) 28%
                 )`,
               }}
             />
 
-            {/* ── Hero copy — fades out as you scroll ── */}
+            {/* ── Left Hero copy exactly styled like the reference ── */}
             <div
               style={{
                 position: 'absolute',
-                left: 'clamp(1.2rem,6vw,6rem)',
-                top: '50%',
-                transform: 'translateY(-52%)',
-                maxWidth: 600,
+                left: 'clamp(1.5rem, 6vw, 6.5rem)',
+                top: '46%',
+                transform: 'translateY(-50%)',
+                maxWidth: 620,
                 zIndex: 2,
                 opacity: copyAlpha,
                 transition: 'opacity 0.1s linear',
                 pointerEvents: copyAlpha < 0.05 ? 'none' : 'auto',
               }}
             >
-              <span className="eyebrow">THE CITY · Virtual business marketplace</span>
-              <h1 style={{ fontSize: 'clamp(2.4rem,6vw,4.6rem)', fontWeight: 700, margin: '0 0 1.1rem', lineHeight: 1.06, letterSpacing: '-0.02em' }}>
-                Your Business Deserves a <em style={{ fontStyle: 'normal', color: 'var(--cyan)' }}>Place</em> in the City.
-              </h1>
-              <p style={{ fontSize: 'clamp(1rem,1.5vw,1.18rem)', color: '#c6d3ee', maxWidth: '50ch', margin: '0 0 2rem', lineHeight: 1.55 }}>
-                Claim a plot, build a storefront and let visitors walk right up to your door.
-                THE CITY turns business discovery into a place you can explore.
-              </p>
-              <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
-                <Link className="btn lg" href="/buy">Claim Your Plot</Link>
-                <Link className="btn lg outline" href="/city">Explore the City</Link>
+              {/* Green Pill Badge */}
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  background: 'rgba(232, 245, 233, 0.92)',
+                  border: '1px solid rgba(46, 125, 50, 0.25)',
+                  padding: '0.45rem 1.1rem',
+                  borderRadius: '999px',
+                  marginBottom: '1.4rem',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                }}
+              >
+                <span style={{ fontSize: '1rem' }}>🍃</span>
+                <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#1b4d2e' }}>
+                  Open World City Experience
+                </span>
               </div>
+
+              {/* Bold Headline with Green Accent Word */}
+              <h1
+                style={{
+                  fontSize: 'clamp(2.8rem, 5.8vw, 4.8rem)',
+                  fontWeight: 800,
+                  margin: '0 0 1.2rem',
+                  lineHeight: 1.05,
+                  letterSpacing: '-0.03em',
+                  color: '#0d1f14',
+                }}
+              >
+                Build. Explore.<br />
+                <span style={{ color: '#2e7d32' }}>Live</span> Your City.
+              </h1>
+
+              {/* Subtitle / Lead Paragraph */}
+              <p
+                style={{
+                  fontSize: 'clamp(1.05rem, 1.4vw, 1.22rem)',
+                  color: '#3d5245',
+                  maxWidth: '48ch',
+                  margin: '0 0 2.2rem',
+                  lineHeight: 1.6,
+                  fontWeight: 450,
+                }}
+              >
+                Create your dream city, explore every street, and experience a living, breathing world.
+              </p>
+
+              {/* CTA Button */}
+              <Link
+                href="/city"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.65rem',
+                  background: '#0d2d1a',
+                  color: '#ffffff',
+                  padding: '0.95rem 2rem',
+                  borderRadius: '999px',
+                  fontSize: '1.02rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  boxShadow: '0 6px 20px rgba(13, 45, 26, 0.3)',
+                  transition: 'transform 0.15s ease',
+                }}
+              >
+                <span>Start Playing</span>
+                <span style={{ fontSize: '1.15rem' }}>→</span>
+              </Link>
+            </div>
+
+            {/* ── Scroll cue on bottom-left ── */}
+            <div
+              style={{
+                position: 'absolute',
+                left: 'clamp(1.5rem, 6vw, 6.5rem)',
+                bottom: '2.8rem',
+                zIndex: 3,
+                opacity: cueAlpha,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                color: '#2d4734',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+              }}
+            >
+              <div
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: '1px solid rgba(45, 71, 52, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.9rem',
+                }}
+              >
+                ↓
+              </div>
+              <span>Scroll to explore</span>
             </div>
 
             {/* ── Mid-scroll landmark pill ── */}
@@ -139,20 +230,21 @@ export default function Home() {
                 opacity: tagAlpha,
                 transition: 'opacity 0.15s linear',
                 pointerEvents: tagAlpha < 0.05 ? 'none' : 'auto',
-                background: 'var(--panel)',
+                background: 'rgba(255, 255, 255, 0.92)',
                 backdropFilter: 'blur(14px)',
-                border: '1px solid var(--line)',
-                borderRadius: 'var(--r)',
-                padding: '0.9rem 1.2rem',
+                border: '1px solid rgba(46, 125, 50, 0.25)',
+                borderRadius: '16px',
+                padding: '0.9rem 1.3rem',
                 fontSize: '0.85rem',
                 maxWidth: 280,
                 textDecoration: 'none',
-                color: 'inherit',
+                color: '#0d2d1a',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
               }}
             >
-              <span style={{ color: 'var(--muted)', display: 'block' }}>Landmark</span>
-              <b style={{ display: 'block', font: '600 1.02rem var(--f-display)' }}>J Enterprise</b>
-              <span style={{ color: 'var(--muted)' }}>Flagship headquarters · visit in 3D →</span>
+              <span style={{ color: '#2e7d32', display: 'block', fontWeight: 600 }}>Landmark</span>
+              <b style={{ display: 'block', font: '700 1.05rem var(--f-display)', margin: '0.1rem 0' }}>J Enterprise</b>
+              <span style={{ color: '#4b5563', fontSize: '0.8rem' }}>Flagship headquarters · visit in 3D →</span>
             </Link>
 
             {/* ── Entering city prompt — appears near the end of scroll ── */}
@@ -166,56 +258,35 @@ export default function Home() {
                   zIndex: 5,
                   opacity: Math.min(1, (scrollP - 0.7) * 4),
                   transition: 'opacity 0.2s',
-                  background: 'rgba(5,11,26,0.78)',
+                  background: 'rgba(13, 45, 26, 0.92)',
                   backdropFilter: 'blur(14px)',
-                  border: '1px solid rgba(34,211,238,0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
                   borderRadius: '999px',
-                  padding: '0.6rem 1.6rem',
+                  padding: '0.7rem 1.8rem',
                   color: '#fff',
-                  fontSize: '0.9rem',
+                  fontSize: '0.92rem',
+                  fontWeight: 600,
                   whiteSpace: 'nowrap',
                   display: 'flex',
                   gap: '0.7rem',
                   alignItems: 'center',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
                 }}
               >
-                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--cyan)', animation: 'pulse 1.4s ease-in-out infinite' }} />
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#4ade80', animation: 'pulse 1.4s ease-in-out infinite' }} />
                 Keep scrolling to enter the city…
               </div>
             )}
-
-            {/* ── Scroll cue (arrow) ── */}
-            <div
-              className="scroll-cue"
-              style={{ opacity: cueAlpha, transition: 'opacity 0.3s' }}
-            >
-              <span>Scroll</span>
-              <i />
-            </div>
           </div>
         </section>
-      ) : (
-        /* ═══════════════════════════════════════════════════════════════
-           CITY MODE — full-screen immersive world, no text, no footer
-        ═══════════════════════════════════════════════════════════════ */
-        <div
-          className="fullscreen"
-          style={{
-            opacity: cityVisible ? 1 : 0,
-            transition: 'opacity 0.6s ease',
-          }}
-        >
-          <CityCanvas stores={stores} layout={layout} mode="city" />
-        </div>
       )}
 
-      {/* Pulse keyframe injected once */}
+      {/* Pulse keyframe */}
       <style>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50%       { opacity: 0.4; transform: scale(1.5); }
         }
-        /* Hide scrollbar in city mode */
         body.city-mode { overflow: hidden; }
       `}</style>
     </>

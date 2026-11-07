@@ -9,7 +9,8 @@ import { terrainFor } from '@/lib/terrain';
 import { player, useUI, QUALITY, Quality } from '@/lib/state';
 import { trackEvent } from '@/lib/data';
 import type { Plot, Store } from '@/lib/types';
-const AdminMap = dynamic(() => import('@/components/admin/AdminMap'), { ssr: false });
+import AdminMap from '@/components/admin/AdminMap';
+import { useTimeStore, formatClock, getTimePhase, TIME_PRESETS } from '@/lib/time';
 
 type Guide = { id: string; name: string; x: number; z: number };
 function Minimap({ occupied, layout, guide }: { occupied: Set<string>; layout: Layout; guide: Guide | null }) {
@@ -35,7 +36,221 @@ function Minimap({ occupied, layout, guide }: { occupied: Set<string>; layout: L
   return <canvas ref={ref} width={116} height={116} className="minimap" aria-label="Minimap" />;
 }
 
-const KEYS_HINT = 'Space jump · Shift run · double-tap Shift sprint · drag to orbit · scroll to zoom · V camera · E interact · F gather · M map';
+const KEYS_HINT = 'Space/E up · Q down · Shift fast · drag look · scroll zoom · V camera · T time · F gather · M map';
+
+function TimeWidget() {
+  const { hour, isPlaying, isLiveDevice, speed, setHour, togglePlay, setLiveDevice, setSpeed } = useTimeStore();
+  const [open, setOpen] = useState(false);
+  const info = getTimePhase(hour);
+
+  return (
+    <div
+      className="time-widget glass"
+      style={{
+        position: 'absolute',
+        top: 'calc(var(--nav-h) + 12px)',
+        right: '16px',
+        zIndex: 60,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.45rem',
+        borderRadius: open ? '18px' : '999px',
+        padding: open ? '0.55rem 0.85rem' : '0.35rem 0.7rem',
+        background: 'rgba(10, 16, 30, 0.55)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255, 255, 255, 0.14)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.45)',
+        color: '#ffffff',
+        fontSize: '0.82rem',
+        transition: 'all 0.25s ease',
+      }}
+    >
+      {/* Top Header Row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <button
+          onClick={() => setOpen(!open)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#ffffff',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            padding: '0.2rem 0.4rem',
+            borderRadius: '999px',
+            fontWeight: 600,
+          }}
+          title="Click to toggle time controls"
+        >
+          <span style={{ fontSize: '1.1rem' }}>{info.icon}</span>
+          <span style={{ letterSpacing: '-0.01em', fontWeight: 700 }}>{formatClock(hour)}</span>
+          <span style={{ color: 'rgba(255, 255, 255, 0.65)', fontWeight: 500, fontSize: '0.74rem' }}>
+            · {info.label}
+          </span>
+          {isLiveDevice && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                fontSize: '0.65rem',
+                padding: '0.12rem 0.45rem',
+                borderRadius: '999px',
+                background: 'rgba(34, 197, 94, 0.2)',
+                border: '1px solid rgba(34, 197, 94, 0.5)',
+                color: '#4ade80',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 6px #4ade80' }} />
+              LIVE
+            </span>
+          )}
+          <span style={{ fontSize: '0.65rem', color: 'rgba(255, 255, 255, 0.5)', marginLeft: '0.2rem' }}>
+            {open ? '▲' : '▼'}
+          </span>
+        </button>
+
+        {/* Play/Pause Cycle */}
+        <button
+          onClick={togglePlay}
+          style={{
+            background: isPlaying ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid ' + (isPlaying ? 'rgba(56, 189, 248, 0.6)' : 'rgba(255, 255, 255, 0.16)'),
+            color: isPlaying ? '#38bdf8' : '#ffffff',
+            borderRadius: '999px',
+            width: '28px',
+            height: '28px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            fontSize: '0.75rem',
+            transition: 'all 0.2s',
+          }}
+          title={isPlaying ? 'Pause day/night cycle' : 'Auto-cycle day & night'}
+        >
+          {isPlaying ? '⏸' : '▶'}
+        </button>
+      </div>
+
+      {/* Expandable Controls Dropdown */}
+      {open && (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.65rem',
+            paddingTop: '0.55rem',
+            borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+            animation: 'rise 0.2s ease',
+          }}
+        >
+          {/* Live Device Sync Toggle */}
+          <button
+            onClick={() => setLiveDevice(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              padding: '0.4rem 0.8rem',
+              borderRadius: '8px',
+              border: isLiveDevice ? '1px solid rgba(34, 197, 94, 0.7)' : '1px solid rgba(255, 255, 255, 0.14)',
+              background: isLiveDevice ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+              color: isLiveDevice ? '#4ade80' : '#e2e8f0',
+              cursor: 'pointer',
+              fontSize: '0.76rem',
+              fontWeight: 600,
+              transition: 'all 0.2s',
+            }}
+          >
+            <span style={{ fontSize: '0.9rem' }}>🕒</span>
+            <span>{isLiveDevice ? '✓ Synced with Device Clock' : 'Sync to Device Clock'}</span>
+          </button>
+
+          {/* Quick Presets */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.3rem' }}>
+            {[
+              { id: 'sunrise', label: 'Sunrise', hour: 6.2, icon: '🌅' },
+              { id: 'day', label: 'Noon', hour: 12.0, icon: '☀️' },
+              { id: 'sunset', label: 'Sunset', hour: 18.2, icon: '🌇' },
+              { id: 'night', label: 'Night', hour: 22.0, icon: '🌙' },
+            ].map((p) => {
+              const active = !isLiveDevice && Math.abs(hour - p.hour) < 1.5;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setHour(p.hour)}
+                  style={{
+                    background: active ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.06)',
+                    border: active ? '1px solid rgba(56, 189, 248, 0.65)' : '1px solid rgba(255, 255, 255, 0.1)',
+                    color: '#ffffff',
+                    borderRadius: '8px',
+                    padding: '0.35rem 0.2rem',
+                    cursor: 'pointer',
+                    fontSize: '0.72rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.15rem',
+                    transition: 'all 0.2s',
+                  }}
+                  title={`Set to ${p.label}`}
+                >
+                  <span style={{ fontSize: '0.95rem' }}>{p.icon}</span>
+                  <span>{p.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Time Scrubber */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <span style={{ fontSize: '0.7rem', color: '#94a3b8', width: '30px' }}>Hour</span>
+            <input
+              type="range"
+              min={0}
+              max={24}
+              step={0.1}
+              value={hour}
+              onChange={(e) => setHour(parseFloat(e.target.value))}
+              style={{ flex: 1, accentColor: '#38bdf8', cursor: 'ew-resize' }}
+            />
+          </div>
+
+          {/* Speed Selector */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: '#94a3b8' }}>
+            <span>Speed:</span>
+            <div style={{ display: 'flex', gap: '0.25rem' }}>
+              {[0.5, 1.0, 2.0, 5.0].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSpeed(s)}
+                  style={{
+                    background: speed === s ? 'rgba(56, 189, 248, 0.35)' : 'rgba(255, 255, 255, 0.08)',
+                    border: speed === s ? '1px solid rgba(56, 189, 248, 0.65)' : '1px solid rgba(255, 255, 255, 0.1)',
+                    color: speed === s ? '#38bdf8' : '#ffffff',
+                    borderRadius: '4px',
+                    padding: '0.15rem 0.45rem',
+                    cursor: 'pointer',
+                    fontSize: '0.68rem',
+                    fontWeight: speed === s ? 700 : 400,
+                  }}
+                >
+                  {s}x
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 export default function HUD({ stores, layout, initialStore }: { stores: Store[]; layout: Layout; initialStore?: string | null }) {
   const { view, setView, nearPlot, quality, setQuality, panelOpen, setPanel, nearRes, inv } = useUI();
   const [q, setQ] = useState(''), [intro, setIntro] = useState(true), [help, setHelp] = useState(false), [map, setMap] = useState(true), [district, setDistrict] = useState(''), distIdx = useRef(0), done = useRef(false);
@@ -46,7 +261,18 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
   useEffect(() => { const t = setTimeout(() => setIntro(false), 7000); return () => clearTimeout(t); }, []);
   useEffect(() => { try { setFound(JSON.parse(localStorage.getItem('thecity.discovered') || '[]')); } catch {} }, []);
   useEffect(() => { const id = setInterval(() => { const a = areaAt(player.x, player.z, layout, terrain); setArea(prev => (prev && prev.name === a.name ? prev : a)); }, 350); return () => clearInterval(id); }, [layout, terrain]);
-  useEffect(() => { if (!area) return; setFound(f => { if (f.includes(area.name)) return f; const n = [...f, area.name]; try { localStorage.setItem('thecity.discovered', JSON.stringify(n)); } catch {} setToast(area.name); setTimeout(() => setToast(''), 3200); return n; }); }, [area]);
+  const [marketBanner, setMarketBanner] = useState<string | null>(null);
+  const lastMarket = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!area) return;
+    if (area.name !== lastMarket.current) {
+      lastMarket.current = area.name;
+      setMarketBanner(`You have entered ${area.name}`);
+      const t = setTimeout(() => setMarketBanner(null), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [area]);
   useEffect(() => { if (!guide) return; const id = setInterval(() => { const dx = guide.x - player.x, dz = guide.z - player.z, d = Math.hypot(dx, dz); if (d < 6) { setGuide(null); return; } setGInfo({ d, a: Math.atan2(dx * -Math.cos(player.yaw) + dz * Math.sin(player.yaw), dx * Math.sin(player.yaw) + dz * Math.cos(player.yaw)) }); }, 150); return () => clearInterval(id); }, [guide]);
 
   const near = stores.find(s => s.plotId === nearPlot), nearP = nearPlot ? layout.byId.get(nearPlot) : undefined;
@@ -57,12 +283,27 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
     const p = layout.byId.get(id); if (!p) return false; const [x, z] = frontOf(p);
     player.teleport = { x: x + Math.sin(p.rot) * 3, z: z + Math.cos(p.rot) * 3, yaw: p.rot + Math.PI }; setQ(''); setMapOpen(false); if (openPanel) setPanel(true); return true;
   };
+  const teleportToCoord = (wx: number, wz: number) => {
+    player.teleport = { x: wx, z: wz, yaw: player.yaw };
+    setMapOpen(false);
+  };
   const guideTo = (id: string) => { const p = layout.byId.get(id); if (!p) return; const [x, z] = frontOf(p), s = stores.find(x => x.plotId === id); setGuide({ id, name: s?.config.name || `Plot ${id}`, x, z }); setMapOpen(false); setQ(''); };
   useEffect(() => { if (initialStore && !done.current && go(initialStore, false)) { done.current = true; setIntro(false); } }, [initialStore, stores, layout]); // eslint-disable-line
   // Entering a store is always an explicit click: the website never opens automatically.
   const enter = (s: Store) => { trackEvent(s.plotId, 'click'); if (s.config.website) window.open(s.config.website, '_blank', 'noopener,noreferrer'); };
   useEffect(() => {
-    const k = (e: KeyboardEvent) => { if ((e.target as HTMLElement).tagName === 'INPUT') return; if (e.code === 'KeyE' && nearPlot) { setPanel(true); if (stores.some(s => s.plotId === nearPlot)) trackEvent(nearPlot, 'visit'); } if (e.code === 'KeyM') setMapOpen(o => !o); if (e.code === 'Escape') { setPanel(false); setMapOpen(false); } };
+    const k = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).tagName === 'INPUT') return;
+      if (e.code === 'KeyE' && nearPlot) { setPanel(true); if (stores.some(s => s.plotId === nearPlot)) trackEvent(nearPlot, 'visit'); }
+      if (e.code === 'KeyM') setMapOpen(o => !o);
+      if (e.code === 'KeyT') {
+        const presets = [6.0, 11.5, 14.5, 18.2, 20.0, 22.5, 0.5];
+        const cur = useTimeStore.getState().hour;
+        const next = presets.find(p => p > cur + 0.5) ?? presets[0];
+        useTimeStore.getState().setHour(next);
+      }
+      if (e.code === 'Escape') { setPanel(false); setMapOpen(false); }
+    };
     window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
   }, [nearPlot, setPanel, stores]);
   const districts = useMemo(() => Array.from(new Set(layout.plots.map(p => p.district))), [layout]);
@@ -71,26 +312,185 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
 
   return (
     <div className="hud">
+      <TimeWidget />
       <div className="hud-tl">
-        {map && <Minimap occupied={occupied} layout={layout} guide={guide} />}
-        <div style={{ display: 'flex', gap: '.4rem' }}><button className="btn outline sm mini-toggle glass" onClick={() => setMap(!map)} aria-pressed={map}>{map ? 'Hide minimap' : 'Minimap'}</button><button className="btn outline sm mini-toggle glass" onClick={() => setMapOpen(true)}>City map (M)</button></div>
-        {area && <div className="area-chip glass" aria-live="polite"><i className={area.kind} /><span><b>{area.name}</b><small>Discovered {Math.min(found.length, totalAreas)} / {totalAreas}</small></span></div>}
+        {map && (
+          <div
+            onClick={() => setMapOpen(true)}
+            title="Click to open City Map (M)"
+            style={{
+              position: 'relative',
+              cursor: 'pointer',
+              borderRadius: '50%',
+              padding: '2px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1.5px solid rgba(34, 211, 238, 0.45)',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(34, 211, 238, 0.2)',
+              transition: 'transform 0.2s ease, border-color 0.2s ease',
+            }}
+          >
+            <Minimap occupied={occupied} layout={layout} guide={guide} />
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 4,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: 'rgba(10, 16, 30, 0.85)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                color: '#22d3ee',
+                fontSize: '0.62rem',
+                fontWeight: 700,
+                padding: '0.12rem 0.55rem',
+                borderRadius: '999px',
+                border: '1px solid rgba(34, 211, 238, 0.4)',
+                whiteSpace: 'nowrap',
+                pointerEvents: 'none',
+              }}
+            >
+              Open Map ↗
+            </div>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: '.4rem' }}>
+          <button className="btn outline sm mini-toggle glass" onClick={() => setMap(!map)} aria-pressed={map}>
+            {map ? 'Hide minimap' : 'Minimap'}
+          </button>
+          <button className="btn outline sm mini-toggle glass" onClick={() => setMapOpen(true)}>
+            City map (M)
+          </button>
+        </div>
+        {area && (
+          <div className="area-chip glass" aria-live="polite">
+            <i className={area.kind} />
+            <span>
+              <b>{area.name}</b>
+              <small>Discovered {Math.min(found.length, totalAreas)} / {totalAreas}</small>
+            </span>
+          </div>
+        )}
       </div>
       <div className="hud-top">
         <div className="search"><input placeholder="Search businesses or plots…" value={q} onChange={e => setQ(e.target.value)} aria-label="Search" />
           {results.length > 0 && <ul className="glass">{results.map(r => <li key={r.id} onClick={() => go(r.id)}><b>{r.name}</b><span>{r.sub}</span></li>)}</ul>}</div>
-        <div className="seg" role="group" aria-label="Camera mode"><button className={view === '1p' ? 'on' : ''} onClick={() => setView('1p')} aria-pressed={view === '1p'}>1P</button><button className={view === '3p' ? 'on' : ''} onClick={() => setView('3p')} aria-pressed={view === '3p'}>3P</button></div>
+        <div className="seg" role="group" aria-label="Camera mode">
+          <button className={view === '1p' ? 'on' : ''} onClick={() => setView('1p')} aria-pressed={view === '1p'}>1P</button>
+          <button className={view === '3p' ? 'on' : ''} onClick={() => setView('3p')} aria-pressed={view === '3p'}>3P</button>
+          <button
+            className={view === 'free' ? 'on' : ''}
+            onClick={() => setView(view === 'free' ? '3p' : 'free')}
+            aria-pressed={view === 'free'}
+            title="Free fly — WASD move · Space/E up · Q down · Shift fast"
+            style={view === 'free' ? { background: 'rgba(250,204,21,0.25)', color: '#fde047', borderColor: 'rgba(250,204,21,0.6)' } : {}}
+          >
+            🪂 Free
+          </button>
+        </div>
         <select className="qsel" value={quality} onChange={e => setQuality(e.target.value as Quality)} aria-label="Graphics quality">{(Object.keys(QUALITY) as Quality[]).map(k => <option key={k} value={k}>{QUALITY[k].label.split(' ')[0]}</option>)}</select>
       </div>
+      {marketBanner && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(var(--nav-h) + 18px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 100,
+            background: 'rgba(10, 16, 30, 0.65)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1.5px solid rgba(34, 211, 238, 0.65)',
+            boxShadow: '0 16px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(34, 211, 238, 0.3)',
+            borderRadius: '999px',
+            padding: '0.75rem 2.2rem',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.85rem',
+            animation: 'rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            pointerEvents: 'none',
+          }}
+          role="status"
+        >
+          <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>📍</span>
+          <div>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#22d3ee', fontWeight: 700 }}>
+              Market Zone Entered
+            </div>
+            <div style={{ fontSize: '1.18rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
+              {marketBanner}
+            </div>
+          </div>
+        </div>
+      )}
       {guide && <div className="guide glass"><span className="arrow" style={{ transform: `rotate(${gInfo.a}rad)` }}>▲</span><span><b>{guide.name}</b><small>{Math.round(gInfo.d)} m</small></span><button className="ghost" onClick={() => setGuide(null)} aria-label="Stop guiding">✕</button></div>}
       {toast && <div className="toast glass" role="status"><small>New area discovered</small><b>{toast}</b></div>}
       {intro && !initialStore && <div className="loc-banner glass" onClick={() => go('J01')}><small>You are here</small><b>J Enterprise</b></div>}
+
+      {/* ── Free-fly mode active badge ── */}
+      {view === 'free' && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '5.5rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 80,
+            background: 'rgba(10, 16, 30, 0.72)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1.5px solid rgba(250, 204, 21, 0.55)',
+            boxShadow: '0 8px 28px rgba(0,0,0,0.5), 0 0 20px rgba(250,204,21,0.15)',
+            borderRadius: '999px',
+            padding: '0.5rem 1.5rem',
+            color: '#fde047',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.9rem',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+          }}
+          role="status"
+        >
+          <span style={{ fontSize: '1.1rem' }}>🪂</span>
+          <span style={{ color: '#fde047', fontWeight: 800, letterSpacing: '0.08em', fontSize: '0.72rem', textTransform: 'uppercase' }}>Free Fly</span>
+          <span style={{ width: '1px', height: '14px', background: 'rgba(253,224,71,0.3)' }} />
+          <span style={{ color: '#e2e8f0', fontSize: '0.76rem', fontWeight: 500 }}>WASD move</span>
+          <span style={{ color: 'rgba(253,224,71,0.5)' }}>·</span>
+          <span style={{ color: '#e2e8f0', fontSize: '0.76rem', fontWeight: 500 }}>Space / E  up</span>
+          <span style={{ color: 'rgba(253,224,71,0.5)' }}>·</span>
+          <span style={{ color: '#e2e8f0', fontSize: '0.76rem', fontWeight: 500 }}>Q  down</span>
+          <span style={{ color: 'rgba(253,224,71,0.5)' }}>·</span>
+          <span style={{ color: '#e2e8f0', fontSize: '0.76rem', fontWeight: 500 }}>Shift  fast</span>
+          <span style={{ color: 'rgba(253,224,71,0.5)' }}>·</span>
+          <span style={{ color: '#94a3b8', fontSize: '0.76rem' }}>drag to look</span>
+        </div>
+      )}
       <div className="hud-bl">
         <div className="inv glass" aria-label="Inventory"><span><i className="w" />Wood <b>{inv.wood}</b></span><span><i className="s" />Stone <b>{inv.stone}</b></span><span><i className="c" />Crystal <b>{inv.crystal}</b></span></div>
         {help && <div className="help glass"><div className="keys"><span /><kbd>W</kbd><span /><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div><span>{KEYS_HINT}</span></div>}
         <button className="btn outline sm glass" onClick={() => setHelp(!help)} aria-expanded={help}>{help ? 'Hide controls' : 'Controls'}</button>
       </div>
-      <div className="hud-br">{district && <span className="dist-label glass">District: {district}</span>}<button className="btn" onClick={exploreDistrict}>Explore District</button></div>
+      <div className="hud-br">
+        {district && <span className="dist-label glass">District: {district}</span>}
+        <button
+          className="btn glass"
+          style={{
+            background: 'rgba(10, 16, 30, 0.55)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(34, 211, 238, 0.45)',
+            color: '#ffffff',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+          }}
+          onClick={exploreDistrict}
+        >
+          Explore District ↗
+        </button>
+      </div>
       {nearRes && !nearP && <div className="hint glass">Press <kbd>F</kbd> · Gather {nearRes.type}</div>}
       {nearP && !panelOpen && <div className="hint glass">Press <kbd>E</kbd> to View {near ? `Store · ${near.config.name}` : `Plot ${nearP.id}`}</div>}
       {nearP && panelOpen && near && (
@@ -116,21 +516,43 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
       )}
       {nearP && panelOpen && !near && (
         <aside className="store-panel glass" aria-label="Plot information">
-          <div className="head"><span className="logo-dot" style={{ background: '#22d3ee', color: '#04202b' }}>{nearP.tier === 'free' ? 'F' : '$'}</span><div><h3>Plot {nearP.id}</h3><p>{nearP.district} · {nearP.status === 'reserved' ? 'Reserved' : 'Available'}</p></div></div>
-          <div className="meta"><div><b>{nearP.w}×{nearP.d} m</b>Size</div><div><b>{nearP.price ? `$${nearP.price}` : 'Free'}</b>Price</div><div><b style={{ textTransform: 'capitalize' }}>{nearP.tier}</b>Tier</div></div>
-          <div className="actions">{nearP.status === 'available' ? <Link className="btn" href={`/buy?plot=${nearP.id}`}>View in marketplace</Link> : <button className="btn" disabled>Reserved</button>}<button className="btn outline" onClick={() => setPanel(false)}>Close</button></div>
+          <div className="head"><span className="logo-dot" style={{ background: nearP.status === 'available' ? '#22c55e' : '#64748b', color: '#fff' }}>{nearP.status === 'available' ? 'F' : '🔒'}</span><div><h3>Plot {nearP.id}</h3><p>{nearP.district} · {nearP.status === 'reserved' ? 'Permanently Locked' : 'Free to Claim'}</p></div></div>
+          <div className="meta"><div><b>{nearP.w}×{nearP.d} m</b>Size</div><div><b>{nearP.status === 'reserved' ? 'Locked' : 'Free'}</b>Price</div><div><b>{nearP.status === 'reserved' ? 'Locked' : 'Free (1/email)'}</b>Tier</div></div>
+          <div className="actions">{nearP.status === 'available' ? <Link className="btn" href={`/buy?plot=${nearP.id}`}>Claim Free Building</Link> : <button className="btn" disabled>🔒 Permanently Locked</button>}<button className="btn outline" onClick={() => setPanel(false)}>Close</button></div>
         </aside>
       )}
       {mapOpen && (
         <div className="modal-back" onClick={() => setMapOpen(false)}>
           <div className="map-modal" onClick={e => e.stopPropagation()} role="dialog" aria-label="City map">
-            <div className="admin-map-wrap"><AdminMap layout={layout} stores={stores} selected={pick} onSelect={setPick} matches={null} preview={null} showLabels showBuildings fitKey={0} /></div>
+            <div className="admin-map-wrap" style={{ position: 'relative' }}>
+              <div style={{ position: 'absolute', top: 12, left: 16, zIndex: 10, background: 'rgba(10, 18, 34, 0.85)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(34, 211, 238, 0.5)', color: '#22d3ee', padding: '0.45rem 1.15rem', borderRadius: 999, fontSize: '0.84rem', fontWeight: 600, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span>⚡ Click anywhere on the map or any building to teleport!</span>
+              </div>
+              <AdminMap
+                layout={layout}
+                stores={stores}
+                selected={pick}
+                onSelect={(id) => {
+                  if (id) {
+                    go(id, false);
+                  }
+                }}
+                onCoordClick={(wx, wz) => {
+                  teleportToCoord(wx, wz);
+                }}
+                matches={null}
+                preview={null}
+                showLabels
+                showBuildings
+                fitKey={0}
+              />
+            </div>
             <aside className="map-side">
               <div className="row" style={{ justifyContent: 'space-between' }}><h3 style={{ margin: 0 }}>City map</h3><button className="ghost" onClick={() => setMapOpen(false)} aria-label="Close map">✕</button></div>
               {pickP ? <>
                 <h3>{pickS ? pickS.config.name : `Plot ${pickP.id}`}</h3><p className="note">{pickP.district} · {pickP.id} · {pickP.w}×{pickP.d} m{pickS ? '' : pickP.price ? ` · $${pickP.price}/mo` : ' · Free'}</p>
                 <div className="actions-row"><button className="btn" onClick={() => guideTo(pickP.id)}>Guide me here</button><button className="btn outline" onClick={() => go(pickP.id)}>Teleport</button></div>
-              </> : <p className="note">Click a plot or building to see its details. Press M or Esc to close.</p>}
+              </> : <p className="note">Click any building, road or area on the map to instantly teleport there! Press M or Esc to close.</p>}
             </aside>
           </div>
         </div>)}

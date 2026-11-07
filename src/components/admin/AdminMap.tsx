@@ -8,14 +8,27 @@ import type { ExpansionPlan } from '@/lib/expansion';
 import type { Plot, Road, Store } from '@/lib/types';
 
 const TIER_STROKE: Record<string, string> = { free: 'none', premium: '#60a5fa', featured: '#facc15', corner: '#c084fc' };
-const DIST_COLOR: [string, string][] = [['Technology', '#3f51b5'], ['Finance', '#0f8f6a'], ['Retail', '#e8651a'], ['Food', '#e03e3e'], ['Creative', '#6a3fb5'], ['Education', '#14909c'], ['Health', '#d63a7d'], ['AI', '#4558c9'], ['Real Estate', '#d9a113'], ['Central', '#64748b']];
+const DIST_COLOR: [string, string][] = [
+  ['SAAS', '#0284c7'],
+  ['AI', '#7c3aed'],
+  ['DEVELOPMENT', '#059669'],
+  ['WINDOWS APPS', '#2563eb'],
+  ['MAC APPS', '#475569'],
+  ['MOBILE APPS', '#ea580c'],
+  ['GAMING', '#dc2626'],
+  ['DESIGN', '#db2777'],
+  ['MARKETING', '#d97706'],
+  ['Central', '#64748b'],
+];
 const distColor = (n: string) => DIST_COLOR.find(([k]) => n.includes(k))?.[1] || '#475569';
 type VB = { x: number; y: number; w: number; h: number };
 const pts = (P: Pt[]) => P.map(p => p.join(',')).join(' ');
 
-export default function AdminMap({ layout, stores, selected, onSelect, matches, preview, showLabels, showBuildings, fitKey, selectedRoad, onSelectRoad, highlightRoads }: {
+export default function AdminMap({ layout, stores, selected, onSelect, matches, preview, showLabels, showBuildings, fitKey, selectedRoad, onSelectRoad, highlightRoads, onCoordClick, theme = 'dark' }: {
   layout: Layout; stores: Store[]; selected: string | null; onSelect: (id: string | null) => void; matches: Set<string> | null; preview: ExpansionPlan | null; showLabels: boolean; showBuildings: boolean; fitKey: number;
   selectedRoad?: string | null; onSelectRoad?: (id: string) => void; highlightRoads?: Set<string> | null;
+  onCoordClick?: (x: number, z: number) => void;
+  theme?: 'dark' | 'light';
 }) {
   const svg = useRef<SVGSVGElement>(null), drag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const [vb, setVb] = useState<VB>({ x: -360, y: -360, w: 720, h: 720 });
@@ -41,19 +54,47 @@ export default function AdminMap({ layout, stores, selected, onSelect, matches, 
   const click = (fn: () => void) => { if (drag.current?.moved) return; fn(); };
   const zoom = (k: number) => setVb(v => ({ x: v.x + (v.w - v.w * k) / 2, y: v.y + (v.h - v.h * k) / 2, w: v.w * k, h: v.h * k }));
   const fs = Math.max(0.9, vb.w / 140), detail = vb.w < 360, far = vb.w > 300;
-  const fill = (p: Plot, occ: boolean) => (occ ? '#f97316' : p.status === 'reserved' ? 'url(#hatch)' : '#22d3ee');
+  const fill = (p: Plot, occ: boolean) => {
+    if (theme === 'light') {
+      if (occ) return '#f97316';
+      if (p.status === 'reserved') return '#475569';
+      return '#22c55e';
+    }
+    return occ ? '#f97316' : p.status === 'reserved' ? 'url(#hatch)' : '#22d3ee';
+  };
   const roadEl = (r: Road, key: string, stroke: string, extra: Partial<React.SVGProps<SVGElement>> = {}, onClick?: () => void) => isRing(r)
     ? <circle key={key} cx={r.x0} cy={r.z0} r={r.x1} fill="none" stroke={stroke} strokeWidth={r.w} onClick={onClick} style={{ cursor: onClick ? 'pointer' : undefined }} {...(extra as any)} />
     : <line key={key} x1={r.x0} y1={r.z0} x2={r.x1} y2={r.z1} stroke={stroke} strokeWidth={r.w} onClick={onClick} style={{ cursor: onClick ? 'pointer' : undefined }} {...(extra as any)} />;
 
   return (
-    <div className="admin-map">
-      <svg ref={svg} viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up} onClick={() => click(() => onSelect(null))} role="img" aria-label="City map">
+    <div className={`admin-map ${theme === 'light' ? 'light' : ''}`}>
+      <svg
+        ref={svg}
+        viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
+        onPointerDown={down}
+        onPointerMove={move}
+        onPointerUp={up}
+        onPointerLeave={up}
+        onClick={(e) => {
+          if (drag.current?.moved) return;
+          if (onCoordClick && svg.current) {
+            const pt = svg.current.createSVGPoint();
+            pt.x = e.clientX;
+            pt.y = e.clientY;
+            const svgP = pt.matrixTransform(svg.current.getScreenCTM()?.inverse());
+            onCoordClick(svgP.x, svgP.y);
+          } else {
+            click(() => onSelect(null));
+          }
+        }}
+        role="img"
+        aria-label="City map"
+      >
         <defs><pattern id="hatch" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="3" fill="#78350f" /><rect width="1.4" height="3" fill="#f59e0b" /></pattern></defs>
-        <rect x={vb.x - 4000} y={vb.y - 4000} width={vb.w + 8000} height={vb.h + 8000} fill="#0f2f4a" />
-        <circle cx={0} cy={0} r={layoutBounds(layout, 0).x1 + 4} fill="#17422c" />
-        {layout.roads.map(r => roadEl(r, r.id, '#2c3445', {}, onSelectRoad ? () => click(() => onSelectRoad(r.id)) : undefined))}
-        {layout.roads.map(r => roadEl(r, 'c' + r.id, '#8794ad', { strokeWidth: 0.35, strokeDasharray: '2 2', style: { pointerEvents: 'none' } }))}
+        <rect x={vb.x - 4000} y={vb.y - 4000} width={vb.w + 8000} height={vb.h + 8000} fill={theme === 'light' ? '#eef5ec' : '#0f2f4a'} />
+        <circle cx={0} cy={0} r={layoutBounds(layout, 0).x1 + 4} fill={theme === 'light' ? '#1f6438' : '#17422c'} />
+        {layout.roads.map(r => roadEl(r, r.id, theme === 'light' ? '#2d3748' : '#2c3445', {}, onSelectRoad ? () => click(() => onSelectRoad(r.id)) : undefined))}
+        {layout.roads.map(r => roadEl(r, 'c' + r.id, theme === 'light' ? '#cbd5e1' : '#8794ad', { strokeWidth: 0.35, strokeDasharray: '2 2', style: { pointerEvents: 'none' } }))}
         {selectedRoad && layout.roads.filter(r => r.id === selectedRoad).map(r => roadEl(r, 's' + r.id, '#22d3ee', { opacity: 0.55, style: { pointerEvents: 'none' } }))}
         {highlightRoads && layout.roads.filter(r => highlightRoads.has(r.id)).map(r => roadEl(r, 'h' + r.id, '#ef4444', { opacity: 0.6, style: { pointerEvents: 'none' } }))}
         {OBSTACLES.map(o => <g key={o.id} style={{ pointerEvents: 'none' }}><circle cx={o.cx} cy={o.cz} r={o.r} fill="#cfe7bd" opacity={0.9} /><circle cx={o.cx} cy={o.cz} r={o.r - 7} fill="none" stroke="#fff3e0" strokeWidth={5} opacity={0.7} /></g>)}
@@ -61,7 +102,7 @@ export default function AdminMap({ layout, stores, selected, onSelect, matches, 
           const s = byStore.get(p.id), dim = matches ? !matches.has(p.id) : false, sel = selected === p.id, P = plotPoly(p), bb = s && showBuildings ? buildingOBB(p, s.config) : null;
           return (
             <g key={p.id} opacity={dim ? 0.2 : 1} onClick={e => { e.stopPropagation(); click(() => onSelect(p.id)); }} style={{ cursor: 'pointer' }}>
-              <polygon points={pts(P)} fill={fill(p, !!s)} fillOpacity={s ? 0.4 : 0.85} stroke={sel ? '#fff' : TIER_STROKE[p.tier]} strokeWidth={sel ? 1 : 0.5} />
+              <polygon points={pts(P)} fill={fill(p, !!s)} fillOpacity={s ? 0.4 : theme === 'light' ? 0.95 : 0.85} stroke={sel ? '#fff' : theme === 'light' ? (p.status === 'available' ? '#16a34a' : '#fff') : TIER_STROKE[p.tier]} strokeWidth={sel ? 1.5 : 0.5} />
               {bb && <polygon points={pts(box(bb.cx, bb.cz, [Math.cos(bb.a), -Math.sin(bb.a)], [Math.sin(bb.a), Math.cos(bb.a)], bb.hw, bb.hd))} fill="#f97316" stroke="#fff" strokeWidth={0.25} />}
               {showLabels && detail && <text x={p.x} y={p.z} fontSize={fs * 0.8} fill="#fff" textAnchor="middle" dominantBaseline="middle" style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#000" strokeWidth={fs * 0.12}>{s ? s.config.name : p.id}</text>}
             </g>);
@@ -73,8 +114,30 @@ export default function AdminMap({ layout, stores, selected, onSelect, matches, 
           {preview.plots.map(p => <g key={p.id}><polygon points={pts(plotPoly(p))} fill={preview.errors.length ? '#ef4444' : '#38bdf8'} opacity={0.55} stroke="#fff" strokeWidth={0.3} strokeDasharray="1.5 1" />{detail && <text x={p.x} y={p.z} fontSize={fs * 0.7} fill="#fff" textAnchor="middle" dominantBaseline="middle">{p.id}</text>}</g>)}
         </g>}
       </svg>
-      <div className="map-ctrl"><button onClick={() => zoom(1 / 1.4)} aria-label="Zoom in">+</button><button onClick={() => zoom(1.4)} aria-label="Zoom out">−</button><button onClick={() => fit(preview)} aria-label="Fit map">⤢</button></div>
-      <ul className="legend admin-legend"><li><i style={{ background: '#22d3ee' }} />Available</li><li><i style={{ background: '#f97316' }} />Occupied</li><li><i style={{ background: '#f59e0b' }} />Reserved</li><li><i className="ring" style={{ borderColor: '#60a5fa' }} />Premium</li><li><i className="ring" style={{ borderColor: '#facc15' }} />Featured</li><li><i className="ring" style={{ borderColor: '#c084fc' }} />Corner</li></ul>
+      <div className={`map-ctrl ${theme === 'light' ? 'light' : ''}`}>
+        <button onClick={() => zoom(1 / 1.4)} aria-label="Zoom in">+</button>
+        <button onClick={() => zoom(1.4)} aria-label="Zoom out">−</button>
+        <button onClick={() => fit(preview)} aria-label="Fit map">⛶</button>
+      </div>
+      {theme === 'light' ? (
+        <ul className="legend admin-legend light">
+          <li><i style={{ background: '#22c55e' }} />Available (Free)</li>
+          <li><i style={{ background: '#475569' }} />Locked (25 / Market)</li>
+          <li><i style={{ background: '#f97316' }} />Occupied</li>
+          <li><i style={{ background: '#3b82f6' }} />Reserved</li>
+          <li><i style={{ background: '#a855f7' }} />Premium</li>
+          <li><i style={{ background: '#eab308' }} />Custom</li>
+        </ul>
+      ) : (
+        <ul className="legend admin-legend">
+          <li><i style={{ background: '#22d3ee' }} />Available</li>
+          <li><i style={{ background: '#f97316' }} />Occupied</li>
+          <li><i style={{ background: '#f59e0b' }} />Reserved</li>
+          <li><i className="ring" style={{ borderColor: '#60a5fa' }} />Premium</li>
+          <li><i className="ring" style={{ borderColor: '#facc15' }} />Featured</li>
+          <li><i className="ring" style={{ borderColor: '#c084fc' }} />Corner</li>
+        </ul>
+      )}
     </div>
   );
 }
