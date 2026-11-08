@@ -1,13 +1,15 @@
 'use client';
 import * as THREE from 'three';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import { player, useUI } from '@/lib/state';
 import type { Collider } from '@/lib/plots';
 import type { Rect } from '@/lib/layout';
 import type { Terrain } from '@/lib/terrain';
 import { stepBody, PHYS, Body } from '@/lib/physics';
 import { ResNode, nearestResource, collect, inventory, RES_LABEL } from '@/lib/resources';
+import { useMultiplayer, broadcastPlayerPosition } from '@/lib/multiplayer';
 
 const F = (c: string) => <meshStandardMaterial color={c} flatShading roughness={0.9} />;
 
@@ -22,6 +24,7 @@ export function Player({ colliders, doors, bounds, terrain, resources }: { colli
   const root = useRef<THREE.Group>(null), body = useRef<THREE.Group>(null), legL = useRef<THREE.Group>(null), legR = useRef<THREE.Group>(null), armL = useRef<THREE.Group>(null), armR = useRef<THREE.Group>(null);
   const keys = useRef<Record<string, boolean>>({}), { camera, gl } = useThree(), t = useRef(0), near = useRef<string | null>(null), nearRes = useRef<string | null>(null), tmp = useRef(new THREE.Vector3());
   const live = useRef({ resources, terrain }); live.current = { resources, terrain };
+  const { myName, myColor } = useMultiplayer();
 
   useEffect(() => {
     const el = gl.domElement; let drag = false;
@@ -160,18 +163,64 @@ export function Player({ colliders, doors, bounds, terrain, resources }: { colli
         camera.position.lerp(tmp.current, 1 - Math.exp(-10 * dt)); camera.lookAt(tx, ty + 0.1, tz);
       }
     }
+
+    // Broadcast local player position to other visitors
+    broadcastPlayerPosition(player.x, player.y, player.z, player.heading, player.moving, myName, myColor);
   });
 
-  // chunky low-poly character (navy hoodie, backpack, white sneakers) after the reference art
+  // chunky low-poly character with custom color & nametag
   return (
     <group ref={root}>
+      {/* ── 3D Floating Name Tag Above Character in 3P ── */}
+      <Html position={[0, 2.35, 0]} center distanceFactor={26} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'rgba(10, 16, 30, 0.78)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: `1.5px solid ${myColor}`,
+            boxShadow: `0 4px 16px rgba(0, 0, 0, 0.4), 0 0 10px ${myColor}44`,
+            borderRadius: '999px',
+            padding: '3px 10px 3px 6px',
+            whiteSpace: 'nowrap',
+            transform: 'translate3d(0, 0, 0)',
+            userSelect: 'none',
+          }}
+        >
+          <span
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: myColor,
+              boxShadow: `0 0 8px ${myColor}`,
+              display: 'inline-block',
+            }}
+          />
+          <span
+            style={{
+              color: '#ffffff',
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '0.02em',
+              textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+            }}
+          >
+            {myName} (You)
+          </span>
+        </div>
+      </Html>
+
       <group ref={body}>
         <group ref={legL} position={[-0.13, 0.82, 0]}><mesh position={[0, -0.36, 0]} castShadow><boxGeometry args={[0.2, 0.72, 0.22]} />{F('#2b2f45')}</mesh><mesh position={[0, -0.74, 0.05]} castShadow><boxGeometry args={[0.23, 0.14, 0.34]} />{F('#ffffff')}</mesh></group>
         <group ref={legR} position={[0.13, 0.82, 0]}><mesh position={[0, -0.36, 0]} castShadow><boxGeometry args={[0.2, 0.72, 0.22]} />{F('#2b2f45')}</mesh><mesh position={[0, -0.74, 0.05]} castShadow><boxGeometry args={[0.23, 0.14, 0.34]} />{F('#ffffff')}</mesh></group>
-        <mesh position={[0, 1.18, 0]} castShadow><boxGeometry args={[0.52, 0.62, 0.32]} />{F('#34479b')}</mesh>
+        <mesh position={[0, 1.18, 0]} castShadow><boxGeometry args={[0.52, 0.62, 0.32]} />{F(myColor)}</mesh>
         <mesh position={[0, 1.14, -0.25]} castShadow><boxGeometry args={[0.4, 0.5, 0.2]} />{F('#262c46')}</mesh>
-        <group ref={armL} position={[-0.34, 1.42, 0]}><mesh position={[0, -0.26, 0]} castShadow><boxGeometry args={[0.15, 0.56, 0.17]} />{F('#34479b')}</mesh><mesh position={[0, -0.56, 0]}><boxGeometry args={[0.13, 0.12, 0.13]} />{F('#f6cba6')}</mesh></group>
-        <group ref={armR} position={[0.34, 1.42, 0]}><mesh position={[0, -0.26, 0]} castShadow><boxGeometry args={[0.15, 0.56, 0.17]} />{F('#34479b')}</mesh><mesh position={[0, -0.56, 0]}><boxGeometry args={[0.13, 0.12, 0.13]} />{F('#f6cba6')}</mesh></group>
+        <group ref={armL} position={[-0.34, 1.42, 0]}><mesh position={[0, -0.26, 0]} castShadow><boxGeometry args={[0.15, 0.56, 0.17]} />{F(myColor)}</mesh><mesh position={[0, -0.56, 0]}><boxGeometry args={[0.13, 0.12, 0.13]} />{F('#f6cba6')}</mesh></group>
+        <group ref={armR} position={[0.34, 1.42, 0]}><mesh position={[0, -0.26, 0]} castShadow><boxGeometry args={[0.15, 0.56, 0.17]} />{F(myColor)}</mesh><mesh position={[0, -0.56, 0]}><boxGeometry args={[0.13, 0.12, 0.13]} />{F('#f6cba6')}</mesh></group>
         <mesh position={[0, 1.72, 0]} scale={[1, 1.05, 1]} castShadow><icosahedronGeometry args={[0.27, 1]} />{F('#f6cba6')}</mesh>
         <mesh position={[0, 1.83, -0.04]} scale={[1.05, 0.8, 1.05]} castShadow><icosahedronGeometry args={[0.29, 1]} />{F('#3a2a24')}</mesh>
         {[-0.1, 0.1].map(x => <mesh key={x} position={[x, 1.72, 0.25]}><boxGeometry args={[0.05, 0.07, 0.03]} />{F('#2a2230')}</mesh>)}

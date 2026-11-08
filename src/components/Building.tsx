@@ -486,13 +486,84 @@ export function BuildingFull({ cfg, plotId, quality = true }: { cfg: StoreConfig
   );
 }
 
-/** Distant version: matching modern silhouette + glowing curtain wall + outside board */
+/** Medium-distance version (LOD 2): Preserves archetype shape, window facades, signage and roofline without heavy micro-props */
+export function BuildingMedium({ cfg, plotId }: { cfg: StoreConfig; plotId?: string }) {
+  const mats = useMats(cfg), tex = useSignTexture(cfg.name, cfg.theme, cfg.sign, cfg.logoUrl);
+  const floors = Math.max(2, Math.min(5, cfg.floors || 3)), H = GH + (floors - 1) * FH;
+  const face = useMemo(() => new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }), [tex]);
+  const ledTheme = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: cfg.theme, emissiveIntensity: 1.6, flatShading: true }), [cfg.theme]);
+  const dark = solid('dark'), steel = solid('steel'), alu = solid('alu');
+  const archetype = getArchetype(plotId, cfg.name);
+
+  return (
+    <group>
+      {/* Plinth */}
+      <B s={[W + 0.6, 0.3, D + 0.6]} p={[0, 0.15, 0]} m={mats.floor} />
+
+      {/* Main Structural Mass */}
+      <B s={[W, H, D]} p={[0, H / 2, 0]} m={mats.wall} />
+
+      {/* Archetype-specific architectural facade features */}
+      {archetype === 0 && (
+        <group>
+          <B s={[1.6, H, 0.4]} p={[-(W / 2 - 0.8), H / 2, D / 2 + 0.1]} m={mats.wall} />
+          <B s={[1.6, H, 0.4]} p={[W / 2 - 0.8, H / 2, D / 2 + 0.1]} m={mats.wall} />
+          <mesh position={[0, H / 2, D / 2 + 0.04]} material={cfg.lights ? mats.glow : mats.glass}>
+            <planeGeometry args={[W - 3.2, H - 0.8]} />
+          </mesh>
+        </group>
+      )}
+
+      {archetype === 1 && (
+        <group position={[0, GH, -0.4]}>
+          <B s={[W - 1.2, H - GH, D - 0.4]} p={[0, (H - GH) / 2, 0]} m={mats.wall} />
+          <mesh position={[0, (H - GH) / 2, D / 2 - 0.1]} material={cfg.lights ? mats.glow : mats.glass}>
+            <planeGeometry args={[W - 2.0, H - GH - 0.6]} />
+          </mesh>
+        </group>
+      )}
+
+      {archetype === 2 && (
+        <group position={[0, GH, 0.3]}>
+          <B s={[W + 0.2, H - GH, D + 0.6]} p={[0, (H - GH) / 2, -0.3]} m={mats.wall} />
+          <mesh position={[0, (H - GH) / 2, D / 2 + 0.02]} material={cfg.lights ? mats.glow : mats.glass}>
+            <planeGeometry args={[W - 1.0, H - GH - 0.6]} />
+          </mesh>
+        </group>
+      )}
+
+      {archetype >= 3 && (
+        <mesh position={[0, H / 2, D / 2 + 0.02]} material={cfg.lights ? mats.glow : mats.glass}>
+          <planeGeometry args={[W - 1.2, H - 1.0]} />
+        </mesh>
+      )}
+
+      {/* Floor Dividing Trim Bands */}
+      {Array.from({ length: floors }).map((_, i) => (
+        <Px key={i} s={[W + 0.1, 0.18, 0.2]} p={[0, GH + i * FH - FH / 2, D / 2 + 0.08]} m={mats.trim} />
+      ))}
+
+      {/* Facade Sign */}
+      <Plane s={[6.6, 1.1]} p={[0, 3.85, D / 2 + 0.12]} m={face} />
+
+      {/* Roof Parapet & HVAC Block */}
+      <B s={[W + 0.4, 0.45, D + 0.4]} p={[0, H + 0.22, 0]} m={mats.roof} />
+      <B s={[2.0, 1.1, 1.6]} p={[-2.2, H + 0.75, -1]} m={steel} />
+      <Px s={[W, 0.06, 0.06]} p={[0, H + 0.46, D / 2 + 0.2]} m={ledTheme} />
+
+      {/* Outdoor Monument Board */}
+      <OutdoorBoard pos={[-3.3, 0, D / 2 + 1.1]} name={cfg.name} tagline={cfg.tagline} theme={cfg.theme} baseMat={mats.trim} rot={0.16} />
+    </group>
+  );
+}
+
+/** Distant version (LOD 1): matching modern silhouette + glowing curtain wall + outside board */
 export function BuildingLow({ cfg, plotId }: { cfg: StoreConfig; plotId?: string }) {
   const mats = useMats(cfg), tex = useSignTexture(cfg.name, cfg.theme, cfg.sign, cfg.logoUrl);
   const floors = Math.max(2, Math.min(5, cfg.floors || 3)), H = GH + (floors - 1) * FH;
   const face = useMemo(() => new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }), [tex]);
   const ledTheme = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: cfg.theme, emissiveIntensity: 1.6, flatShading: true }), [cfg.theme]);
-  const dark = solid('dark'), steel = solid('steel');
+  const steel = solid('steel');
 
   return (
     <group>
@@ -520,16 +591,19 @@ export function BuildingLow({ cfg, plotId }: { cfg: StoreConfig; plotId?: string
       <B s={[2.0, 1.1, 1.6]} p={[-2.2, H + 0.75, -1]} m={steel} />
       <Px s={[W, 0.06, 0.06]} p={[0, H + 0.46, D / 2 + 0.2]} m={ledTheme} />
 
-      {/* Outdoor Board (always visible in Low-LOD too!) */}
+      {/* Outdoor Board */}
       <OutdoorBoard pos={[-3.3, 0, D / 2 + 1.1]} name={cfg.name} tagline={cfg.tagline} theme={cfg.theme} baseMat={mats.trim} rot={0.16} />
     </group>
   );
 }
 
-export function StoreBuilding({ cfg, plotId, lodDistance = 60, interiors = true }: { cfg: StoreConfig; plotId?: string; lodDistance?: number; interiors?: boolean }) {
+export function StoreBuilding({ cfg, plotId, lodDistance = 48, interiors = true }: { cfg: StoreConfig; plotId?: string; lodDistance?: number; interiors?: boolean }) {
+  const dMed = lodDistance;
+  const dLow = Math.max(105, lodDistance * 2.3);
   return (
-    <Detailed distances={[0, lodDistance]}>
+    <Detailed distances={[0, dMed, dLow]}>
       {cfg.mode === 'modular' ? <ModularBuilding cfg={cfg} /> : <BuildingFull cfg={cfg} plotId={plotId} quality={interiors} />}
+      {cfg.mode === 'modular' ? <ModularBuilding cfg={cfg} /> : <BuildingMedium cfg={cfg} plotId={plotId} />}
       {cfg.mode === 'modular' ? <ModularBuilding cfg={cfg} /> : <BuildingLow cfg={cfg} plotId={plotId} />}
     </Detailed>
   );

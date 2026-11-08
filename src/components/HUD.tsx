@@ -11,6 +11,7 @@ import { trackEvent } from '@/lib/data';
 import type { Plot, Store } from '@/lib/types';
 import AdminMap from '@/components/admin/AdminMap';
 import { useTimeStore, formatClock, getTimePhase, TIME_PRESETS } from '@/lib/time';
+import { useMultiplayer } from '@/lib/multiplayer';
 
 type Guide = { id: string; name: string; x: number; z: number };
 function Minimap({ occupied, layout, guide }: { occupied: Set<string>; layout: Layout; guide: Guide | null }) {
@@ -253,6 +254,7 @@ function TimeWidget() {
 }
 export default function HUD({ stores, layout, initialStore }: { stores: Store[]; layout: Layout; initialStore?: string | null }) {
   const { view, setView, nearPlot, quality, setQuality, panelOpen, setPanel, nearRes, inv } = useUI();
+  const { myName, myColor, remotePlayers } = useMultiplayer();
   const [q, setQ] = useState(''), [intro, setIntro] = useState(true), [help, setHelp] = useState(false), [map, setMap] = useState(true), [district, setDistrict] = useState(''), distIdx = useRef(0), done = useRef(false);
   const [guide, setGuide] = useState<Guide | null>(null), [gInfo, setGInfo] = useState({ d: 0, a: 0 }), [mapOpen, setMapOpen] = useState(false), [pick, setPick] = useState<string | null>(null);
   const [area, setArea] = useState<Area | null>(null), [found, setFound] = useState<string[]>([]), [toast, setToast] = useState('');
@@ -388,6 +390,28 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
           </button>
         </div>
         <select className="qsel" value={quality} onChange={e => setQuality(e.target.value as Quality)} aria-label="Graphics quality">{(Object.keys(QUALITY) as Quality[]).map(k => <option key={k} value={k}>{QUALITY[k].label.split(' ')[0]}</option>)}</select>
+
+        {/* Live Online Explorers Pill */}
+        <div
+          className="glass"
+          title={`Online in City: ${myName} (You)${remotePlayers.length ? ', ' + remotePlayers.map(p => p.name).join(', ') : ''}`}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '0.35rem 0.8rem',
+            borderRadius: '999px',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            color: '#e2e8f0',
+            border: '1px solid rgba(255, 255, 255, 0.16)',
+            background: 'rgba(10, 16, 30, 0.55)',
+            userSelect: 'none',
+          }}
+        >
+          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px #4ade80' }} />
+          <span>👥 {remotePlayers.length + 1} Online</span>
+        </div>
       </div>
       {marketBanner && (
         <div
@@ -397,13 +421,13 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 100,
-            background: 'rgba(10, 16, 30, 0.65)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1.5px solid rgba(34, 211, 238, 0.65)',
-            boxShadow: '0 16px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(34, 211, 238, 0.3)',
+            background: 'rgba(15, 23, 42, 0.25)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255, 255, 255, 0.22)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), 0 0 20px rgba(56, 189, 248, 0.12)',
             borderRadius: '999px',
-            padding: '0.75rem 2.2rem',
+            padding: '0.65rem 2rem',
             color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
@@ -415,10 +439,10 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
         >
           <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>📍</span>
           <div>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#22d3ee', fontWeight: 700 }}>
+            <div style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#38bdf8', fontWeight: 700 }}>
               Market Zone Entered
             </div>
-            <div style={{ fontSize: '1.18rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
+            <div style={{ fontSize: '1.14rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
               {marketBanner}
             </div>
           </div>

@@ -11,8 +11,11 @@ export function Inst({ geo, material, items, cast = false, recv = false }: { geo
   useLayoutEffect(() => {
     const m = ref.current; if (!m) return; const o = new THREE.Object3D(), col = new THREE.Color();
     items.forEach((it, i) => { o.position.set(...it.p); o.rotation.set(0, it.r || 0, 0); o.scale.set(...(it.s || [1, 1, 1])); o.updateMatrix(); m.setMatrixAt(i, o.matrix); if (it.c) { col.set(it.c); m.setColorAt(i, col); } });
-    m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true;
+    m.instanceMatrix.needsUpdate = true;
+    if (m.instanceColor) m.instanceColor.needsUpdate = true;
+    m.computeBoundingBox();
+    m.computeBoundingSphere();
   }, [items]);
   if (!items.length) return null;
-  return <instancedMesh key={items.length} ref={ref} args={[geo, material, items.length]} castShadow={cast} receiveShadow={recv} frustumCulled={false} />;
+  return <instancedMesh key={items.length} ref={ref} args={[geo, material, items.length]} castShadow={cast} receiveShadow={recv} frustumCulled={true} />;
 }

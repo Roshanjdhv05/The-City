@@ -30,7 +30,7 @@ export const useUI = create<UI>((set) => ({
 }));
 
 /** Mutable per-frame player state (read by HUD minimap without React re-renders). */
-export const SPAWN = { x: -4, z: 33, yaw: Math.PI + 0.06 }; // on the plaza, facing J Enterprise (door at z = +12)
-export const player = { x: SPAWN.x, y: 0.1, z: SPAWN.z, yaw: SPAWN.yaw, pitch: 0.22, heading: SPAWN.yaw, moving: false, vx: 0, vz: 0, vy: 0, onGround: true, inWater: false, camDist: 6, teleport: null as null | { x: number; z: number; yaw: number } };
+export const SPAWN = { x: -4.4, z: 39.5, yaw: Math.PI }; // on the plaza facing J Enterprise, matching landing rig endpoint
+export const player = { x: SPAWN.x, y: 0.1, z: SPAWN.z, yaw: SPAWN.yaw, pitch: 0.18, heading: SPAWN.yaw, moving: false, vx: 0, vz: 0, vy: 0, onGround: true, inWater: false, camDist: 6, teleport: null as null | { x: number; z: number; yaw: number } };
 
 export const landing = { p: 0 };

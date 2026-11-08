@@ -6,6 +6,7 @@ import Nav from '@/components/Nav';
 import HUD from '@/components/HUD';
 import { useStores } from '@/components/useStores';
 import { landing } from '@/lib/state';
+import { usePreloadStore } from '@/lib/preload';
 
 const CityCanvas = dynamic(() => import('@/components/CityCanvas'), { ssr: false });
 
@@ -32,13 +33,29 @@ export default function Home() {
       landing.p = p;
       setScrollP(p);
 
-      // When completely scrolled — enter city
+      // Start background preloading of actual-world assets during the zoom animation
+      if (p > 0.35) {
+        usePreloadStore.getState().startPreload();
+      }
+
+      // When completely scrolled — enter city smoothly once assets are ready
       if (p >= 0.995 && !entered.current) {
         entered.current = true;
-        setTimeout(() => {
+        const enter = () => {
           setCityMode(true);
           requestAnimationFrame(() => setCityVisible(true));
-        }, 220);
+        };
+        if (usePreloadStore.getState().isWorldReady) {
+          setTimeout(enter, 140);
+        } else {
+          const unsub = usePreloadStore.subscribe((state) => {
+            if (state.isWorldReady) {
+              unsub();
+              enter();
+            }
+          });
+          setTimeout(() => { unsub(); enter(); }, 600);
+        }
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });

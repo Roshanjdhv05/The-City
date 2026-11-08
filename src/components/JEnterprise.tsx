@@ -146,7 +146,27 @@ export function JEnterprise() {
   );
 }
 
-/** Distant version: massing + sign. */
+/** Medium-distance version (LOD 2): Core tower architecture and signs, without micro shrubs / bollards */
+function JEnterpriseMedium() {
+  const T = textures(), marble = useMemo(() => new THREE.MeshStandardMaterial({ color: '#3d4a8a', flatShading: true }), []), g = useMemo(() => new THREE.MeshStandardMaterial({ color: '#80b6de', flatShading: true }), []), warm = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffe0a8', flatShading: true }), []);
+  const sign = useMemo(() => new THREE.MeshBasicMaterial({ map: T.main, transparent: true, toneMapped: false }), [T]);
+  const dark = solid('dark'), metal = solid('steel');
+  return (
+    <group>
+      <B s={[24.6, 0.7, 15.6]} p={[0, 0.35, 0]} m={dark} />
+      <B s={[8, 12.5, 15]} p={[-0.5, 11.95, 0.7]} m={marble} />
+      <mesh position={[-0.5, 12.6, 8.25]} material={sign}><planeGeometry args={[5.8, 5.8]} /></mesh>
+      <B s={[7, 12.6, 13]} p={[-8.5, 7, -0.6]} m={g} />
+      <B s={[7.6, 17.5, 15]} p={[7.7, 9.45, 0]} m={g} />
+      <B s={[6, 5.2, 14]} p={[-0.5, 3.3, 0]} m={warm} />
+      {/* Upper terrace accent & fin lines */}
+      <B s={[7.4, 0.3, 13.2]} p={[-8.5, 12.6, -0.6]} m={metal} />
+      <B s={[8.6, 0.45, 15.6]} p={[7.7, 17.75, 0]} m={metal} />
+    </group>
+  );
+}
+
+/** Distant version (LOD 1): massing + sign. */
 function JELow() {
   const T = textures(), marble = useMemo(() => new THREE.MeshStandardMaterial({ color: '#3d4a8a', flatShading: true }), []), g = useMemo(() => new THREE.MeshStandardMaterial({ color: '#80b6de', flatShading: true }), []), warm = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffe0a8', flatShading: true }), []);
   const sign = useMemo(() => new THREE.MeshBasicMaterial({ map: T.main, transparent: true, toneMapped: false }), [T]);
@@ -160,5 +180,11 @@ function JELow() {
 }
 
 export function JEnterpriseLOD() {
-  return <Detailed distances={[0, 150]}><JEnterprise /><JELow /></Detailed>;
+  return (
+    <Detailed distances={[0, 60, 140]}>
+      <JEnterprise />
+      <JEnterpriseMedium />
+      <JELow />
+    </Detailed>
+  );
 }

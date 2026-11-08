@@ -25,18 +25,41 @@ export function drawSign(c: HTMLCanvasElement, o: { name: string; theme: string;
   g.fillStyle = '#ffffff'; g.fillText(text, tx, h / 2 + 4); g.shadowBlur = 0;
 }
 
+const signTexCache = new Map<string, { canvas: HTMLCanvasElement; tex: THREE.CanvasTexture }>();
+
 export function useSignTexture(name: string, theme: string, style: string, logoUrl: string) {
-  const { canvas, tex } = useMemo(() => {
-    const canvas = document.createElement('canvas'); canvas.width = 1536; canvas.height = 256;
-    const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8; return { canvas, tex };
-  }, []);
+  const key = `${name || 'STORE'}|${theme}|${style}`;
+  const entry = useMemo(() => {
+    let item = signTexCache.get(key);
+    if (!item) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1536;
+      canvas.height = 256;
+      drawSign(canvas, { name, theme, style });
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      item = { canvas, tex };
+      signTexCache.set(key, item);
+    }
+    return item;
+  }, [key, name, theme, style]);
+
   useEffect(() => {
-    let dead = false; drawSign(canvas, { name, theme, style }); tex.needsUpdate = true;
-    if (logoUrl) { const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => { if (dead) return; drawSign(canvas, { name, theme, style, img }); tex.needsUpdate = true; }; img.src = logoUrl; }
+    if (!logoUrl) return;
+    let dead = false;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      if (dead) return;
+      drawSign(entry.canvas, { name, theme, style, img });
+      entry.tex.needsUpdate = true;
+    };
+    img.src = logoUrl;
     return () => { dead = true; };
-  }, [name, theme, style, logoUrl, canvas, tex]);
-  useEffect(() => () => tex.dispose(), [tex]);
-  return tex;
+  }, [name, theme, style, logoUrl, entry]);
+
+  return entry.tex;
 }
 
 /** Small cached text-card texture (for-sale boards etc). */

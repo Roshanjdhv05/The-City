@@ -46,7 +46,7 @@ const glassCache = new Map<string, THREE.MeshStandardMaterial>();
 const GLASS: Record<string, { color: string; opacity: number }> = { clear: { color: '#a3cfe8', opacity: 0.5 }, tinted: { color: '#64809f', opacity: 0.64 }, blue: { color: '#74add8', opacity: 0.55 }, frosted: { color: '#dce7ef', opacity: 0.78 } };
 export function glassMat(style: string) {
   let m = glassCache.get(style); if (m) return m; const g = GLASS[style] || GLASS.clear;
-  m = new THREE.MeshStandardMaterial({ color: g.color, transparent: true, opacity: g.opacity, roughness: 0.25, metalness: 0.05, envMapIntensity: 0.9, depthWrite: false, flatShading: true });
+  m = new THREE.MeshStandardMaterial({ color: g.color, transparent: true, opacity: g.opacity, roughness: 0.25, metalness: 0.05, envMapIntensity: 0.9, depthWrite: false, flatShading: true, side: THREE.DoubleSide });
   glassCache.set(style, m); return m;
 }
 

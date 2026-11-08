@@ -1155,9 +1155,9 @@ export function AdvertisingBillboardDisplay() {
 }
 
 // =============================================================
-// Market Props Master Distribution Manager
+// Market Props Master Distribution Manager (supports chunk-based active districts)
 // =============================================================
-export function MarketPropsManager({ layout }: { layout: Layout }) {
+export function MarketPropsManager({ layout, activeDistricts }: { layout: Layout; activeDistricts?: Set<string> }) {
   // 1. Major Entrance Landmarks (At the entrance to each district from Ring 1)
   // Positioned on the manicured green lawn corner, 12m to the side of the spine road (clear of road & sidewalk)
   const districtEntrances = useMemo(() => {
@@ -1213,10 +1213,20 @@ export function MarketPropsManager({ layout }: { layout: Layout }) {
     return byDist;
   }, [layout]);
 
+  const visibleEntrances = useMemo(
+    () => (!activeDistricts ? districtEntrances : districtEntrances.filter(e => activeDistricts.has(e.code))),
+    [districtEntrances, activeDistricts]
+  );
+
+  const visibleMidMonuments = useMemo(
+    () => (!activeDistricts ? midDistrictMonuments : midDistrictMonuments.filter(m => activeDistricts.has(m.code))),
+    [midDistrictMonuments, activeDistricts]
+  );
+
   return (
     <group>
       {/* ── A. Grand Market Entrance Landmarks (Visible approaching Ring 1) ── */}
-      {districtEntrances.map((ent) => (
+      {visibleEntrances.map((ent) => (
         <group key={`ent-${ent.code}`} position={[ent.x, 0, ent.z]} rotation={[0, ent.rot, 0]}>
           {ent.code === 'SAS' && <CloudComputingSculpture />}
           {ent.code === 'AIM' && <AIBrainSculpture />}
@@ -1231,7 +1241,7 @@ export function MarketPropsManager({ layout }: { layout: Layout }) {
       ))}
 
       {/* ── B. Mid-District Spine Promenade Monuments ── */}
-      {midDistrictMonuments.map((mon) => (
+      {visibleMidMonuments.map((mon) => (
         <group key={`mid-${mon.code}`} position={[mon.x, 0, mon.z]} rotation={[0, mon.rot, 0]}>
           {mon.code === 'SAS' && <CloudTechMonument />}
           {mon.code === 'AIM' && <NeuralNetworkGlobe />}
@@ -1246,7 +1256,9 @@ export function MarketPropsManager({ layout }: { layout: Layout }) {
       ))}
 
       {/* ── C. Building Forecourt Themed Installations ── */}
-      {Array.from(districtPlacements.entries()).map(([code, spots]) => (
+      {Array.from(districtPlacements.entries())
+        .filter(([code]) => !activeDistricts || activeDistricts.has(code))
+        .map(([code, spots]) => (
         <group key={`dist-props-${code}`}>
           {/* Forecourt Spot 1 */}
           {spots[2] && (

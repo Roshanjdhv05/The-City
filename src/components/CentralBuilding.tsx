@@ -1092,7 +1092,7 @@ function CentralBuildingFull({ cfg, plotId }: { cfg: StoreConfig; plotId?: strin
 // =========================================================================
 // DISTANT LOW-LOD COMPONENT
 // =========================================================================
-function CentralBuildingLow({ cfg, plotId }: { cfg: StoreConfig; plotId?: string }) {
+export function CentralBuildingLow({ cfg, plotId }: { cfg: StoreConfig; plotId?: string }) {
   const index = getCentralIndex(plotId, cfg.name);
   const tex = useSignTexture(cfg.name, '#3b82f6', 'panel', cfg.logoUrl);
   const signM = useMemo(() => emiss(tex, 0.7), [tex]);
@@ -1202,17 +1202,32 @@ function CentralBuildingLow({ cfg, plotId }: { cfg: StoreConfig; plotId?: string
 }
 
 // =========================================================================
-// LOD EXPORT
+// LOD EXPORT (3 Detail Levels)
 // =========================================================================
+export function CentralBuildingMinimal({ cfg, plotId }: { cfg: StoreConfig; plotId?: string }) {
+  const index = getCentralIndex(plotId, cfg.name);
+  const dark = solid('dark'), white = solid('white');
+  const h = index === 0 || index === 3 ? 16 : index === 1 ? 20 : 12;
+  return (
+    <group>
+      <B s={[24, 0.6, 15.6]} p={[0, 0.3, -1]} m={dark} />
+      <B s={[20, h, 13]} p={[0, h / 2 + 0.3, -1]} m={index === 1 || index === 4 || index === 7 ? white : dark} />
+    </group>
+  );
+}
+
 export function CentralBuildingLOD({
-  cfg, plotId, lodDistance = 65
+  cfg, plotId, lodDistance = 50
 }: {
   cfg: StoreConfig; plotId?: string; lodDistance?: number
 }) {
+  const dMed = lodDistance;
+  const dLow = Math.max(115, lodDistance * 2.3);
   return (
-    <Detailed distances={[0, lodDistance]}>
+    <Detailed distances={[0, dMed, dLow]}>
       <CentralBuildingFull cfg={cfg} plotId={plotId} />
       <CentralBuildingLow cfg={cfg} plotId={plotId} />
+      <CentralBuildingMinimal cfg={cfg} plotId={plotId} />
     </Detailed>
   );
 }

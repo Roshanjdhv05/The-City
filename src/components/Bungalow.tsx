@@ -65,10 +65,32 @@ export function Bungalow({ cfg }: { cfg: StoreConfig }) {
   );
 }
 
-function BungalowLow({ cfg }: { cfg: StoreConfig }) {
+function BungalowMedium({ cfg }: { cfg: StoreConfig }) {
   const mats = useMats(cfg), roofM = useMemo(() => flat(ROOF[cfg.facade] || ROOF.stone), [cfg.facade]), roof = useMemo(() => roofGeo(11, 8, 3, 11), []);
-  return <group><B s={[20, 3.6, 14]} p={[0, 2.3, 0]} m={mats.wall} /><mesh geometry={roof} position={[0, 4.1, 0]} material={roofM} castShadow /><B s={[13, 0.3, 3.2]} p={[0, 0.65, 8.6]} m={mats.wall} /></group>;
+  const tex = useSignTexture(cfg.name, cfg.theme, 'box', cfg.logoUrl);
+  const sign = useMemo(() => new THREE.MeshBasicMaterial({ map: tex }), [tex]);
+  return (
+    <group>
+      <B s={[20, 3.6, 14]} p={[0, 2.3, 0]} m={mats.wall} />
+      <mesh geometry={roof} position={[0, 4.1, 0]} material={roofM} castShadow />
+      <B s={[13, 0.3, 3.2]} p={[0, 0.65, 8.6]} m={mats.wall} />
+      <mesh position={[0, 3.5, 9.9]} material={sign}><planeGeometry args={[5.2, 0.9]} /></mesh>
+    </group>
+  );
 }
-export function BungalowLOD({ cfg, lodDistance = 60 }: { cfg: StoreConfig; lodDistance?: number }) {
-  return <Detailed distances={[0, lodDistance]}><Bungalow cfg={cfg} /><BungalowLow cfg={cfg} /></Detailed>;
+
+export function BungalowLow({ cfg }: { cfg: StoreConfig }) {
+  const mats = useMats(cfg), roofM = useMemo(() => flat(ROOF[cfg.facade] || ROOF.stone), [cfg.facade]), roof = useMemo(() => roofGeo(11, 8, 3, 11), []);
+  return <group><B s={[20, 3.6, 14]} p={[0, 2.3, 0]} m={mats.wall} /><mesh geometry={roof} position={[0, 4.1, 0]} material={roofM} /></group>;
+}
+export function BungalowLOD({ cfg, lodDistance = 45 }: { cfg: StoreConfig; lodDistance?: number }) {
+  const dMed = lodDistance;
+  const dLow = Math.max(95, lodDistance * 2.2);
+  return (
+    <Detailed distances={[0, dMed, dLow]}>
+      <Bungalow cfg={cfg} />
+      <BungalowMedium cfg={cfg} />
+      <BungalowLow cfg={cfg} />
+    </Detailed>
+  );
 }
