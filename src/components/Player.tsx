@@ -55,7 +55,7 @@ export function Player({ colliders, doors, bounds, terrain, resources }: { colli
       const fp = useUI.getState().view !== '3p';
       player.pitch = THREE.MathUtils.clamp(player.pitch + (fp ? -1 : 1) * e.movementY * 0.003, fp ? -1.45 : -0.12, fp ? 1.45 : 1.25);
     };
-    const wheel = (e: WheelEvent) => { if (useUI.getState().view === '3p') { e.preventDefault(); player.camDist = THREE.MathUtils.clamp(player.camDist + e.deltaY * 0.01, 2.5, 14); } };
+    const wheel = (e: WheelEvent) => { if (useUI.getState().view === '3p') { e.preventDefault(); player.camDist = THREE.MathUtils.clamp(player.camDist + e.deltaY * 0.012, 3.5, 22); } };
     window.addEventListener('keydown', kd); window.addEventListener('keyup', ku); el.addEventListener('mousedown', md); window.addEventListener('mouseup', mu); window.addEventListener('mousemove', mm); el.addEventListener('wheel', wheel, { passive: false });
     let touch: { x: number; y: number } | null = null;
     const ts = (e: TouchEvent) => { touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
@@ -158,9 +158,9 @@ export function Player({ colliders, doors, bounds, terrain, resources }: { colli
         camera.lookAt(player.x + sdir * Math.cos(player.pitch), player.y + 1.6 + Math.sin(player.pitch), player.z + cdir * Math.cos(player.pitch));
       } else {
         const d = player.camDist, tx = player.x, ty = player.y + 1.45, tz = player.z;
-        tmp.current.set(tx - sdir * Math.cos(player.pitch) * d, ty + Math.sin(player.pitch) * d + 0.5, tz - cdir * Math.cos(player.pitch) * d);
+        tmp.current.set(tx - sdir * Math.cos(player.pitch) * d, ty + Math.sin(player.pitch) * d + 0.8, tz - cdir * Math.cos(player.pitch) * d);
         tmp.current.y = Math.max(tmp.current.y, th.height(tmp.current.x, tmp.current.z) + 0.7);
-        camera.position.lerp(tmp.current, 1 - Math.exp(-10 * dt)); camera.lookAt(tx, ty + 0.1, tz);
+        camera.position.lerp(tmp.current, 1 - Math.exp(-10 * dt)); camera.lookAt(tx, ty + 0.25, tz);
       }
     }
 
@@ -172,19 +172,19 @@ export function Player({ colliders, doors, bounds, terrain, resources }: { colli
   return (
     <group ref={root}>
       {/* ── 3D Floating Name Tag Above Character in 3P ── */}
-      <Html position={[0, 2.15, 0]} center distanceFactor={30} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+      <Html position={[0, 2.05, 0]} center distanceFactor={42} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '4px',
-            background: 'rgba(10, 16, 30, 0.7)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            border: `1px solid ${myColor}aa`,
-            boxShadow: `0 2px 8px rgba(0, 0, 0, 0.4)`,
+            gap: '3px',
+            background: 'rgba(10, 16, 30, 0.65)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            border: `0.75px solid ${myColor}99`,
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.35)',
             borderRadius: '999px',
-            padding: '1.5px 7px 1.5px 4.5px',
+            padding: '1px 5px 1px 3.5px',
             whiteSpace: 'nowrap',
             transform: 'translate3d(0, 0, 0)',
             userSelect: 'none',
@@ -192,18 +192,18 @@ export function Player({ colliders, doors, bounds, terrain, resources }: { colli
         >
           <span
             style={{
-              width: '5px',
-              height: '5px',
+              width: '4px',
+              height: '4px',
               borderRadius: '50%',
               backgroundColor: myColor,
-              boxShadow: `0 0 6px ${myColor}`,
+              boxShadow: `0 0 4px ${myColor}`,
               display: 'inline-block',
             }}
           />
           <span
             style={{
               color: '#ffffff',
-              fontSize: '9.5px',
+              fontSize: '7.5px',
               fontWeight: 600,
               letterSpacing: '0.01em',
               textShadow: '0 1px 2px rgba(0,0,0,0.9)',

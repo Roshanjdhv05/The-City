@@ -82,7 +82,7 @@ export default function CityCanvas({ stores, layout, mode, paused = false }: { s
           fov: mode === 'city' ? 58 : 42,
           near: 0.1,
           far: 2200,
-          position: mode === 'city' ? [-4.4, 3.4, 39.5] : [0, 95, 145],
+          position: mode === 'city' ? [-4.4, 5.5, 51.0] : [0, 95, 145],
         }}
         gl={{ antialias: isLanding || !Q.post, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
