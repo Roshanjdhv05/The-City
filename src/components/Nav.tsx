@@ -106,19 +106,39 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
         {/* Action Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
           {user ? (
-            <button
-              onClick={signOut}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#4b5563',
-                fontSize: '0.88rem',
-                cursor: 'pointer',
-                fontWeight: 500,
-              }}
-            >
-              Sign out
-            </button>
+            <>
+              <Link
+                href="/profile"
+                style={{
+                  color: path === '/profile' ? '#1b4d2e' : '#4b5563',
+                  fontSize: '0.88rem',
+                  fontWeight: path === '/profile' ? 700 : 500,
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.35rem 0.65rem',
+                  borderRadius: '999px',
+                  background: path === '/profile' ? '#e8f5e9' : 'transparent',
+                }}
+              >
+                <span>👤</span>
+                <span>Profile</span>
+              </Link>
+              <button
+                onClick={signOut}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  fontSize: '0.84rem',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                }}
+              >
+                Sign out
+              </button>
+            </>
           ) : (
             <Link
               href="/login"

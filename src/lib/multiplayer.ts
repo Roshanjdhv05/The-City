@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import { useAuth } from './data';
+import { fetchProfile } from './profile';
 
 export interface RemotePlayer {
   id: string;
@@ -262,10 +263,27 @@ export function broadcastPlayerPosition(
 export function useMultiplayer() {
   const { user } = useAuth();
   const [remotes, setRemotes] = useState<RemotePlayer[]>([]);
+  const [customProfile, setCustomProfile] = useState<{ username: string | null; color: string | null }>({ username: null, color: null });
 
   const myId = getLocalPlayerId();
-  const myColor = getPlayerColor(myId);
-  const myName = getPlayerDisplayName(user?.email, myId);
+  const baseColor = getPlayerColor(myId);
+  const baseName = getPlayerDisplayName(user?.email, myId);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchProfile(user.id).then(p => {
+        if (p.username || p.avatarColor) {
+          setCustomProfile({
+            username: p.username ? `@${p.username}` : null,
+            color: p.avatarColor || null,
+          });
+        }
+      });
+    }
+  }, [user?.id]);
+
+  const myName = customProfile.username || baseName;
+  const myColor = customProfile.color || baseColor;
 
   useEffect(() => {
     // Seed snapshot with identity so HTTP sync has a name/color immediately
