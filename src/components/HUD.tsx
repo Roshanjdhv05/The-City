@@ -252,6 +252,89 @@ function TimeWidget() {
     </div>
   );
 }
+// ─── Online Players Panel ───────────────────────────────────────────────────
+import type { RemotePlayer } from '@/lib/multiplayer';
+
+function OnlinePlayersPanel({ myName, myColor, remotePlayers }: { myName: string; myColor: string; remotePlayers: RemotePlayer[] }) {
+  const [open, setOpen] = useState(false);
+  const total = remotePlayers.length + 1;
+
+  return (
+    <div style={{ position: 'relative' }}>
+      {/* Pill button */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="glass"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '7px',
+          padding: '0.35rem 0.85rem',
+          borderRadius: '999px',
+          fontSize: '0.78rem',
+          fontWeight: 600,
+          color: '#e2e8f0',
+          border: '1px solid rgba(255,255,255,0.18)',
+          background: 'rgba(10,16,30,0.6)',
+          cursor: 'pointer',
+          userSelect: 'none',
+          transition: 'border-color 0.2s',
+        }}
+        title="Click to see who is online"
+      >
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px #4ade80', flexShrink: 0 }} />
+        <span>👥 {total} Online</span>
+        <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.45)', marginLeft: 2 }}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {/* Dropdown list */}
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            right: 0,
+            minWidth: '180px',
+            background: 'rgba(10,16,30,0.88)',
+            backdropFilter: 'blur(18px)',
+            WebkitBackdropFilter: 'blur(18px)',
+            border: '1px solid rgba(255,255,255,0.14)',
+            borderRadius: '14px',
+            padding: '0.55rem 0.65rem',
+            zIndex: 200,
+            boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+            animation: 'rise 0.18s ease',
+          }}
+        >
+          <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: '#64748b', fontWeight: 700, padding: '0 0.3rem 0.4rem', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '0.4rem' }}>
+            Live Explorers
+          </div>
+          {/* You */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.3rem 0.3rem' }}>
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: myColor, boxShadow: `0 0 8px ${myColor}`, flexShrink: 0 }} />
+            <span style={{ color: '#ffffff', fontSize: '0.8rem', fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {myName}
+            </span>
+            <span style={{ fontSize: '0.62rem', color: '#4ade80', fontWeight: 700, background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '999px', padding: '0.08rem 0.4rem' }}>You</span>
+          </div>
+          {/* Others */}
+          {remotePlayers.length === 0 ? (
+            <div style={{ color: '#475569', fontSize: '0.74rem', padding: '0.3rem 0.3rem', fontStyle: 'italic' }}>No other visitors yet</div>
+          ) : remotePlayers.map(p => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.3rem 0.3rem' }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: p.color, boxShadow: `0 0 7px ${p.color}`, flexShrink: 0 }} />
+              <span style={{ color: '#e2e8f0', fontSize: '0.8rem', fontWeight: 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {p.name}
+              </span>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: p.moving ? '#4ade80' : '#64748b', flexShrink: 0 }} title={p.moving ? 'Moving' : 'Idle'} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function HUD({ stores, layout, initialStore }: { stores: Store[]; layout: Layout; initialStore?: string | null }) {
   const { view, setView, nearPlot, quality, setQuality, panelOpen, setPanel, nearRes, inv } = useUI();
   const { myName, myColor, remotePlayers } = useMultiplayer();
@@ -391,27 +474,8 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
         </div>
         <select className="qsel" value={quality} onChange={e => setQuality(e.target.value as Quality)} aria-label="Graphics quality">{(Object.keys(QUALITY) as Quality[]).map(k => <option key={k} value={k}>{QUALITY[k].label.split(' ')[0]}</option>)}</select>
 
-        {/* Live Online Explorers Pill */}
-        <div
-          className="glass"
-          title={`Online in City: ${myName} (You)${remotePlayers.length ? ', ' + remotePlayers.map(p => p.name).join(', ') : ''}`}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '0.35rem 0.8rem',
-            borderRadius: '999px',
-            fontSize: '0.78rem',
-            fontWeight: 600,
-            color: '#e2e8f0',
-            border: '1px solid rgba(255, 255, 255, 0.16)',
-            background: 'rgba(10, 16, 30, 0.55)',
-            userSelect: 'none',
-          }}
-        >
-          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px #4ade80' }} />
-          <span>👥 {remotePlayers.length + 1} Online</span>
-        </div>
+        {/* Live Online Explorers Panel */}
+        <OnlinePlayersPanel myName={myName} myColor={myColor} remotePlayers={remotePlayers} />
       </div>
       {marketBanner && (
         <div
