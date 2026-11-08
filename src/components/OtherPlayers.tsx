@@ -58,19 +58,19 @@ function RemoteAvatar({ player }: { player: RemotePlayer }) {
   return (
     <group ref={root} position={[player.x, player.y, player.z]} rotation={[0, player.yaw, 0]}>
       {/* ── 3D Floating Name Tag Above Character ── */}
-      <Html position={[0, 2.35, 0]} center distanceFactor={26} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+      <Html position={[0, 2.15, 0]} center distanceFactor={30} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            background: 'rgba(10, 16, 30, 0.78)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: `1.5px solid ${hoodieColor}`,
-            boxShadow: `0 4px 16px rgba(0, 0, 0, 0.4), 0 0 10px ${hoodieColor}44`,
+            gap: '4px',
+            background: 'rgba(10, 16, 30, 0.7)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            border: `1px solid ${hoodieColor}aa`,
+            boxShadow: `0 2px 8px rgba(0, 0, 0, 0.4)`,
             borderRadius: '999px',
-            padding: '3px 10px 3px 6px',
+            padding: '1.5px 7px 1.5px 4.5px',
             whiteSpace: 'nowrap',
             transform: 'translate3d(0, 0, 0)',
             userSelect: 'none',
@@ -78,21 +78,21 @@ function RemoteAvatar({ player }: { player: RemotePlayer }) {
         >
           <span
             style={{
-              width: '8px',
-              height: '8px',
+              width: '5px',
+              height: '5px',
               borderRadius: '50%',
               backgroundColor: hoodieColor,
-              boxShadow: `0 0 8px ${hoodieColor}`,
+              boxShadow: `0 0 6px ${hoodieColor}`,
               display: 'inline-block',
             }}
           />
           <span
             style={{
               color: '#ffffff',
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '0.02em',
-              textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+              fontSize: '9.5px',
+              fontWeight: 600,
+              letterSpacing: '0.01em',
+              textShadow: '0 1px 2px rgba(0,0,0,0.9)',
             }}
           >
             {player.name}

@@ -353,8 +353,8 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
     if (!area) return;
     if (area.name !== lastMarket.current) {
       lastMarket.current = area.name;
-      setMarketBanner(`You have entered ${area.name}`);
-      const t = setTimeout(() => setMarketBanner(null), 4000);
+      setMarketBanner(area.name);
+      const t = setTimeout(() => setMarketBanner(null), 3600);
       return () => clearTimeout(t);
     }
   }, [area]);
@@ -481,34 +481,47 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
         <div
           style={{
             position: 'absolute',
-            top: 'calc(var(--nav-h) + 18px)',
+            top: 'calc(var(--nav-h) + 72px)',
             left: '50%',
             transform: 'translateX(-50%)',
-            zIndex: 100,
-            background: 'rgba(15, 23, 42, 0.25)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.22)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), 0 0 20px rgba(56, 189, 248, 0.12)',
-            borderRadius: '999px',
-            padding: '0.65rem 2rem',
-            color: '#ffffff',
+            zIndex: 90,
+            background: 'none',
+            border: 'none',
+            boxShadow: 'none',
+            padding: 0,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            gap: '0.85rem',
-            animation: 'rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            textAlign: 'center',
+            gap: '4px',
+            animation: 'rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
             pointerEvents: 'none',
+            userSelect: 'none',
           }}
           role="status"
         >
-          <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>📍</span>
-          <div>
-            <div style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#38bdf8', fontWeight: 700 }}>
-              Market Zone Entered
-            </div>
-            <div style={{ fontSize: '1.14rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
-              {marketBanner}
-            </div>
+          <div
+            style={{
+              fontSize: '0.68rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.28em',
+              color: '#38bdf8',
+              fontWeight: 700,
+              textShadow: '0 2px 10px rgba(0, 0, 0, 0.95), 0 0 16px rgba(56, 189, 248, 0.7)',
+            }}
+          >
+            Entering Market
+          </div>
+          <div
+            style={{
+              fontSize: '2.1rem',
+              fontWeight: 900,
+              color: '#ffffff',
+              letterSpacing: '-0.02em',
+              textShadow: '0 4px 20px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 0, 0, 0.85)',
+            }}
+          >
+            {marketBanner}
           </div>
         </div>
       )}
