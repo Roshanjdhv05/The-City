@@ -1,311 +1,538 @@
 'use client';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useState, useRef } from 'react';
 import Nav from '@/components/Nav';
-import HUD from '@/components/HUD';
-import { useStores } from '@/components/useStores';
-import { landing } from '@/lib/state';
-import { usePreloadStore } from '@/lib/preload';
 
-const CityCanvas = dynamic(() => import('@/components/CityCanvas'), { ssr: false });
+const TownModelViewer = dynamic(() => import('@/components/TownModelViewer'), { ssr: false });
+const PropertyCustomizer = dynamic(() => import('@/components/PropertyCustomizer'), { ssr: false });
+
+// ── Category cards for the "Discover Businesses" carousel ───────────────────
+const CATEGORIES = [
+  { icon: '💻', label: 'Software & Tech', count: '120+ Stores', color: '#dbeafe' },
+  { icon: '🛍️', label: 'E-Commerce & Retail', count: '80+ Stores', color: '#fef3c7' },
+  { icon: '🎮', label: 'Gaming & Entertainment', count: '60+ Stores', color: '#ede9fe' },
+  { icon: '🤖', label: 'AI & Innovation', count: '70+ Stores', color: '#dcfce7' },
+  { icon: '🏢', label: 'Real Estate', count: '50+ Stores', color: '#fce7f3' },
+  { icon: '📸', label: 'Creative Studios', count: '40+ Stores', color: '#e0f2fe' },
+];
+
+function CategorySlider() {
+  const [page, setPage] = useState(0);
+  const perPage = 5;
+  const pages = Math.ceil(CATEGORIES.length / perPage);
+  const start = page * perPage;
+  const visible = CATEGORIES.slice(start, start + perPage);
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      {/* Previous button */}
+      <button
+        onClick={() => setPage((p) => Math.max(0, p - 1))}
+        disabled={page === 0}
+        style={{
+          position: 'absolute', left: '-24px', top: '50%', transform: 'translateY(-50%)',
+          width: 44, height: 44, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(203,213,225,0.7)',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.08)', cursor: page === 0 ? 'not-allowed' : 'pointer',
+          opacity: page === 0 ? 0.4 : 1, fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 2, transition: 'opacity 0.2s',
+        }}
+        aria-label="Previous"
+      >
+        ‹
+      </button>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
+        {visible.map((cat) => (
+          <Link
+            key={cat.label}
+            href="/city"
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: '0.75rem', padding: '1.5rem 0.75rem',
+              background: 'rgba(255,255,255,0.95)', borderRadius: '20px',
+              border: '1px solid rgba(226,232,240,0.9)',
+              boxShadow: '0 2px 12px rgba(15,23,42,0.05)',
+              textDecoration: 'none', transition: 'transform 0.2s, box-shadow 0.2s',
+              cursor: 'pointer',
+            }}
+          >
+            <div
+              style={{
+                width: 72, height: 72, borderRadius: '20px',
+                background: cat.color, display: 'flex',
+                alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem',
+              }}
+            >
+              {cat.icon}
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
+                {cat.label}
+              </div>
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  gap: '4px', marginTop: '6px',
+                  fontSize: '0.78rem', fontWeight: 600, color: '#64748b',
+                }}
+              >
+                {cat.count}
+                <span
+                  style={{
+                    width: 20, height: 20, borderRadius: '50%',
+                    background: '#eff6ff', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', fontSize: 11, color: '#2563eb',
+                  }}
+                >
+                  →
+                </span>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Next button */}
+      <button
+        onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}
+        disabled={page === pages - 1}
+        style={{
+          position: 'absolute', right: '-24px', top: '50%', transform: 'translateY(-50%)',
+          width: 44, height: 44, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(203,213,225,0.7)',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.08)', cursor: page === pages - 1 ? 'not-allowed' : 'pointer',
+          opacity: page === pages - 1 ? 0.4 : 1, fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 2, transition: 'opacity 0.2s',
+        }}
+        aria-label="Next"
+      >
+        ›
+      </button>
+
+      {/* Pagination dots */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '1.5rem' }}>
+        {Array.from({ length: pages }, (_, i) => (
+          <button
+            key={i}
+            onClick={() => setPage(i)}
+            style={{
+              width: i === page ? 24 : 8, height: 8, borderRadius: '999px',
+              background: i === page ? '#2563eb' : '#cbd5e1',
+              border: 'none', cursor: 'pointer',
+              transition: 'all 0.25s ease', padding: 0,
+            }}
+            aria-label={`Page ${i + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
-  const { stores, layout } = useStores();
-
-  // How far the user has scrolled through the hero (0 → 1)
-  const [scrollP, setScrollP] = useState(0);
-  // Once scrollP hits 1, we lock into full city mode
-  const [cityMode, setCityMode] = useState(false);
-  // Fade-in the city canvas after switching
-  const [cityVisible, setCityVisible] = useState(false);
-
-  const heroRef = useRef<HTMLElement>(null);
-  const entered  = useRef(false);
-
-  useEffect(() => {
-    const onScroll = () => {
-      const el = heroRef.current;
-      if (!el || cityMode) return;
-      const r = el.getBoundingClientRect();
-      const h = r.height - window.innerHeight;
-      const p = h > 0 ? Math.min(1, Math.max(0, -r.top / h)) : 0;
-      landing.p = p;
-      setScrollP(p);
-
-      // Start background preloading of actual-world assets during the zoom animation
-      if (p > 0.35) {
-        usePreloadStore.getState().startPreload();
-      }
-
-      // When completely scrolled — enter city smoothly once assets are ready
-      if (p >= 0.995 && !entered.current) {
-        entered.current = true;
-        const enter = () => {
-          setCityMode(true);
-          requestAnimationFrame(() => setCityVisible(true));
-        };
-        if (usePreloadStore.getState().isWorldReady) {
-          setTimeout(enter, 140);
-        } else {
-          const unsub = usePreloadStore.subscribe((state) => {
-            if (state.isWorldReady) {
-              unsub();
-              enter();
-            }
-          });
-          setTimeout(() => { unsub(); enter(); }, 600);
-        }
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-    };
-  }, [cityMode]);
-
-  const copyAlpha = Math.max(0, 1 - scrollP * 2.8);
-  const tagAlpha  = Math.max(0, Math.min(1, scrollP * 3 - 0.2) * (1 - scrollP * 2));
-  const cueAlpha  = Math.max(0, 1 - scrollP * 6);
+  const [activeDistrict, setActiveDistrict] = useState<string | null>(null);
 
   return (
     <>
-      {!cityMode && <Nav overlay />}
+      {/* ── Navbar ── */}
+      <Nav overlay />
 
-      {/* Persistent Single 3D City Canvas Instance */}
-      <div
-        className={cityMode ? 'fullscreen' : ''}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: cityMode ? 50 : 0,
-          opacity: !cityMode || cityVisible ? 1 : 0,
-          transition: 'opacity 0.6s ease',
-          pointerEvents: 'auto',
-        }}
-      >
-        <CityCanvas stores={stores} layout={layout} mode={cityMode ? 'city' : 'landing'} paused={false} />
-        {cityMode && <HUD stores={stores} layout={layout} />}
-      </div>
+      {/* ── Page Wrapper ── */}
+      <div style={{ background: '#f0f7ff', minHeight: '100vh', overflowX: 'hidden' }}>
 
-      {!cityMode && (
+        {/* ════════════════════════════════════════════
+            HERO SECTION — Left copy + Right 3D Model
+            ════════════════════════════════════════════ */}
         <section
-          ref={heroRef}
-          style={{ position: 'relative', height: '240vh', pointerEvents: 'none', zIndex: 10 }}
+          style={{
+            position: 'relative',
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            overflow: 'hidden',
+            background: 'linear-gradient(135deg, #e8f4ff 0%, #f0f7ff 40%, #dbeafe 100%)',
+          }}
         >
-          {/* Sticky full-viewport landing copy & fog */}
-          <div style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }}>
-            {/* Subtle soft white & green atmosphere fog gradient */}
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                pointerEvents: 'none',
-                background: `linear-gradient(
-                  100deg,
-                  rgba(240, 248, 242, ${0.92 - scrollP * 0.7}) 0%,
-                  rgba(240, 248, 242, ${0.55 - scrollP * 0.5}) 36%,
-                  rgba(240, 248, 242, 0) 65%
-                ),
-                linear-gradient(
-                  0deg,
-                  rgba(235, 246, 238, ${Math.max(0, 0.85 - scrollP * 0.85)}) 0%,
-                  rgba(235, 246, 238, 0) 28%
-                )`,
-              }}
-            />
+          {/* Background soft radial glows */}
+          <div
+            style={{
+              position: 'absolute', inset: 0, pointerEvents: 'none',
+              background: 'radial-gradient(ellipse 60% 55% at 70% 50%, rgba(99, 180, 255, 0.22) 0%, transparent 70%), radial-gradient(ellipse 40% 40% at 15% 30%, rgba(190, 227, 255, 0.35) 0%, transparent 70%)',
+            }}
+          />
 
-            {/* ── Left Hero copy exactly styled like the reference ── */}
-            <div
-              style={{
-                position: 'absolute',
-                left: 'clamp(1.5rem, 6vw, 6.5rem)',
-                top: '46%',
-                transform: 'translateY(-50%)',
-                maxWidth: 620,
-                zIndex: 2,
-                opacity: copyAlpha,
-                transition: 'opacity 0.1s linear',
-                pointerEvents: copyAlpha < 0.05 ? 'none' : 'auto',
-              }}
-            >
-              {/* Green Pill Badge */}
+          <div
+            style={{
+              maxWidth: '1340px', margin: '0 auto', padding: 'clamp(6rem, 10vh, 9rem) clamp(1.5rem, 5vw, 3.5rem) clamp(3rem, 6vh, 5rem)',
+              display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.3fr)',
+              gap: 'clamp(2rem, 5vw, 5rem)', alignItems: 'center', width: '100%',
+            }}
+          >
+            {/* ── LEFT: Text & CTAs ── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.6rem' }}>
+              {/* Tagline pill */}
               <div
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  background: 'rgba(232, 245, 233, 0.92)',
-                  border: '1px solid rgba(46, 125, 50, 0.25)',
-                  padding: '0.45rem 1.1rem',
-                  borderRadius: '999px',
-                  marginBottom: '1.4rem',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  padding: '8px 18px', borderRadius: '999px',
+                  background: 'rgba(37, 99, 235, 0.1)', border: '1px solid rgba(37, 99, 235, 0.25)',
+                  fontSize: '0.88rem', fontWeight: 700, color: '#1d4ed8',
+                  width: 'fit-content',
                 }}
               >
-                <span style={{ fontSize: '1rem' }}>🍃</span>
-                <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#1b4d2e' }}>
-                  Open World City Experience
-                </span>
+                <span
+                  style={{
+                    width: 8, height: 8, borderRadius: '50%',
+                    background: '#2563eb', boxShadow: '0 0 8px rgba(37, 99, 235, 0.6)',
+                    display: 'inline-block',
+                  }}
+                />
+                Virtual Business City
               </div>
 
-              {/* Bold Headline with Green Accent Word */}
+              {/* Headline */}
               <h1
                 style={{
-                  fontSize: 'clamp(2.8rem, 5.8vw, 4.8rem)',
-                  fontWeight: 800,
-                  margin: '0 0 1.2rem',
-                  lineHeight: 1.05,
+                  margin: 0,
+                  fontSize: 'clamp(2.8rem, 5.5vw, 4.8rem)',
+                  fontWeight: 900,
+                  lineHeight: 1.0,
                   letterSpacing: '-0.03em',
-                  color: '#0d1f14',
+                  color: '#0f172a',
                 }}
               >
-                Build. Explore.<br />
-                <span style={{ color: '#2e7d32' }}>Live</span> Your City.
+                A New Place<br />
+                for Businesses<br />
+                to <span style={{ color: '#2563eb' }}>Exist.</span>
               </h1>
 
-              {/* Subtitle / Lead Paragraph */}
+              {/* Sub */}
               <p
                 style={{
-                  fontSize: 'clamp(1.05rem, 1.4vw, 1.22rem)',
-                  color: '#3d5245',
-                  maxWidth: '48ch',
-                  margin: '0 0 2.2rem',
-                  lineHeight: 1.6,
-                  fontWeight: 450,
+                  margin: 0,
+                  fontSize: 'clamp(1rem, 1.3vw, 1.15rem)',
+                  color: '#475569',
+                  lineHeight: 1.65,
+                  maxWidth: '42ch',
                 }}
               >
-                Create your dream city, explore every street, and experience a living, breathing world.
+                Explore a vibrant virtual city, discover businesses and claim your own building.
               </p>
 
-              {/* CTA Button */}
+              {/* CTAs */}
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <Link
+                  href="/city"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
+                    background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                    color: '#ffffff', padding: '0.95rem 2rem',
+                    borderRadius: '999px', fontSize: '1rem', fontWeight: 700,
+                    textDecoration: 'none',
+                    boxShadow: '0 8px 28px rgba(37, 99, 235, 0.4), 0 2px 6px rgba(37, 99, 235, 0.3)',
+                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                  }}
+                >
+                  Explore City
+                  <span style={{ fontSize: '1.1rem' }}>→</span>
+                </Link>
+
+                <Link
+                  href="/city"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                    background: 'rgba(255, 255, 255, 0.85)',
+                    backdropFilter: 'blur(12px)',
+                    color: '#0f172a', padding: '0.95rem 1.6rem',
+                    borderRadius: '999px', fontSize: '1rem', fontWeight: 600,
+                    textDecoration: 'none',
+                    border: '1px solid rgba(203, 213, 225, 0.8)',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+                    transition: 'transform 0.15s ease',
+                  }}
+                >
+                  <span style={{ fontSize: '1rem' }}>▶</span>
+                  Watch Demo
+                </Link>
+              </div>
+
+              {/* Social proof strip */}
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '1rem',
+                  padding: '0.85rem 1.3rem',
+                  background: 'rgba(255, 255, 255, 0.72)',
+                  backdropFilter: 'blur(14px)',
+                  border: '1px solid rgba(226, 232, 240, 0.8)',
+                  borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
+                  width: 'fit-content',
+                }}
+              >
+                <div style={{ display: 'flex' }}>
+                  {['🧑‍💼', '👩‍💻', '👨‍🎨', '🧑‍🚀'].map((e, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        width: 32, height: 32, borderRadius: '50%',
+                        background: `hsl(${200 + i * 40},70%,65%)`,
+                        border: '2px solid #fff', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', fontSize: 14,
+                        marginLeft: i > 0 ? -8 : 0,
+                      }}
+                    >
+                      {e}
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a' }}>2,400+ Businesses</div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>already in the city</div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── RIGHT: Interactive 3D Town Model ── */}
+            <div
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: 'clamp(440px, 55vh, 660px)',
+              }}
+            >
+              {/* Soft glow pedestal */}
+              <div
+                style={{
+                  position: 'absolute', bottom: '5%', left: '10%', right: '10%', height: '100px',
+                  background: 'radial-gradient(ellipse at center, rgba(99, 148, 255, 0.4) 0%, transparent 70%)',
+                  filter: 'blur(28px)', pointerEvents: 'none', zIndex: 0,
+                }}
+              />
+
+              <div style={{ position: 'relative', width: '100%', height: '100%', zIndex: 1 }}>
+                <TownModelViewer onSelectDistrict={setActiveDistrict} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ════════════════════════════════════════════
+            SECTION 2 — Discover Businesses
+            ════════════════════════════════════════════ */}
+        <section
+          style={{
+            padding: 'clamp(4rem, 7vh, 6rem) clamp(1.5rem, 5vw, 3.5rem)',
+            background: '#ffffff',
+          }}
+        >
+          <div style={{ maxWidth: '1340px', margin: '0 auto' }}>
+            {/* Section badge & heading */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.2rem', marginBottom: '2.8rem' }}>
+              <div
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                  color: '#fff', fontSize: '0.9rem', fontWeight: 800,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                2
+              </div>
+              <div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+                  Discover
+                </div>
+                <h2
+                  style={{
+                    margin: 0, fontSize: 'clamp(1.8rem, 3.5vw, 2.9rem)',
+                    fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', lineHeight: 1.1,
+                  }}
+                >
+                  Discover <span style={{ color: '#2563eb' }}>Businesses</span>
+                </h2>
+                <p style={{ margin: '0.5rem 0 0', color: '#64748b', fontSize: '1rem', lineHeight: 1.5 }}>
+                  From startups to global brands — explore a diverse range of businesses in Nextown's virtual marketplace.
+                </p>
+              </div>
+            </div>
+
+            {/* Category Slider */}
+            <div style={{ position: 'relative', padding: '0 1.5rem' }}>
+              <CategorySlider />
+            </div>
+          </div>
+        </section>
+
+        {/* ════════════════════════════════════════════
+            SECTION 3 — Design Your Virtual Property
+            ════════════════════════════════════════════ */}
+        <section
+          style={{
+            padding: 'clamp(4rem, 7vh, 6.5rem) clamp(1.5rem, 5vw, 3.5rem)',
+            background: 'linear-gradient(180deg, #f8faff 0%, #eef4ff 100%)',
+          }}
+        >
+          <div style={{ maxWidth: '1340px', margin: '0 auto' }}>
+            {/* Section header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', marginBottom: '2.8rem' }}>
+              <div
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                  color: '#fff', fontSize: '0.9rem', fontWeight: 800,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}
+              >
+                3
+              </div>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Claim
+              </div>
+            </div>
+
+            <PropertyCustomizer />
+          </div>
+        </section>
+
+        {/* ════════════════════════════════════════════
+            CTA BANNER — Step into Nextown today
+            ════════════════════════════════════════════ */}
+        <section style={{ padding: 'clamp(1.5rem, 3vw, 2rem) clamp(1.5rem, 5vw, 3.5rem)' }}>
+          <div style={{ maxWidth: '1340px', margin: '0 auto' }}>
+            <div
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                flexWrap: 'wrap', gap: '1.5rem',
+                background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0d2a5e 100%)',
+                borderRadius: '28px', padding: 'clamp(1.8rem, 3vw, 2.5rem) clamp(2rem, 4vw, 3.5rem)',
+                boxShadow: '0 20px 60px rgba(15, 23, 42, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.07)',
+                position: 'relative', overflow: 'hidden',
+              }}
+            >
+              {/* Background planes silhouette decoration */}
+              <div
+                style={{
+                  position: 'absolute', right: '15%', top: '50%', transform: 'translateY(-55%)',
+                  fontSize: '8rem', opacity: 0.07, lineHeight: 1, pointerEvents: 'none',
+                  userSelect: 'none', filter: 'blur(2px)',
+                }}
+              >
+                ✈️
+              </div>
+
+              <div>
+                <h3 style={{ margin: '0 0 0.3rem', fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
+                  Step into Nextown today!
+                </h3>
+                <p style={{ margin: 0, color: 'rgba(203, 213, 225, 0.85)', fontSize: '0.95rem', fontWeight: 500 }}>
+                  Explore. Discover. Grow.
+                </p>
+              </div>
+
               <Link
                 href="/city"
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.65rem',
-                  background: '#0d2d1a',
-                  color: '#ffffff',
-                  padding: '0.95rem 2rem',
-                  borderRadius: '999px',
-                  fontSize: '1.02rem',
-                  fontWeight: 600,
+                  display: 'inline-flex', alignItems: 'center', gap: '0.65rem',
+                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                  color: '#ffffff', padding: '1rem 2.2rem',
+                  borderRadius: '999px', fontSize: '1rem', fontWeight: 700,
                   textDecoration: 'none',
-                  boxShadow: '0 6px 20px rgba(13, 45, 26, 0.3)',
+                  boxShadow: '0 8px 24px rgba(37, 99, 235, 0.45)',
                   transition: 'transform 0.15s ease',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                <span>Start Playing</span>
-                <span style={{ fontSize: '1.15rem' }}>→</span>
+                Enter the City
+                <span style={{ fontSize: '1.1rem' }}>→</span>
               </Link>
             </div>
-
-            {/* ── Scroll cue on bottom-left ── */}
-            <div
-              style={{
-                position: 'absolute',
-                left: 'clamp(1.5rem, 6vw, 6.5rem)',
-                bottom: '2.8rem',
-                zIndex: 3,
-                opacity: cueAlpha,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.6rem',
-                color: '#2d4734',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-              }}
-            >
-              <div
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  border: '1px solid rgba(45, 71, 52, 0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.9rem',
-                }}
-              >
-                ↓
-              </div>
-              <span>Scroll to explore</span>
-            </div>
-
-            {/* ── Mid-scroll landmark pill ── */}
-            <Link
-              href="/city?store=J01"
-              style={{
-                position: 'absolute',
-                right: 'clamp(1rem,4vw,3rem)',
-                bottom: 'clamp(5rem,12vh,8rem)',
-                zIndex: 2,
-                opacity: tagAlpha,
-                transition: 'opacity 0.15s linear',
-                pointerEvents: tagAlpha < 0.05 ? 'none' : 'auto',
-                background: 'rgba(255, 255, 255, 0.92)',
-                backdropFilter: 'blur(14px)',
-                border: '1px solid rgba(46, 125, 50, 0.25)',
-                borderRadius: '16px',
-                padding: '0.9rem 1.3rem',
-                fontSize: '0.85rem',
-                maxWidth: 280,
-                textDecoration: 'none',
-                color: '#0d2d1a',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-              }}
-            >
-              <span style={{ color: '#2e7d32', display: 'block', fontWeight: 600 }}>Landmark</span>
-              <b style={{ display: 'block', font: '700 1.05rem var(--f-display)', margin: '0.1rem 0' }}>J Enterprise</b>
-              <span style={{ color: '#4b5563', fontSize: '0.8rem' }}>Flagship headquarters · visit in 3D →</span>
-            </Link>
-
-            {/* ── Entering city prompt — appears near the end of scroll ── */}
-            {scrollP > 0.7 && (
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '2.5rem',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  zIndex: 5,
-                  opacity: Math.min(1, (scrollP - 0.7) * 4),
-                  transition: 'opacity 0.2s',
-                  background: 'rgba(13, 45, 26, 0.92)',
-                  backdropFilter: 'blur(14px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: '999px',
-                  padding: '0.7rem 1.8rem',
-                  color: '#fff',
-                  fontSize: '0.92rem',
-                  fontWeight: 600,
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  gap: '0.7rem',
-                  alignItems: 'center',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
-                }}
-              >
-                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#4ade80', animation: 'pulse 1.4s ease-in-out infinite' }} />
-                Keep scrolling to enter the city…
-              </div>
-            )}
           </div>
         </section>
-      )}
 
-      {/* Pulse keyframe */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50%       { opacity: 0.4; transform: scale(1.5); }
-        }
-        body.city-mode { overflow: hidden; }
-      `}</style>
+        {/* ════════════════════════════════════════════
+            FOOTER
+            ════════════════════════════════════════════ */}
+        <footer
+          style={{
+            background: '#ffffff',
+            borderTop: '1px solid rgba(226, 232, 240, 0.8)',
+            padding: 'clamp(2rem, 4vh, 3rem) clamp(1.5rem, 5vw, 3.5rem)',
+          }}
+        >
+          <div
+            style={{
+              maxWidth: '1340px', margin: '0 auto',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              flexWrap: 'wrap', gap: '1.5rem',
+            }}
+          >
+            {/* Brand */}
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none' }}>
+              <div style={{ width: 32, height: 32, borderRadius: '9px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 20V10L10 6V20M10 20V4L18 8V20M4 20H20" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <span style={{ font: '700 1.15rem var(--f-display)', color: '#0f172a' }}>NEXTOWN</span>
+            </Link>
+
+            {/* Footer links */}
+            <nav style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+              {[['Explore City', '/city'], ['Properties', '/buy'], ['FAQ', '/faq'], ['About', '/about'], ['Contact', '/contact']].map(([label, href]) => (
+                <Link key={href} href={href} style={{ fontSize: '0.88rem', fontWeight: 500, color: '#64748b', textDecoration: 'none' }}>
+                  {label}
+                </Link>
+              ))}
+            </nav>
+
+            {/* Social icons */}
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              {[
+                { icon: '💬', label: 'Discord' },
+                { icon: '▶', label: 'YouTube' },
+                { icon: '✕', label: 'Twitter/X' },
+                { icon: '🌐', label: 'Web' },
+              ].map(({ icon, label }) => (
+                <div
+                  key={label}
+                  style={{
+                    width: 36, height: 36, borderRadius: '50%',
+                    background: 'rgba(241, 245, 249, 0.9)',
+                    border: '1px solid rgba(226, 232, 240, 0.8)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 15, cursor: 'pointer', transition: 'background 0.2s',
+                    color: '#475569',
+                  }}
+                  title={label}
+                >
+                  {icon}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div
+            style={{
+              maxWidth: '1340px', margin: '1.5rem auto 0',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              borderTop: '1px solid rgba(226, 232, 240, 0.6)',
+              paddingTop: '1rem', flexWrap: 'wrap', gap: '0.5rem',
+            }}
+          >
+            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+              © 2025 Nextown. All rights reserved.
+            </span>
+            <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>
+              Build. Explore. Live Your City.
+            </span>
+          </div>
+        </footer>
+      </div>
     </>
   );
 }
