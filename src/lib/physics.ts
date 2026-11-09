@@ -3,7 +3,7 @@ import type { Rect } from './layout';
 import { WATER_Y } from './terrain';
 
 export interface Body { x: number; y: number; z: number; vx: number; vz: number; vy: number; yaw: number; heading: number; onGround: boolean; inWater: boolean; moving: boolean }
-export interface Input { f: number; s: number; run: boolean; jump: boolean; sprint: boolean }
+export interface Input { f: number; s: number; run: boolean; jump: boolean; sprint: boolean; speedMult?: number }
 export interface Ctx { colliders: Collider[]; height: (x: number, z: number) => number; bounds: Rect }
 export const PHYS = { walk: 4.8, run: 9.2, sprint: 18, jumpV: 8.8, gravity: 26, radius: 0.45, maxSlope: 1.3, waterSlow: 0.55, feet: 0.1 };
 
@@ -42,7 +42,7 @@ export function stepBody(b: Body, i: Input, dtRaw: number, c: Ctx) {
   const dt = Math.min(dtRaw, 0.05), sy = Math.sin(b.yaw), cy = Math.cos(b.yaw);
   let dx = sy * i.f - cy * i.s, dz = cy * i.f + sy * i.s; const len = Math.hypot(dx, dz);
   b.moving = len > 0; if (b.moving) { dx /= len; dz /= len; }
-  const sp = (i.sprint ? PHYS.sprint : i.run ? PHYS.run : PHYS.walk) * (b.inWater ? PHYS.waterSlow : 1), k = Math.min(1, dt * (b.onGround ? 14 : 3));
+  const sp = (i.sprint ? PHYS.sprint : i.run ? PHYS.run : PHYS.walk) * (b.inWater ? PHYS.waterSlow : 1) * (i.speedMult ?? 1), k = Math.min(1, dt * (b.onGround ? 14 : 3));
   b.vx += (dx * sp - b.vx) * k; b.vz += (dz * sp - b.vz) * k;
   if (b.moving) { let diff = Math.atan2(dx, dz) - b.heading; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); b.heading += diff * Math.min(1, dt * 12); }
 

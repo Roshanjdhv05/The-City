@@ -51,15 +51,22 @@ export function Player({ colliders, doors, bounds, terrain, resources }: { colli
     const mu = () => { drag = false; };
     const mm = (e: MouseEvent) => {
       if (!drag && document.pointerLockElement !== el) return;
-      player.yaw -= e.movementX * 0.0035;
+      const sens = useUI.getState().sensitivity || 1.0;
+      player.yaw -= e.movementX * 0.0035 * sens;
       const fp = useUI.getState().view !== '3p';
-      player.pitch = THREE.MathUtils.clamp(player.pitch + (fp ? -1 : 1) * e.movementY * 0.003, fp ? -1.45 : -0.12, fp ? 1.45 : 1.25);
+      player.pitch = THREE.MathUtils.clamp(player.pitch + (fp ? -1 : 1) * e.movementY * 0.003 * sens, fp ? -1.45 : -0.12, fp ? 1.45 : 1.25);
     };
     const wheel = (e: WheelEvent) => { if (useUI.getState().view === '3p') { e.preventDefault(); player.camDist = THREE.MathUtils.clamp(player.camDist + e.deltaY * 0.012, 3.5, 22); } };
     window.addEventListener('keydown', kd); window.addEventListener('keyup', ku); el.addEventListener('mousedown', md); window.addEventListener('mouseup', mu); window.addEventListener('mousemove', mm); el.addEventListener('wheel', wheel, { passive: false });
     let touch: { x: number; y: number } | null = null;
     const ts = (e: TouchEvent) => { touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
-    const tm = (e: TouchEvent) => { if (!touch) return; player.yaw -= (e.touches[0].clientX - touch.x) * 0.005; player.pitch = THREE.MathUtils.clamp(player.pitch + (e.touches[0].clientY - touch.y) * 0.004, -0.12, 1.25); touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
+    const tm = (e: TouchEvent) => {
+      if (!touch) return;
+      const sens = useUI.getState().sensitivity || 1.0;
+      player.yaw -= (e.touches[0].clientX - touch.x) * 0.005 * sens;
+      player.pitch = THREE.MathUtils.clamp(player.pitch + (e.touches[0].clientY - touch.y) * 0.004 * sens, -0.12, 1.25);
+      touch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    };
     el.addEventListener('touchstart', ts); el.addEventListener('touchmove', tm);
     return () => { window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); el.removeEventListener('mousedown', md); window.removeEventListener('mouseup', mu); window.removeEventListener('mousemove', mm); el.removeEventListener('wheel', wheel); el.removeEventListener('touchstart', ts); el.removeEventListener('touchmove', tm); if (document.pointerLockElement === el) document.exitPointerLock(); };
   }, [gl]);
@@ -125,14 +132,14 @@ export function Player({ colliders, doors, bounds, terrain, resources }: { colli
         if (k.ArrowRight) player.yaw   -= LOOK_SPD * dt;
         if (k.ArrowUp)    player.pitch  = THREE.MathUtils.clamp(player.pitch + LOOK_SPD * dt * 0.6, -0.12, 1.25);
         if (k.ArrowDown)  player.pitch  = THREE.MathUtils.clamp(player.pitch - LOOK_SPD * dt * 0.6, -0.12, 1.25);
-        stepBody(player as unknown as Body, { f: (k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0), s: (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0), run: !!(k.ShiftLeft || k.ShiftRight), sprint: !!k['Sprint'], jump: !!k.Space }, dt, { colliders, height: th.height, bounds });
+        stepBody(player as unknown as Body, { f: (k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0), s: (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0), run: !!(k.ShiftLeft || k.ShiftRight), sprint: !!k['Sprint'], jump: !!k.Space, speedMult: ui.walkSpeed }, dt, { colliders, height: th.height, bounds });
       } else {
         // 1P: arrows look, WASD moves
         if (k.ArrowLeft)  player.yaw   += LOOK_SPD * dt;
         if (k.ArrowRight) player.yaw   -= LOOK_SPD * dt;
         if (k.ArrowUp)    player.pitch  = THREE.MathUtils.clamp(player.pitch + LOOK_SPD * dt, -1.3, 1.3);
         if (k.ArrowDown)  player.pitch  = THREE.MathUtils.clamp(player.pitch - LOOK_SPD * dt, -1.3, 1.3);
-        stepBody(player as unknown as Body, { f: (k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0), s: (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0), run: !!(k.ShiftLeft || k.ShiftRight), sprint: !!k['Sprint'], jump: !!k.Space }, dt, { colliders, height: th.height, bounds });
+        stepBody(player as unknown as Body, { f: (k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0), s: (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0), run: !!(k.ShiftLeft || k.ShiftRight), sprint: !!k['Sprint'], jump: !!k.Space, speedMult: ui.walkSpeed }, dt, { colliders, height: th.height, bounds });
       }
       if (player.moving && player.onGround) t.current += dt * (Math.hypot(player.vx, player.vz) > 6.5 ? 12 : 8);
     }

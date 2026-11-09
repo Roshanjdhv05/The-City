@@ -9,10 +9,22 @@ export const QUALITY: Record<Quality, { dpr: [number, number]; shadow: number; p
 
 interface UI {
   quality: Quality; view: '1p' | '3p' | 'free'; nearPlot: string | null; panelOpen: boolean; teleportMapOpen: boolean; nearRes: { id: string; type: string } | null; inv: { wood: number; stone: number; crystal: number }; setNearRes: (r: { id: string; type: string } | null) => void; setInv: (i: { wood: number; stone: number; crystal: number }) => void;
+  walkSpeed: number; sensitivity: number;
+  setWalkSpeed: (s: number) => void; setSensitivity: (s: number) => void;
   setQuality: (q: Quality) => void; setView: (v: '1p' | '3p' | 'free') => void; setNear: (p: string | null) => void; setPanel: (b: boolean) => void; setTeleportMapOpen: (b: boolean) => void; init: () => void;
 }
 export const useUI = create<UI>((set) => ({
-  quality: 'medium', view: '3p', nearPlot: null, panelOpen: false, teleportMapOpen: false, nearRes: null, inv: { wood: 0, stone: 0, crystal: 0 }, setNearRes: (nearRes) => set({ nearRes }), setInv: (inv) => set({ inv }),
+  quality: 'medium', view: '3p', nearPlot: null, panelOpen: false, teleportMapOpen: false, nearRes: null, inv: { wood: 0, stone: 0, crystal: 0 },
+  walkSpeed: 1.0, sensitivity: 1.0,
+  setWalkSpeed: (walkSpeed) => {
+    try { localStorage.setItem('thecity.walkSpeed', String(walkSpeed)); } catch {}
+    set({ walkSpeed });
+  },
+  setSensitivity: (sensitivity) => {
+    try { localStorage.setItem('thecity.sensitivity', String(sensitivity)); } catch {}
+    set({ sensitivity });
+  },
+  setNearRes: (nearRes) => set({ nearRes }), setInv: (inv) => set({ inv }),
   setQuality: (quality) => { try { localStorage.setItem('thecity.quality', quality); } catch {} set({ quality }); },
   setView: (view) => set({ view }),
   setNear: (nearPlot) => set({ nearPlot }),
@@ -21,7 +33,11 @@ export const useUI = create<UI>((set) => ({
   init: () => {
     try {
       const saved = localStorage.getItem('thecity.quality') as Quality | null;
-      if (saved && QUALITY[saved]) return set({ quality: saved });
+      if (saved && QUALITY[saved]) set({ quality: saved });
+      const sp = parseFloat(localStorage.getItem('thecity.walkSpeed') || '1.0');
+      if (!isNaN(sp) && sp > 0) set({ walkSpeed: sp });
+      const sens = parseFloat(localStorage.getItem('thecity.sensitivity') || '1.0');
+      if (!isNaN(sens) && sens > 0) set({ sensitivity: sens });
     } catch {}
     const mobile = window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 820;
     const mem = (navigator as any).deviceMemory || 8, cores = navigator.hardwareConcurrency || 8;

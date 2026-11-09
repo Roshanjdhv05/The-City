@@ -270,6 +270,98 @@ function TimeWidget() {
     </div>
   );
 }
+// ─── Settings Panel ─────────────────────────────────────────────────────────
+function SettingsPanel() {
+  const { walkSpeed, sensitivity, setWalkSpeed, setSensitivity } = useUI();
+  const [open, setOpen] = useState(false);
+
+  const pill: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 5,
+    padding: '4px 10px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.18)',
+    background: 'rgba(10,16,30,0.6)', backdropFilter: 'blur(8px)',
+    color: '#e2e8f0', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+    transition: 'background 0.15s',
+  };
+
+  const panel: React.CSSProperties = {
+    position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 200,
+    minWidth: 240, padding: '14px 16px 12px',
+    background: 'rgba(10,16,30,0.82)', backdropFilter: 'blur(14px)',
+    border: '1px solid rgba(255,255,255,0.14)', borderRadius: 14,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.5)', color: '#e2e8f0',
+  };
+
+  const row: React.CSSProperties = {
+    display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12,
+  };
+
+  const label: React.CSSProperties = {
+    display: 'flex', justifyContent: 'space-between', fontSize: 12,
+    color: '#94a3b8', fontWeight: 600, letterSpacing: '0.03em',
+  };
+
+  const slider: React.CSSProperties = {
+    width: '100%', accentColor: '#60a5fa', cursor: 'pointer',
+  };
+
+  const resetBtn: React.CSSProperties = {
+    width: '100%', padding: '5px 0', marginTop: 2,
+    background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.14)',
+    borderRadius: 8, color: '#94a3b8', fontSize: 12, cursor: 'pointer',
+  };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button style={pill} onClick={() => setOpen(o => !o)} title="Settings">
+        ⚙️ Settings
+      </button>
+      {open && (
+        <div style={panel}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: '#f1f5f9', letterSpacing: '0.04em' }}>
+            ⚙️ Settings
+          </div>
+
+          {/* Walk Speed */}
+          <div style={row}>
+            <div style={label}>
+              <span>Walk Speed</span>
+              <span style={{ color: '#60a5fa' }}>{walkSpeed.toFixed(2)}×</span>
+            </div>
+            <input
+              type="range" min={0.5} max={2.0} step={0.05}
+              value={walkSpeed} style={slider}
+              onChange={e => setWalkSpeed(parseFloat(e.target.value))}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#475569' }}>
+              <span>0.5× slow</span><span>2.0× fast</span>
+            </div>
+          </div>
+
+          {/* Look Sensitivity */}
+          <div style={row}>
+            <div style={label}>
+              <span>Look Sensitivity</span>
+              <span style={{ color: '#60a5fa' }}>{sensitivity.toFixed(2)}×</span>
+            </div>
+            <input
+              type="range" min={0.3} max={3.0} step={0.05}
+              value={sensitivity} style={slider}
+              onChange={e => setSensitivity(parseFloat(e.target.value))}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#475569' }}>
+              <span>0.3× slow</span><span>3.0× fast</span>
+            </div>
+          </div>
+
+          <button style={resetBtn} onClick={() => { setWalkSpeed(1.0); setSensitivity(1.0); }}>
+            ↺ Reset to defaults
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Online Players Panel ───────────────────────────────────────────────────
 import type { RemotePlayer } from '@/lib/multiplayer';
 
@@ -511,6 +603,9 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
           </button>
         </div>
         <select className="qsel" value={quality} onChange={e => setQuality(e.target.value as Quality)} aria-label="Graphics quality">{(Object.keys(QUALITY) as Quality[]).map(k => <option key={k} value={k}>{QUALITY[k].label.split(' ')[0]}</option>)}</select>
+
+        {/* Settings Panel */}
+        <SettingsPanel />
 
         {/* Live Online Explorers Panel */}
         <OnlinePlayersPanel myName={myName} myColor={myColor} remotePlayers={remotePlayers} />
