@@ -359,6 +359,8 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
   const [q, setQ] = useState(''), [intro, setIntro] = useState(true), [help, setHelp] = useState(false), [map, setMap] = useState(true), [district, setDistrict] = useState(''), distIdx = useRef(0), done = useRef(false);
   const [guide, setGuide] = useState<Guide | null>(null), [gInfo, setGInfo] = useState({ d: 0, a: 0 }), [mapOpen, setMapOpen] = useState(false), [pick, setPick] = useState<string | null>(null);
   const [area, setArea] = useState<Area | null>(null), [found, setFound] = useState<string[]>([]), [toast, setToast] = useState('');
+  const [dismissedPlot, setDismissedPlot] = useState<string | null>(null);
+  const lastTrackedPlot = useRef<string | null>(null);
   const occupied = useMemo(() => new Set(stores.map(s => s.plotId)), [stores]), terrain = useMemo(() => terrainFor(layoutBounds(layout, 0)), [layout]);
   const totalAreas = useMemo(() => new Set([...layout.plots.map(p => p.district), 'Civic Plaza', ...NATURE]).size, [layout]);
   useEffect(() => { const t = setTimeout(() => setIntro(false), 7000); return () => clearTimeout(t); }, []);
@@ -366,6 +368,20 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
   useEffect(() => { const id = setInterval(() => { const a = areaAt(player.x, player.z, layout, terrain); setArea(prev => (prev && prev.name === a.name ? prev : a)); }, 350); return () => clearInterval(id); }, [layout, terrain]);
   const [marketBanner, setMarketBanner] = useState<string | null>(null);
   const lastMarket = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!nearPlot) {
+      setDismissedPlot(null);
+      return;
+    }
+    // Track visit once automatically when walking near the store
+    if (nearPlot !== lastTrackedPlot.current) {
+      lastTrackedPlot.current = nearPlot;
+      if (stores.some(s => s.plotId === nearPlot)) {
+        trackEvent(nearPlot, 'visit');
+      }
+    }
+  }, [nearPlot, stores]);
 
   useEffect(() => {
     if (!area) return;
@@ -379,6 +395,7 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
   useEffect(() => { if (!guide) return; const id = setInterval(() => { const dx = guide.x - player.x, dz = guide.z - player.z, d = Math.hypot(dx, dz); if (d < 6) { setGuide(null); return; } setGInfo({ d, a: Math.atan2(dx * -Math.cos(player.yaw) + dz * Math.sin(player.yaw), dx * Math.sin(player.yaw) + dz * Math.cos(player.yaw)) }); }, 150); return () => clearInterval(id); }, [guide]);
 
   const near = stores.find(s => s.plotId === nearPlot), nearP = nearPlot ? layout.byId.get(nearPlot) : undefined;
+  const showBuildingDetails = !!nearP && dismissedPlot !== nearPlot;
   const results = q ? [...stores.filter(s => (s.config.name + s.config.tagline + (layout.byId.get(s.plotId)?.district || '')).toLowerCase().includes(q.toLowerCase())).map(s => ({ id: s.plotId, name: s.config.name, sub: layout.byId.get(s.plotId)?.district || '' })),
     ...(q.length > 2 ? layout.plots.filter(p => !occupied.has(p.id) && (p.id + ' ' + p.district).toLowerCase().includes(q.toLowerCase())).slice(0, 4).map(p => ({ id: p.id, name: `Plot ${p.id}`, sub: p.district })) : [])].slice(0, 7) : [];
   const frontOf = (p: Plot): [number, number] => { const s = stores.find(x => x.plotId === p.id); return s ? storeDoor(p, s.config) : plotFront(p); };
@@ -397,7 +414,6 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === 'INPUT') return;
-      if (e.code === 'KeyE' && nearPlot) { setPanel(true); if (stores.some(s => s.plotId === nearPlot)) trackEvent(nearPlot, 'visit'); }
       if (e.code === 'KeyM') setMapOpen(o => !o);
       if (e.code === 'KeyT') {
         const presets = [6.0, 11.5, 14.5, 18.2, 20.0, 22.5, 0.5];
@@ -405,10 +421,14 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
         const next = presets.find(p => p > cur + 0.5) ?? presets[0];
         useTimeStore.getState().setHour(next);
       }
-      if (e.code === 'Escape') { setPanel(false); setMapOpen(false); }
+      if (e.code === 'Escape') {
+        if (nearPlot) setDismissedPlot(nearPlot);
+        setPanel(false);
+        setMapOpen(false);
+      }
     };
     window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
-  }, [nearPlot, setPanel, stores]);
+  }, [nearPlot, setPanel]);
   const districts = useMemo(() => Array.from(new Set(layout.plots.map(p => p.district))), [layout]);
   const exploreDistrict = () => { const d = districts[distIdx.current++ % districts.length], first = layout.plots.find(p => p.district === d); setDistrict(d); if (first) go(first.id, false); };
   const pickP = pick ? layout.byId.get(pick) : undefined, pickS = stores.find(s => s.plotId === pick);
@@ -611,8 +631,7 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
         </button>
       </div>
       {nearRes && !nearP && <div className="hint glass">Press <kbd>F</kbd> · Gather {nearRes.type}</div>}
-      {nearP && !panelOpen && <div className="hint glass">Press <kbd>E</kbd> to View {near ? `Store · ${near.config.name}` : `Plot ${nearP.id}`}</div>}
-      {nearP && panelOpen && near && (
+      {showBuildingDetails && near && (
         <aside className="store-panel glass" aria-label="Store information">
           <div className="head">
             <span className="logo-dot" style={{ background: near.config.logoUrl ? `center/cover url(${near.config.logoUrl})` : near.config.theme }}>{near.config.logoUrl ? '' : near.config.name[0]}</span>
@@ -629,15 +648,15 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
           <div className="actions">
             <button className="btn" disabled={!near.config.website} onClick={() => enter(near)}>{near.config.website ? 'Visit Website' : 'No website yet'}</button>
             {!near.ownerId && nearP.status === 'available' && <Link className="btn" href={`/buy?plot=${nearP.id}`}>Claim building</Link>}
-            <button className="btn outline" onClick={() => setPanel(false)}>Close</button>
+            <button className="btn outline" onClick={() => { setDismissedPlot(nearPlot); setPanel(false); }}>Close</button>
           </div>
         </aside>
       )}
-      {nearP && panelOpen && !near && (
+      {showBuildingDetails && !near && (
         <aside className="store-panel glass" aria-label="Plot information">
           <div className="head"><span className="logo-dot" style={{ background: nearP.status === 'available' ? '#22c55e' : '#64748b', color: '#fff' }}>{nearP.status === 'available' ? 'F' : '🔒'}</span><div><h3>Plot {nearP.id}</h3><p>{nearP.district} · {nearP.status === 'reserved' ? 'Permanently Locked' : 'Free to Claim'}</p></div></div>
           <div className="meta"><div><b>{nearP.w}×{nearP.d} m</b>Size</div><div><b>{nearP.status === 'reserved' ? 'Locked' : 'Free'}</b>Price</div><div><b>{nearP.status === 'reserved' ? 'Locked' : 'Free (1/email)'}</b>Tier</div></div>
-          <div className="actions">{nearP.status === 'available' ? <Link className="btn" href={`/buy?plot=${nearP.id}`}>Claim Free Building</Link> : <button className="btn" disabled>🔒 Permanently Locked</button>}<button className="btn outline" onClick={() => setPanel(false)}>Close</button></div>
+          <div className="actions">{nearP.status === 'available' ? <Link className="btn" href={`/buy?plot=${nearP.id}`}>Claim Free Building</Link> : <button className="btn" disabled>🔒 Permanently Locked</button>}<button className="btn outline" onClick={() => { setDismissedPlot(nearPlot); setPanel(false); }}>Close</button></div>
         </aside>
       )}
       {mapOpen && (
