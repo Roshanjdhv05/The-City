@@ -1,10 +1,10 @@
 'use client';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import Nav from '@/components/Nav';
 
-const TownModelViewer = dynamic(() => import('@/components/TownModelViewer'), { ssr: false });
+const CityHeroScene = dynamic(() => import('@/components/CityHeroScene'), { ssr: false });
 const PropertyCustomizer = dynamic(() => import('@/components/PropertyCustomizer'), { ssr: false });
 
 // ── Category cards for the "Discover Businesses" carousel ───────────────────
@@ -132,8 +132,6 @@ function CategorySlider() {
 }
 
 export default function Home() {
-  const [activeDistrict, setActiveDistrict] = useState<string | null>(null);
-
   return (
     <>
       {/* ── Navbar ── */}
@@ -293,27 +291,18 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ── RIGHT: Interactive 3D Town Model ── */}
+            {/* ── RIGHT: Procedural 3D City Scene ── */}
             <div
               style={{
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                height: 'clamp(440px, 55vh, 660px)',
+                height: 'clamp(460px, 60vh, 680px)',
               }}
             >
-              {/* Soft glow pedestal */}
-              <div
-                style={{
-                  position: 'absolute', bottom: '5%', left: '10%', right: '10%', height: '100px',
-                  background: 'radial-gradient(ellipse at center, rgba(99, 148, 255, 0.4) 0%, transparent 70%)',
-                  filter: 'blur(28px)', pointerEvents: 'none', zIndex: 0,
-                }}
-              />
-
               <div style={{ position: 'relative', width: '100%', height: '100%', zIndex: 1 }}>
-                <TownModelViewer onSelectDistrict={setActiveDistrict} />
+                <CityHeroScene />
               </div>
             </div>
           </div>
