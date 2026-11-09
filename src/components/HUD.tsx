@@ -420,13 +420,26 @@ function OnlinePlayersPanel({ myName, myColor, remotePlayers }: { myName: string
             Live Explorers
           </div>
           {/* You */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.3rem 0.3rem' }}>
+          <Link
+            href="/profile"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '0.3rem 0.4rem',
+              borderRadius: '8px',
+              textDecoration: 'none',
+              background: 'rgba(255,255,255,0.05)',
+              transition: 'background 0.15s',
+            }}
+            title="Click to view & edit your profile"
+          >
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: myColor, boxShadow: `0 0 8px ${myColor}`, flexShrink: 0 }} />
             <span style={{ color: '#ffffff', fontSize: '0.8rem', fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {myName}
             </span>
-            <span style={{ fontSize: '0.62rem', color: '#4ade80', fontWeight: 700, background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '999px', padding: '0.08rem 0.4rem' }}>You</span>
-          </div>
+            <span style={{ fontSize: '0.62rem', color: '#4ade80', fontWeight: 700, background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '999px', padding: '0.08rem 0.4rem' }}>You ✏️</span>
+          </Link>
           {/* Others */}
           {remotePlayers.length === 0 ? (
             <div style={{ color: '#475569', fontSize: '0.74rem', padding: '0.3rem 0.3rem', fontStyle: 'italic' }}>No other visitors yet</div>
@@ -603,6 +616,30 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
           </button>
         </div>
         <select className="qsel" value={quality} onChange={e => setQuality(e.target.value as Quality)} aria-label="Graphics quality">{(Object.keys(QUALITY) as Quality[]).map(k => <option key={k} value={k}>{QUALITY[k].label.split(' ')[0]}</option>)}</select>
+
+        {/* Profile Link */}
+        <Link
+          href="/profile"
+          className="glass"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '4px 11px',
+            borderRadius: 20,
+            border: '1px solid rgba(255,255,255,0.18)',
+            background: 'rgba(10,16,30,0.6)',
+            color: '#e2e8f0',
+            fontSize: 13,
+            fontWeight: 600,
+            textDecoration: 'none',
+            backdropFilter: 'blur(8px)',
+            transition: 'background 0.15s',
+          }}
+          title="My Profile & Properties"
+        >
+          👤 Profile
+        </Link>
 
         {/* Settings Panel */}
         <SettingsPanel />

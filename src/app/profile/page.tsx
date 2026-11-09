@@ -114,7 +114,6 @@ function UsernameInput({
 export default function ProfilePage() {
   const { user, ready, signOut } = useAuth();
   const { stores } = useStores();
-  const mine = stores.filter(s => s.ownerId === user?.id);
 
   // Profile state
   const [savedUsername, setSavedUsername] = useState<string | null>(null);
@@ -133,11 +132,11 @@ export default function ProfilePage() {
   // Load profile on mount
   useEffect(() => {
     if (!ready) return;
-    if (!user) { setLoading(false); return; }
-    fetchProfile(user.id).then(p => {
+    const effectiveId = user?.id || getLocalPlayerId();
+    fetchProfile(effectiveId).then(p => {
       if (p.username) setSavedUsername(p.username);
       if (p.avatarColor) setAvatarColor(p.avatarColor);
-      else setAvatarColor(getPlayerColor(getLocalPlayerId()));
+      else setAvatarColor(getPlayerColor(effectiveId));
       setLoading(false);
     });
   }, [ready, user]);
@@ -170,11 +169,11 @@ export default function ProfilePage() {
   }
 
   async function handleSave() {
-    if (!user) return;
+    const effectiveId = user?.id || getLocalPlayerId();
     if (checkState !== 'available') return;
     setSaving(true);
     setSaveMsg('');
-    const result = await saveProfile(user.id, draft, draftColor);
+    const result = await saveProfile(effectiveId, draft, draftColor);
     setSaving(false);
     if (result.ok) {
       setSavedUsername(draft.toLowerCase());
@@ -200,27 +199,57 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="page light">
-        <Nav />
-        <div className="wrap" style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
-          <h2 style={{ color: '#0f172a' }}>Sign in to view your profile</h2>
-          <Link href="/login" className="btn">Sign In</Link>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  const displayName = savedUsername ? `@${savedUsername}` : user.email.split('@')[0];
-  const initials = (savedUsername ?? user.email).slice(0, 2).toUpperCase();
+  const effectiveId = user?.id || getLocalPlayerId();
+  const mine = stores.filter(s => s.ownerId === effectiveId || (user && s.ownerId === user.id));
+  const displayName = savedUsername ? `@${savedUsername}` : user ? user.email.split('@')[0] : 'Guest Explorer';
+  const emailOrGuest = user ? user.email : 'Guest Session (local)';
 
   return (
     <div className="page light">
       <Nav />
 
       <div className="wrap" style={{ paddingTop: '7rem', paddingBottom: '5rem', maxWidth: 760 }}>
+
+        {/* Guest Banner if not signed in */}
+        {!user && (
+          <div
+            style={{
+              background: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '16px',
+              padding: '1rem 1.4rem',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+            }}
+          >
+            <div>
+              <p style={{ margin: '0 0 0.2rem', fontWeight: 700, color: '#166534', fontSize: '0.92rem' }}>
+                🌟 You are browsing as a Guest Explorer
+              </p>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: '#15803d' }}>
+                You can customize your unique username and avatar color right here. Sign in with email to claim permanent buildings and sync across devices.
+              </p>
+            </div>
+            <Link
+              href="/login"
+              style={{
+                background: '#166534',
+                color: '#fff',
+                padding: '0.5rem 1.1rem',
+                borderRadius: '999px',
+                fontSize: '0.84rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              Sign In with Email
+            </Link>
+          </div>
+        )}
 
         {/* ── Hero header ─────────────────────────────────────────────── */}
         <div
@@ -266,7 +295,7 @@ export default function ProfilePage() {
             <h1 style={{ margin: '0 0 0.3rem', fontSize: '2rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
               {displayName}
             </h1>
-            <p style={{ margin: 0, fontSize: '0.88rem', color: 'rgba(255,255,255,0.55)' }}>{user.email}</p>
+            <p style={{ margin: 0, fontSize: '0.88rem', color: 'rgba(255,255,255,0.55)' }}>{emailOrGuest}</p>
             <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1rem', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', background: 'rgba(255,255,255,0.1)', borderRadius: 999, padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.15)' }}>
                 🏢 {mine.length} {mine.length === 1 ? 'Property' : 'Properties'}
@@ -496,10 +525,25 @@ export default function ProfilePage() {
           >
             <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <p style={{ margin: '0 0 0.1rem', fontWeight: 600, fontSize: '0.9rem', color: '#0f172a' }}>Email</p>
-                <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748b' }}>{user.email}</p>
+                <p style={{ margin: '0 0 0.1rem', fontWeight: 600, fontSize: '0.9rem', color: '#0f172a' }}>
+                  {user ? 'Email' : 'Session Status'}
+                </p>
+                <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748b' }}>
+                  {user ? user.email : 'Guest Session (saved in this browser)'}
+                </p>
               </div>
-              <span style={{ fontSize: '0.72rem', background: '#dcfce7', color: '#16a34a', padding: '0.2rem 0.6rem', borderRadius: 999, fontWeight: 700 }}>Verified</span>
+              {user ? (
+                <span style={{ fontSize: '0.72rem', background: '#dcfce7', color: '#16a34a', padding: '0.2rem 0.6rem', borderRadius: 999, fontWeight: 700 }}>
+                  Verified
+                </span>
+              ) : (
+                <Link
+                  href="/login"
+                  style={{ fontSize: '0.78rem', background: '#e0f2fe', color: '#0284c7', padding: '0.25rem 0.75rem', borderRadius: 999, fontWeight: 700, textDecoration: 'none' }}
+                >
+                  Sign in with email →
+                </Link>
+              )}
             </div>
             <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
@@ -515,18 +559,20 @@ export default function ProfilePage() {
                 {savedUsername ? 'Change' : 'Set username'}
               </button>
             </div>
-            <div style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <p style={{ margin: '0 0 0.1rem', fontWeight: 600, fontSize: '0.9rem', color: '#0f172a' }}>Sign out</p>
-                <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748b' }}>Sign out from all devices</p>
+            {user && (
+              <div style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <p style={{ margin: '0 0 0.1rem', fontWeight: 600, fontSize: '0.9rem', color: '#0f172a' }}>Sign out</p>
+                  <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748b' }}>Sign out from all devices</p>
+                </div>
+                <button
+                  onClick={signOut}
+                  style={{ fontSize: '0.8rem', fontWeight: 600, color: '#ef4444', background: '#fef2f2', border: 'none', borderRadius: 999, padding: '0.35rem 0.9rem', cursor: 'pointer' }}
+                >
+                  Sign out
+                </button>
               </div>
-              <button
-                onClick={signOut}
-                style={{ fontSize: '0.8rem', fontWeight: 600, color: '#ef4444', background: '#fef2f2', border: 'none', borderRadius: 999, padding: '0.35rem 0.9rem', cursor: 'pointer' }}
-              >
-                Sign out
-              </button>
-            </div>
+            )}
           </div>
         </section>
 
