@@ -1221,13 +1221,5 @@ export function CentralBuildingLOD({
 }: {
   cfg: StoreConfig; plotId?: string; lodDistance?: number
 }) {
-  const dMed = lodDistance;
-  const dLow = Math.max(115, lodDistance * 2.3);
-  return (
-    <Detailed distances={[0, dMed, dLow]}>
-      <CentralBuildingFull cfg={cfg} plotId={plotId} />
-      <CentralBuildingLow cfg={cfg} plotId={plotId} />
-      <CentralBuildingMinimal cfg={cfg} plotId={plotId} />
-    </Detailed>
-  );
+  return <CentralBuildingFull cfg={cfg} plotId={plotId} />;
 }

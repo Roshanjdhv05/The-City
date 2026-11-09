@@ -42,7 +42,25 @@ const KEYS_HINT = 'Space/E up · Q down · Shift fast · drag look · scroll zoo
 function TimeWidget() {
   const { hour, isPlaying, isLiveDevice, speed, setHour, togglePlay, setLiveDevice, setSpeed } = useTimeStore();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const info = getTimePhase(hour);
+
+  if (!mounted) {
+    return (
+      <div
+        className="time-widget glass"
+        style={{
+          position: 'absolute',
+          top: 'calc(var(--nav-h) + 12px)',
+          right: '16px',
+          zIndex: 60,
+          opacity: 0,
+          pointerEvents: 'none',
+        }}
+      />
+    );
+  }
 
   return (
     <div
@@ -85,8 +103,8 @@ function TimeWidget() {
           }}
           title="Click to toggle time controls"
         >
-          <span style={{ fontSize: '1.1rem' }}>{info.icon}</span>
-          <span style={{ letterSpacing: '-0.01em', fontWeight: 700 }}>{formatClock(hour)}</span>
+          <span style={{ fontSize: '1.1rem' }} suppressHydrationWarning>{info.icon}</span>
+          <span style={{ letterSpacing: '-0.01em', fontWeight: 700 }} suppressHydrationWarning>{formatClock(hour)}</span>
           <span style={{ color: 'rgba(255, 255, 255, 0.65)', fontWeight: 500, fontSize: '0.74rem' }}>
             · {info.label}
           </span>

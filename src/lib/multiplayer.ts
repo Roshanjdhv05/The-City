@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import { useAuth } from './data';
-import { fetchProfile } from './profile';
+import { fetchProfile, getLocalProfile } from './profile';
 
 export interface RemotePlayer {
   id: string;
@@ -263,13 +263,31 @@ export function broadcastPlayerPosition(
 export function useMultiplayer() {
   const { user } = useAuth();
   const [remotes, setRemotes] = useState<RemotePlayer[]>([]);
-  const [customProfile, setCustomProfile] = useState<{ username: string | null; color: string | null }>({ username: null, color: null });
+  const [customProfile, setCustomProfile] = useState<{ username: string | null; color: string | null }>(() => {
+    const p = getLocalProfile();
+    return {
+      username: p.username ? `@${p.username}` : null,
+      color: p.avatarColor || null,
+    };
+  });
 
   const myId = getLocalPlayerId();
   const baseColor = getPlayerColor(myId);
   const baseName = getPlayerDisplayName(user?.email, myId);
 
   useEffect(() => {
+    // Listen to local profile changes (e.g. when updated on /profile)
+    const onProfileUpdate = (e: any) => {
+      const p = e.detail;
+      if (p) {
+        setCustomProfile({
+          username: p.username ? `@${p.username}` : null,
+          color: p.avatarColor || null,
+        });
+      }
+    };
+    window.addEventListener('thecity_profile_updated', onProfileUpdate);
+
     if (user?.id) {
       fetchProfile(user.id).then(p => {
         if (p.username || p.avatarColor) {
@@ -280,6 +298,7 @@ export function useMultiplayer() {
         }
       });
     }
+    return () => window.removeEventListener('thecity_profile_updated', onProfileUpdate);
   }, [user?.id]);
 
   const myName = customProfile.username || baseName;

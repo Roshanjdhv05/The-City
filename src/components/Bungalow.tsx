@@ -84,13 +84,5 @@ export function BungalowLow({ cfg }: { cfg: StoreConfig }) {
   return <group><B s={[20, 3.6, 14]} p={[0, 2.3, 0]} m={mats.wall} /><mesh geometry={roof} position={[0, 4.1, 0]} material={roofM} /></group>;
 }
 export function BungalowLOD({ cfg, lodDistance = 45 }: { cfg: StoreConfig; lodDistance?: number }) {
-  const dMed = lodDistance;
-  const dLow = Math.max(95, lodDistance * 2.2);
-  return (
-    <Detailed distances={[0, dMed, dLow]}>
-      <Bungalow cfg={cfg} />
-      <BungalowMedium cfg={cfg} />
-      <BungalowLow cfg={cfg} />
-    </Detailed>
-  );
+  return <Bungalow cfg={cfg} />;
 }

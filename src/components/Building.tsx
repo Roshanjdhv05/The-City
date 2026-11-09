@@ -598,15 +598,8 @@ export function BuildingLow({ cfg, plotId }: { cfg: StoreConfig; plotId?: string
 }
 
 export function StoreBuilding({ cfg, plotId, lodDistance = 48, interiors = true }: { cfg: StoreConfig; plotId?: string; lodDistance?: number; interiors?: boolean }) {
-  const dMed = lodDistance;
-  const dLow = Math.max(105, lodDistance * 2.3);
-  return (
-    <Detailed distances={[0, dMed, dLow]}>
-      {cfg.mode === 'modular' ? <ModularBuilding cfg={cfg} /> : <BuildingFull cfg={cfg} plotId={plotId} quality={interiors} />}
-      {cfg.mode === 'modular' ? <ModularBuilding cfg={cfg} /> : <BuildingMedium cfg={cfg} plotId={plotId} />}
-      {cfg.mode === 'modular' ? <ModularBuilding cfg={cfg} /> : <BuildingLow cfg={cfg} plotId={plotId} />}
-    </Detailed>
-  );
+  if (cfg.mode === 'modular') return <ModularBuilding cfg={cfg} />;
+  return <BuildingFull cfg={cfg} plotId={plotId} quality={interiors} />;
 }
 
 // ---------------- modular construction ----------------

@@ -5,40 +5,81 @@ export interface UserProfile {
   avatarColor: string | null;
 }
 
-/** Fetch a user's profile from the API */
-export async function fetchProfile(userId: string): Promise<UserProfile> {
+const LP_KEY = 'thecity_user_profile';
+
+/** Read profile synchronously from local storage */
+export function getLocalProfile(): UserProfile {
+  if (typeof window === 'undefined') return { username: null, avatarColor: null };
   try {
-    const res = await fetch(`/api/profiles?userId=${encodeURIComponent(userId)}`);
-    if (!res.ok) return { username: null, avatarColor: null };
-    return await res.json();
+    const raw = localStorage.getItem(LP_KEY);
+    if (!raw) return { username: null, avatarColor: null };
+    return JSON.parse(raw);
   } catch {
     return { username: null, avatarColor: null };
   }
 }
 
-/** Check if a username is available (returns true = available) */
-export async function checkUsernameAvailable(username: string): Promise<{ available: boolean; reason?: string }> {
+/** Store profile locally and notify listeners */
+export function setLocalProfile(p: UserProfile) {
+  if (typeof window === 'undefined') return;
   try {
-    const res = await fetch(`/api/profiles?check=${encodeURIComponent(username)}`);
-    if (!res.ok) return { available: false };
-    return await res.json();
-  } catch {
-    return { available: false };
-  }
+    localStorage.setItem(LP_KEY, JSON.stringify(p));
+    window.dispatchEvent(new CustomEvent('thecity_profile_updated', { detail: p }));
+  } catch {}
 }
 
-/** Save / update a user's username */
+/** Fetch a user's profile: reads local cache first, then attempts API */
+export async function fetchProfile(userId: string): Promise<UserProfile> {
+  const local = getLocalProfile();
+  try {
+    const res = await fetch(`/api/profiles?userId=${encodeURIComponent(userId)}`);
+    if (res.ok) {
+      const serverProfile = await res.json();
+      if (serverProfile.username || serverProfile.avatarColor) {
+        setLocalProfile(serverProfile);
+        return serverProfile;
+      }
+    }
+  } catch {}
+  return local;
+}
+
+/** Check if a username is available (returns true = available) */
+export async function checkUsernameAvailable(username: string): Promise<{ available: boolean; reason?: string }> {
+  const handle = username.toLowerCase().trim();
+  const valid = /^[a-z0-9_]{3,20}$/.test(handle);
+  if (!valid) return { available: false, reason: 'invalid' };
+
+  try {
+    const res = await fetch(`/api/profiles?check=${encodeURIComponent(handle)}`);
+    if (res.ok) return await res.json();
+  } catch {}
+
+  // Fallback for static GitHub deployment or offline
+  return { available: true };
+}
+
+/** Save / update a user's username with instant local + API sync */
 export async function saveProfile(userId: string, username: string, avatarColor?: string): Promise<{ ok: boolean; error?: string }> {
+  const handle = username.toLowerCase().trim();
+  if (!/^[a-z0-9_]{3,20}$/.test(handle)) {
+    return { ok: false, error: 'Username must be 3–20 characters: letters, numbers, underscores only.' };
+  }
+
+  const prof: UserProfile = { username: handle, avatarColor: avatarColor || '#2563eb' };
+  setLocalProfile(prof);
+
   try {
     const res = await fetch('/api/profiles', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, username, avatarColor }),
+      body: JSON.stringify({ userId, username: handle, avatarColor }),
     });
-    return await res.json();
-  } catch {
-    return { ok: false, error: 'Network error' };
-  }
+    if (res.ok) return await res.json();
+  } catch {}
+
+  // Always return ok: true when locally saved so users on GitHub Pages can change username
+  return { ok: true };
 }
 
 /** Avatar color palette — same as multiplayer.ts */
@@ -54,4 +95,3 @@ export const AVATAR_COLORS = [
   { hex: '#059669', label: 'Teal' },
   { hex: '#db2777', label: 'Pink' },
 ];
-

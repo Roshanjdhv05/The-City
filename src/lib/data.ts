@@ -40,7 +40,15 @@ export async function loadWorld(): Promise<{ layout: Layout; stores: Store[] }> 
   if (supabase) {
     const [p, r, g, s] = await Promise.all([supabase.from('city_plots').select('*'), supabase.from('city_roads').select('*'), supabase.from('city_regions').select('*'), supabase.from('stores').select('*')]);
     const owned = (s.data || []).map(rowStore);
-    if (!p.error && p.data && p.data.length) return { layout: makeLayout(p.data.map(rowPlot), (r.data || []).map(rowRoad), (g.data || []) as Region[], 'db'), stores: owned };
+    if (!p.error && p.data && p.data.length) {
+      const plots = p.data.map(rowPlot);
+      const ids = new Set(owned.map(x => x.plotId));
+      const seeded = SEED_STORES.filter(x => !ids.has(x.plotId));
+      const merged = [...seeded, ...owned];
+      const mergedIds = new Set(merged.map(x => x.plotId));
+      const missing = plots.filter(x => !mergedIds.has(x.id)).map((plot, i) => createMarketBuilding(plot, i));
+      return { layout: makeLayout(plots, (r.data || []).map(rowRoad), (g.data || []) as Region[], 'db'), stores: [...merged, ...missing] };
+    }
     const ids = new Set(owned.map(x => x.plotId)); // migration not applied yet: fall back to built-in layout
     return { layout: baseLayout(), stores: [...SEED_STORES.filter(x => !ids.has(x.plotId)), ...owned] };
   }

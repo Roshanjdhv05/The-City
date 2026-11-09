@@ -180,11 +180,5 @@ function JELow() {
 }
 
 export function JEnterpriseLOD() {
-  return (
-    <Detailed distances={[0, 60, 140]}>
-      <JEnterprise />
-      <JEnterpriseMedium />
-      <JELow />
-    </Detailed>
-  );
+  return <JEnterprise />;
 }
