@@ -14,7 +14,7 @@ interface UI {
   setQuality: (q: Quality) => void; setView: (v: '1p' | '3p' | 'free') => void; setNear: (p: string | null) => void; setPanel: (b: boolean) => void; setTeleportMapOpen: (b: boolean) => void; init: () => void;
 }
 export const useUI = create<UI>((set) => ({
-  quality: 'medium', view: '3p', nearPlot: null, panelOpen: false, teleportMapOpen: false, nearRes: null, inv: { wood: 0, stone: 0, crystal: 0 },
+  quality: 'low', view: '3p', nearPlot: null, panelOpen: false, teleportMapOpen: false, nearRes: null, inv: { wood: 0, stone: 0, crystal: 0 },
   walkSpeed: 1.0, sensitivity: 1.0,
   setWalkSpeed: (walkSpeed) => {
     try { localStorage.setItem('thecity.walkSpeed', String(walkSpeed)); } catch {}
@@ -33,15 +33,18 @@ export const useUI = create<UI>((set) => ({
   init: () => {
     try {
       const saved = localStorage.getItem('thecity.quality') as Quality | null;
-      if (saved && QUALITY[saved]) set({ quality: saved });
+      if (saved && QUALITY[saved]) {
+        set({ quality: saved });
+      } else {
+        set({ quality: 'low' });
+      }
       const sp = parseFloat(localStorage.getItem('thecity.walkSpeed') || '1.0');
       if (!isNaN(sp) && sp > 0) set({ walkSpeed: sp });
       const sens = parseFloat(localStorage.getItem('thecity.sensitivity') || '1.0');
       if (!isNaN(sens) && sens > 0) set({ sensitivity: sens });
-    } catch {}
-    const mobile = window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 820;
-    const mem = (navigator as any).deviceMemory || 8, cores = navigator.hardwareConcurrency || 8;
-    set({ quality: mobile ? 'low' : mem <= 4 || cores <= 4 ? 'medium' : 'high' });
+    } catch {
+      set({ quality: 'low' });
+    }
   },
 }));
 
