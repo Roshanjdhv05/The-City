@@ -26,237 +26,208 @@ function Minimap({ occupied, layout, guide }: { occupied: Set<string>; layout: L
       for (const p of layout.plots) { g.fillStyle = p.landmark ? '#e8eefc' : occupied.has(p.id) ? '#fb923c' : '#22d3ee'; g.globalAlpha = occupied.has(p.id) ? 0.95 : 0.6; g.save(); g.translate(p.x, p.z); g.rotate(-p.rot); g.fillRect(-p.w / 2, -p.d / 2, p.w, p.d); g.restore(); }
       g.globalAlpha = 1; const t = g2.current; if (t) { g.fillStyle = '#ff4d6d'; g.beginPath(); g.arc(t.x, t.z, 9, 0, Math.PI * 2); g.fill(); }
       g.restore();
-      g.fillStyle = '#fff'; g.beginPath(); g.moveTo(S / 2, S / 2 - 8); g.lineTo(S / 2 + 6, S / 2 + 7); g.lineTo(S / 2 - 6, S / 2 + 7); g.closePath(); g.fill();
-      g.strokeStyle = 'rgba(34,211,238,.9)'; g.lineWidth = 2.5; g.beginPath(); g.arc(S / 2, S / 2, S / 2 - 2, 0, Math.PI * 2); g.stroke();
-      g.fillStyle = '#fff'; g.font = '700 11px Arial'; g.textAlign = 'center';
-      const na = -player.yaw + Math.PI; g.fillText('N', S / 2 + Math.sin(na) * (S / 2 - 12), S / 2 - Math.cos(na) * (S / 2 - 12) + 4);
+      // Player Arrow
+      g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(S / 2, S / 2 - 8); g.lineTo(S / 2 + 6, S / 2 + 7); g.lineTo(S / 2 - 6, S / 2 + 7); g.closePath(); g.fill();
+      // Lime Accent Ring
+      g.strokeStyle = 'rgba(163, 230, 53, 0.9)'; g.lineWidth = 2.5; g.beginPath(); g.arc(S / 2, S / 2, S / 2 - 2, 0, Math.PI * 2); g.stroke();
       raf = requestAnimationFrame(draw);
     };
     draw(); return () => cancelAnimationFrame(raf);
   }, [occupied, layout]);
-  return <canvas ref={ref} width={116} height={116} className="minimap" aria-label="Minimap" />;
+  return <canvas ref={ref} width={120} height={120} className="minimap" aria-label="Minimap" />;
 }
 
 const KEYS_HINT = 'Space/E up · Q down · Shift fast · drag look · scroll zoom · V camera · T time · F gather · M map';
 
-function TimeWidget() {
-  const { hour, isPlaying, isLiveDevice, speed, setHour, togglePlay, setLiveDevice, setSpeed } = useTimeStore();
+import type { RemotePlayer } from '@/lib/multiplayer';
+
+// ─── Day / Night Quick Toggle ───────────────────────────────────────────────
+function DayNightToggle() {
+  const { hour, setHour } = useTimeStore();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
+  const isDay = hour >= 6.0 && hour < 18.5;
+
+  return (
+    <div className="world-pill" style={{ padding: 4, gap: 4 }}>
+      <button
+        className={isDay ? 'world-active-lime' : ''}
+        onClick={() => setHour(12.0)}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: isDay ? '#0f172a' : '#cbd5e1',
+          padding: '6px 14px',
+          borderRadius: 9999,
+          fontSize: 12,
+          fontWeight: isDay ? 700 : 600,
+          cursor: 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          transition: 'all 0.2s',
+        }}
+        title="Set to Daytime (Noon)"
+      >
+        <span>☀️</span>
+        <span>Noon</span>
+      </button>
+      <button
+        className={!isDay ? 'world-active-lime' : ''}
+        onClick={() => setHour(22.0)}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: !isDay ? '#0f172a' : '#cbd5e1',
+          padding: '6px 14px',
+          borderRadius: 9999,
+          fontSize: 12,
+          fontWeight: !isDay ? 700 : 600,
+          cursor: 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          transition: 'all 0.2s',
+        }}
+        title="Set to Nighttime"
+      >
+        <span>🌙</span>
+        <span>Night</span>
+      </button>
+    </div>
+  );
+}
+
+// ─── Time & Online Status Pill ──────────────────────────────────────────────
+function TimeStatusPill({ onToggleOnline }: { onToggleOnline: () => void }) {
+  const { hour, isPlaying, togglePlay, setHour, speed, setSpeed } = useTimeStore();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
   const info = getTimePhase(hour);
 
-  if (!mounted) {
-    return (
-      <div
-        className="time-widget glass"
-        style={{
-          position: 'absolute',
-          top: 'calc(var(--nav-h) + 12px)',
-          right: '16px',
-          zIndex: 60,
-          opacity: 0,
-          pointerEvents: 'none',
-        }}
-      />
-    );
-  }
-
   return (
-    <div
-      className="time-widget glass"
-      style={{
-        position: 'absolute',
-        top: 'calc(var(--nav-h) + 12px)',
-        right: '16px',
-        zIndex: 60,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.45rem',
-        borderRadius: open ? '18px' : '999px',
-        padding: open ? '0.55rem 0.85rem' : '0.35rem 0.7rem',
-        background: 'rgba(10, 16, 30, 0.55)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255, 255, 255, 0.14)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.45)',
-        color: '#ffffff',
-        fontSize: '0.82rem',
-        transition: 'all 0.25s ease',
-      }}
-    >
-      {/* Top Header Row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+    <div style={{ position: 'relative' }}>
+      <div
+        className="world-pill"
+        style={{
+          padding: '7px 18px',
+          gap: 10,
+          fontSize: 13,
+          fontWeight: 600,
+        }}
+      >
         <button
-          onClick={() => setOpen(!open)}
+          onClick={() => setOpen(o => !o)}
           style={{
             background: 'none',
             border: 'none',
             color: '#ffffff',
-            cursor: 'pointer',
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.45rem',
-            padding: '0.2rem 0.4rem',
-            borderRadius: '999px',
-            fontWeight: 600,
+            gap: 6,
+            cursor: 'pointer',
+            padding: 0,
+            fontSize: 13,
+            fontWeight: 700,
           }}
-          title="Click to toggle time controls"
+          title="Click to adjust time & day cycle"
         >
-          <span style={{ fontSize: '1.1rem' }} suppressHydrationWarning>{info.icon}</span>
-          <span style={{ letterSpacing: '-0.01em', fontWeight: 700 }} suppressHydrationWarning>{formatClock(hour)}</span>
-          <span style={{ color: 'rgba(255, 255, 255, 0.65)', fontWeight: 500, fontSize: '0.74rem' }}>
-            · {info.label}
-          </span>
-          {isLiveDevice && (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.25rem',
-                fontSize: '0.65rem',
-                padding: '0.12rem 0.45rem',
-                borderRadius: '999px',
-                background: 'rgba(34, 197, 94, 0.2)',
-                border: '1px solid rgba(34, 197, 94, 0.5)',
-                color: '#4ade80',
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-              }}
-            >
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 6px #4ade80' }} />
-              LIVE
-            </span>
-          )}
-          <span style={{ fontSize: '0.65rem', color: 'rgba(255, 255, 255, 0.5)', marginLeft: '0.2rem' }}>
-            {open ? '▲' : '▼'}
-          </span>
+          <span style={{ fontSize: 14 }}>{info.icon}</span>
+          <span>{formatClock(hour)}</span>
         </button>
-
-        {/* Play/Pause Cycle */}
+        <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
         <button
-          onClick={togglePlay}
+          onClick={onToggleOnline}
           style={{
-            background: isPlaying ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid ' + (isPlaying ? 'rgba(56, 189, 248, 0.6)' : 'rgba(255, 255, 255, 0.16)'),
-            color: isPlaying ? '#38bdf8' : '#ffffff',
-            borderRadius: '999px',
-            width: '28px',
-            height: '28px',
-            display: 'flex',
+            background: 'none',
+            border: 'none',
+            display: 'inline-flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: 6,
             cursor: 'pointer',
-            fontSize: '0.75rem',
-            transition: 'all 0.2s',
+            padding: 0,
+            fontSize: 13,
           }}
-          title={isPlaying ? 'Pause day/night cycle' : 'Auto-cycle day & night'}
+          title="Click to view online explorers"
         >
-          {isPlaying ? '⏸' : '▶'}
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px #4ade80' }} />
+          <span style={{ color: '#4ade80', fontWeight: 600 }}>Online</span>
         </button>
       </div>
 
-      {/* Expandable Controls Dropdown */}
+      {/* Expanded Time Scrubber Modal/Dropdown */}
       {open && (
         <div
           style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            minWidth: 260,
+            background: 'rgba(18, 25, 42, 0.94)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,255,255,0.16)',
+            borderRadius: 18,
+            padding: '14px 16px',
+            zIndex: 200,
+            boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.65rem',
-            paddingTop: '0.55rem',
-            borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-            animation: 'rise 0.2s ease',
+            gap: 10,
+            animation: 'rise 0.18s ease',
           }}
         >
-          {/* Live Device Sync Toggle */}
-          <button
-            onClick={() => setLiveDevice(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              padding: '0.4rem 0.8rem',
-              borderRadius: '8px',
-              border: isLiveDevice ? '1px solid rgba(34, 197, 94, 0.7)' : '1px solid rgba(255, 255, 255, 0.14)',
-              background: isLiveDevice ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255, 255, 255, 0.06)',
-              color: isLiveDevice ? '#4ade80' : '#e2e8f0',
-              cursor: 'pointer',
-              fontSize: '0.76rem',
-              fontWeight: 600,
-              transition: 'all 0.2s',
-            }}
-          >
-            <span style={{ fontSize: '0.9rem' }}>🕒</span>
-            <span>{isLiveDevice ? '✓ Synced with Device Clock' : 'Sync to Device Clock'}</span>
-          </button>
-
-          {/* Quick Presets */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.3rem' }}>
-            {[
-              { id: 'sunrise', label: 'Sunrise', hour: 6.2, icon: '🌅' },
-              { id: 'day', label: 'Noon', hour: 12.0, icon: '☀️' },
-              { id: 'sunset', label: 'Sunset', hour: 18.2, icon: '🌇' },
-              { id: 'night', label: 'Night', hour: 22.0, icon: '🌙' },
-            ].map((p) => {
-              const active = !isLiveDevice && Math.abs(hour - p.hour) < 1.5;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => setHour(p.hour)}
-                  style={{
-                    background: active ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.06)',
-                    border: active ? '1px solid rgba(56, 189, 248, 0.65)' : '1px solid rgba(255, 255, 255, 0.1)',
-                    color: '#ffffff',
-                    borderRadius: '8px',
-                    padding: '0.35rem 0.2rem',
-                    cursor: 'pointer',
-                    fontSize: '0.72rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.15rem',
-                    transition: 'all 0.2s',
-                  }}
-                  title={`Set to ${p.label}`}
-                >
-                  <span style={{ fontSize: '0.95rem' }}>{p.icon}</span>
-                  <span>{p.label}</span>
-                </button>
-              );
-            })}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9' }}>🕒 Time Controls</span>
+            <button
+              onClick={togglePlay}
+              style={{
+                background: isPlaying ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.08)',
+                border: isPlaying ? '1px solid rgba(74,222,128,0.5)' : '1px solid rgba(255,255,255,0.14)',
+                color: isPlaying ? '#4ade80' : '#ffffff',
+                borderRadius: 999,
+                padding: '3px 10px',
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              {isPlaying ? '⏸ Pause' : '▶ Play'}
+            </button>
           </div>
 
-          {/* Time Scrubber */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <span style={{ fontSize: '0.7rem', color: '#94a3b8', width: '30px' }}>Hour</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: '#94a3b8', width: 32 }}>Hour</span>
             <input
               type="range"
               min={0}
               max={24}
               step={0.1}
               value={hour}
-              onChange={(e) => setHour(parseFloat(e.target.value))}
-              style={{ flex: 1, accentColor: '#38bdf8', cursor: 'ew-resize' }}
+              onChange={e => setHour(parseFloat(e.target.value))}
+              style={{ flex: 1, accentColor: '#a3e635', cursor: 'ew-resize' }}
             />
           </div>
 
-          {/* Speed Selector */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: '#94a3b8' }}>
-            <span>Speed:</span>
-            <div style={{ display: 'flex', gap: '0.25rem' }}>
-              {[0.5, 1.0, 2.0, 5.0].map((s) => (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: '#94a3b8' }}>
+            <span>Cycle speed:</span>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {[0.5, 1.0, 2.0, 5.0].map(s => (
                 <button
                   key={s}
                   onClick={() => setSpeed(s)}
                   style={{
-                    background: speed === s ? 'rgba(56, 189, 248, 0.35)' : 'rgba(255, 255, 255, 0.08)',
-                    border: speed === s ? '1px solid rgba(56, 189, 248, 0.65)' : '1px solid rgba(255, 255, 255, 0.1)',
-                    color: speed === s ? '#38bdf8' : '#ffffff',
-                    borderRadius: '4px',
-                    padding: '0.15rem 0.45rem',
+                    background: speed === s ? 'rgba(163, 230, 53, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                    border: speed === s ? '1px solid rgba(163, 230, 53, 0.6)' : '1px solid rgba(255, 255, 255, 0.1)',
+                    color: speed === s ? '#a3e635' : '#ffffff',
+                    borderRadius: 6,
+                    padding: '2px 6px',
                     cursor: 'pointer',
-                    fontSize: '0.68rem',
+                    fontSize: 11,
                     fontWeight: speed === s ? 700 : 400,
                   }}
                 >
@@ -270,29 +241,136 @@ function TimeWidget() {
     </div>
   );
 }
+
+// ─── Segmented Quality Switcher ─────────────────────────────────────────────
+function SegmentedQuality() {
+  const { quality, setQuality } = useUI();
+
+  return (
+    <div className="world-pill" style={{ padding: 4, gap: 4 }}>
+      <span style={{ padding: '0 4px 0 8px', color: '#a3e635', fontSize: 13 }}>📶</span>
+      {(['high', 'medium', 'low'] as Quality[]).map((q, idx) => {
+        const active = quality === q;
+        const label = q === 'high' ? 'H' : q === 'medium' ? 'M' : 'L';
+        return (
+          <span key={q} style={{ display: 'inline-flex', alignItems: 'center' }}>
+            {idx > 0 && <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 2px' }}>|</span>}
+            <button
+              onClick={() => setQuality(q)}
+              style={{
+                background: active ? 'rgba(163, 230, 53, 0.25)' : 'none',
+                border: 'none',
+                color: active ? '#a3e635' : '#94a3b8',
+                fontWeight: active ? 800 : 600,
+                fontSize: 12,
+                padding: '5px 10px',
+                borderRadius: 9999,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              title={`${q.toUpperCase()} Quality`}
+            >
+              {label}
+            </button>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Quality Selector Dropdown ──────────────────────────────────────────────
+function QualitySelector() {
+  const { quality, setQuality } = useUI();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        className="world-pill"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          padding: '8px 16px',
+          gap: 8,
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: 'pointer',
+        }}
+        title="Graphics Quality"
+      >
+        <span style={{ color: quality === 'high' ? '#a3e635' : quality === 'medium' ? '#38bdf8' : '#94a3b8', fontSize: 14 }}>
+          📶
+        </span>
+        <span style={{ textTransform: 'capitalize', color: '#ffffff', fontWeight: 600 }}>{quality}</span>
+        <span style={{ fontSize: 10, color: '#94a3b8' }}>▾</span>
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            right: 0,
+            zIndex: 200,
+            minWidth: 180,
+            background: 'rgba(18, 25, 42, 0.94)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.16)',
+            borderRadius: 16,
+            padding: '6px',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+            animation: 'rise 0.18s ease',
+          }}
+        >
+          {(['high', 'medium', 'low'] as Quality[]).map(q => (
+            <button
+              key={q}
+              onClick={() => { setQuality(q); setOpen(false); }}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '9px 12px',
+                borderRadius: 10,
+                background: quality === q ? 'rgba(163, 230, 53, 0.15)' : 'transparent',
+                border: quality === q ? '1px solid rgba(163, 230, 53, 0.4)' : '1px solid transparent',
+                color: quality === q ? '#a3e635' : '#e2e8f0',
+                fontSize: 12,
+                fontWeight: quality === q ? 700 : 500,
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s',
+              }}
+            >
+              <span>{q === 'high' ? 'High (desktop)' : q === 'medium' ? 'Medium' : 'Low (fast)'}</span>
+              {quality === q && <span>✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Settings Panel ─────────────────────────────────────────────────────────
 function SettingsPanel() {
   const { walkSpeed, sensitivity, setWalkSpeed, setSensitivity } = useUI();
   const [open, setOpen] = useState(false);
 
-  const pill: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 5,
-    padding: '4px 10px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.18)',
-    background: 'rgba(10,16,30,0.6)', backdropFilter: 'blur(8px)',
-    color: '#e2e8f0', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-    transition: 'background 0.15s',
-  };
-
   const panel: React.CSSProperties = {
-    position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 200,
-    minWidth: 240, padding: '14px 16px 12px',
-    background: 'rgba(10,16,30,0.82)', backdropFilter: 'blur(14px)',
-    border: '1px solid rgba(255,255,255,0.14)', borderRadius: 14,
-    boxShadow: '0 8px 32px rgba(0,0,0,0.5)', color: '#e2e8f0',
+    position: 'absolute', top: 'calc(100% + 10px)', right: 0, zIndex: 200,
+    minWidth: 260, padding: '16px 18px 14px',
+    background: 'rgba(18, 25, 42, 0.94)', backdropFilter: 'blur(24px)',
+    WebkitBackdropFilter: 'blur(24px)',
+    border: '1px solid rgba(255,255,255,0.16)', borderRadius: 18,
+    boxShadow: '0 12px 40px rgba(0,0,0,0.6), 0 0 20px rgba(0,0,0,0.4)', color: '#e2e8f0',
+    animation: 'rise 0.2s ease',
   };
 
   const row: React.CSSProperties = {
-    display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12,
+    display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14,
   };
 
   const label: React.CSSProperties = {
@@ -301,38 +379,40 @@ function SettingsPanel() {
   };
 
   const slider: React.CSSProperties = {
-    width: '100%', accentColor: '#60a5fa', cursor: 'pointer',
+    width: '100%', accentColor: '#a3e635', cursor: 'pointer',
   };
 
   const resetBtn: React.CSSProperties = {
-    width: '100%', padding: '5px 0', marginTop: 2,
-    background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.14)',
-    borderRadius: 8, color: '#94a3b8', fontSize: 12, cursor: 'pointer',
+    width: '100%', padding: '7px 0', marginTop: 4,
+    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 10, color: '#94a3b8', fontSize: 12, cursor: 'pointer',
+    transition: 'all 0.15s',
   };
 
   return (
     <div style={{ position: 'relative' }}>
-      <button style={pill} onClick={() => setOpen(o => !o)} title="Settings">
-        ⚙️ Settings
+      <button className="world-circle-btn" onClick={() => setOpen(o => !o)} title="Game Settings">
+        ⚙️
       </button>
       {open && (
         <div style={panel}>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: '#f1f5f9', letterSpacing: '0.04em' }}>
-            ⚙️ Settings
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: '#f1f5f9', letterSpacing: '0.02em', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>⚙️ Game Settings</span>
+            <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 14 }}>✕</button>
           </div>
 
           {/* Walk Speed */}
           <div style={row}>
             <div style={label}>
               <span>Walk Speed</span>
-              <span style={{ color: '#60a5fa' }}>{walkSpeed.toFixed(2)}×</span>
+              <span style={{ color: '#a3e635', fontWeight: 700 }}>{walkSpeed.toFixed(2)}×</span>
             </div>
             <input
               type="range" min={0.5} max={2.0} step={0.05}
               value={walkSpeed} style={slider}
               onChange={e => setWalkSpeed(parseFloat(e.target.value))}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#475569' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#64748b' }}>
               <span>0.5× slow</span><span>2.0× fast</span>
             </div>
           </div>
@@ -341,14 +421,14 @@ function SettingsPanel() {
           <div style={row}>
             <div style={label}>
               <span>Look Sensitivity</span>
-              <span style={{ color: '#60a5fa' }}>{sensitivity.toFixed(2)}×</span>
+              <span style={{ color: '#a3e635', fontWeight: 700 }}>{sensitivity.toFixed(2)}×</span>
             </div>
             <input
               type="range" min={0.3} max={3.0} step={0.05}
               value={sensitivity} style={slider}
               onChange={e => setSensitivity(parseFloat(e.target.value))}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#475569' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#64748b' }}>
               <span>0.3× slow</span><span>3.0× fast</span>
             </div>
           </div>
@@ -362,90 +442,82 @@ function SettingsPanel() {
   );
 }
 
-// ─── Online Players Panel ───────────────────────────────────────────────────
-import type { RemotePlayer } from '@/lib/multiplayer';
-
-function OnlinePlayersPanel({ myName, myColor, remotePlayers }: { myName: string; myColor: string; remotePlayers: RemotePlayer[] }) {
-  const [open, setOpen] = useState(false);
+// ─── Online Players Dropdown Panel ──────────────────────────────────────────
+function OnlinePlayersPanel({
+  myName,
+  myColor,
+  remotePlayers,
+  open,
+  setOpen,
+}: {
+  myName: string;
+  myColor: string;
+  remotePlayers: RemotePlayer[];
+  open: boolean;
+  setOpen: (b: boolean | ((p: boolean) => boolean)) => void;
+}) {
   const total = remotePlayers.length + 1;
 
-  return (
-    <div style={{ position: 'relative' }}>
-      {/* Pill button */}
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="glass"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '7px',
-          padding: '0.35rem 0.85rem',
-          borderRadius: '999px',
-          fontSize: '0.78rem',
-          fontWeight: 600,
-          color: '#e2e8f0',
-          border: '1px solid rgba(255,255,255,0.18)',
-          background: 'rgba(10,16,30,0.6)',
-          cursor: 'pointer',
-          userSelect: 'none',
-          transition: 'border-color 0.2s',
-        }}
-        title="Click to see who is online"
-      >
-        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px #4ade80', flexShrink: 0 }} />
-        <span>👥 {total} Online</span>
-        <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.45)', marginLeft: 2 }}>{open ? '▲' : '▼'}</span>
-      </button>
+  if (!open) return null;
 
-      {/* Dropdown list */}
-      {open && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 8px)',
-            right: 0,
-            minWidth: '180px',
-            background: 'rgba(10,16,30,0.88)',
-            backdropFilter: 'blur(18px)',
-            WebkitBackdropFilter: 'blur(18px)',
-            border: '1px solid rgba(255,255,255,0.14)',
-            borderRadius: '14px',
-            padding: '0.55rem 0.65rem',
-            zIndex: 200,
-            boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
-            animation: 'rise 0.18s ease',
-          }}
-        >
-          <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: '#64748b', fontWeight: 700, padding: '0 0.3rem 0.4rem', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '0.4rem' }}>
-            Live Explorers
-          </div>
-          {/* You */}
-          <Link
-            href="/profile"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '0.3rem 0.4rem',
-              borderRadius: '8px',
-              textDecoration: 'none',
-              background: 'rgba(255,255,255,0.05)',
-              transition: 'background 0.15s',
-            }}
-            title="Click to view & edit your profile"
-          >
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: myColor, boxShadow: `0 0 8px ${myColor}`, flexShrink: 0 }} />
-            <span style={{ color: '#ffffff', fontSize: '0.8rem', fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {myName}
-            </span>
-            <span style={{ fontSize: '0.62rem', color: '#4ade80', fontWeight: 700, background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '999px', padding: '0.08rem 0.4rem' }}>You ✏️</span>
-          </Link>
-          {/* Others */}
-          {remotePlayers.length === 0 ? (
-            <div style={{ color: '#475569', fontSize: '0.74rem', padding: '0.3rem 0.3rem', fontStyle: 'italic' }}>No other visitors yet</div>
-          ) : remotePlayers.map(p => (
-            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.3rem 0.3rem' }}>
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: p.color, boxShadow: `0 0 7px ${p.color}`, flexShrink: 0 }} />
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        bottom: 'calc(100% + 12px)',
+        right: 0,
+        minWidth: '220px',
+        background: 'rgba(18, 25, 42, 0.94)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255,255,255,0.16)',
+        borderRadius: '16px',
+        padding: '0.75rem 0.85rem',
+        zIndex: 200,
+        boxShadow: '0 16px 48px rgba(0,0,0,0.65)',
+        animation: 'rise 0.18s ease',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', paddingBottom: '0.4rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: '#4ade80', fontWeight: 800 }}>
+          Live Explorers ({total})
+        </span>
+        <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 13 }}>✕</button>
+      </div>
+
+      {/* You */}
+      <Link
+        href="/profile"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '9px',
+          padding: '0.4rem 0.5rem',
+          borderRadius: '10px',
+          textDecoration: 'none',
+          background: 'rgba(255,255,255,0.06)',
+          transition: 'background 0.15s',
+          marginBottom: '0.35rem',
+        }}
+        title="Click to view & edit your profile"
+      >
+        <span style={{ width: 10, height: 10, borderRadius: '50%', background: myColor, boxShadow: `0 0 8px ${myColor}`, flexShrink: 0 }} />
+        <span style={{ color: '#ffffff', fontSize: '0.82rem', fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {myName}
+        </span>
+        <span style={{ fontSize: '0.65rem', color: '#4ade80', fontWeight: 700, background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.35)', borderRadius: '999px', padding: '0.1rem 0.45rem' }}>You ✏️</span>
+      </Link>
+
+      {/* Others */}
+      {remotePlayers.length === 0 ? (
+        <div style={{ color: '#64748b', fontSize: '0.76rem', padding: '0.4rem 0.5rem', fontStyle: 'italic' }}>
+          No other visitors in the city right now
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '180px', overflowY: 'auto' }}>
+          {remotePlayers.map(p => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '0.35rem 0.5rem', borderRadius: '8px' }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: p.color, boxShadow: `0 0 8px ${p.color}`, flexShrink: 0 }} />
               <span style={{ color: '#e2e8f0', fontSize: '0.8rem', fontWeight: 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {p.name}
               </span>
@@ -536,12 +608,14 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
   }, [nearPlot, setPanel]);
   const districts = useMemo(() => Array.from(new Set(layout.plots.map(p => p.district))), [layout]);
   const exploreDistrict = () => { const d = districts[distIdx.current++ % districts.length], first = layout.plots.find(p => p.district === d); setDistrict(d); if (first) go(first.id, false); };
+  const prevDistrict = () => { distIdx.current = (distIdx.current - 2 + districts.length) % districts.length; exploreDistrict(); };
   const pickP = pick ? layout.byId.get(pick) : undefined, pickS = stores.find(s => s.plotId === pick);
+  const [onlinePanelOpen, setOnlinePanelOpen] = useState(false);
 
   return (
     <div className="hud">
-      <TimeWidget />
-      <div className="hud-tl">
+      {/* ── Top-Left: Circular Radar Minimap with Lime Accent Ring ────────── */}
+      <div className="hud-tl" style={{ zIndex: 60 }}>
         {map && (
           <div
             onClick={() => setMapOpen(true)}
@@ -550,102 +624,304 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
               position: 'relative',
               cursor: 'pointer',
               borderRadius: '50%',
-              padding: '2px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1.5px solid rgba(34, 211, 238, 0.45)',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(34, 211, 238, 0.2)',
+              padding: '3px',
+              background: 'rgba(15, 23, 42, 0.82)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '3.5px solid #a3e635',
+              boxShadow: '0 0 24px rgba(163, 230, 53, 0.4), 0 10px 32px rgba(0, 0, 0, 0.55)',
               transition: 'transform 0.2s ease, border-color 0.2s ease',
             }}
           >
             <Minimap occupied={occupied} layout={layout} guide={guide} />
+
+            {/* North Badge 'N' at top */}
             <div
               style={{
                 position: 'absolute',
-                bottom: 4,
+                top: -8,
                 left: '50%',
                 transform: 'translateX(-50%)',
-                background: 'rgba(10, 16, 30, 0.85)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-                color: '#22d3ee',
-                fontSize: '0.62rem',
-                fontWeight: 700,
-                padding: '0.12rem 0.55rem',
-                borderRadius: '999px',
-                border: '1px solid rgba(34, 211, 238, 0.4)',
-                whiteSpace: 'nowrap',
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: '#0f172a',
+                border: '1.5px solid #a3e635',
+                color: '#ffffff',
+                fontSize: '10px',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
                 pointerEvents: 'none',
               }}
             >
-              Open Map ↗
+              N
+            </div>
+
+            {/* Compass navigation arrow at bottom-right */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 2,
+                right: 2,
+                width: 26,
+                height: 26,
+                borderRadius: '50%',
+                background: 'rgba(15, 23, 42, 0.92)',
+                border: '1.5px solid rgba(255, 255, 255, 0.25)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '11px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                pointerEvents: 'none',
+              }}
+            >
+              ➤
             </div>
           </div>
         )}
-        <div style={{ display: 'flex', gap: '.4rem' }}>
-          <button className="btn outline sm mini-toggle glass" onClick={() => setMap(!map)} aria-pressed={map}>
-            {map ? 'Hide minimap' : 'Minimap'}
-          </button>
-          <button className="btn outline sm mini-toggle glass" onClick={() => setMapOpen(true)}>
-            City map (M)
-          </button>
-        </div>
-        {area && (
-          <div className="area-chip glass" aria-live="polite">
-            <i className={area.kind} />
-            <span>
-              <b>{area.name}</b>
-              <small>Discovered {Math.min(found.length, totalAreas)} / {totalAreas}</small>
-            </span>
-          </div>
-        )}
       </div>
-      <div className="hud-top">
-        <div className="search"><input placeholder="Search businesses or plots…" value={q} onChange={e => setQ(e.target.value)} aria-label="Search" />
-          {results.length > 0 && <ul className="glass">{results.map(r => <li key={r.id} onClick={() => go(r.id)}><b>{r.name}</b><span>{r.sub}</span></li>)}</ul>}</div>
-        <div className="seg" role="group" aria-label="Camera mode">
-          <button className={view === '1p' ? 'on' : ''} onClick={() => setView('1p')} aria-pressed={view === '1p'}>1P</button>
-          <button className={view === '3p' ? 'on' : ''} onClick={() => setView('3p')} aria-pressed={view === '3p'}>3P</button>
-          <button
-            className={view === 'free' ? 'on' : ''}
-            onClick={() => setView(view === 'free' ? '3p' : 'free')}
-            aria-pressed={view === 'free'}
-            title="Free fly — WASD move · Space/E up · Q down · Shift fast"
-            style={view === 'free' ? { background: 'rgba(250,204,21,0.25)', color: '#fde047', borderColor: 'rgba(250,204,21,0.6)' } : {}}
+
+      {/* ── Top Floating World Buttons Rows ──────────────────────────────── */}
+      <div
+        className="hud-controls-container"
+        style={{
+          position: 'absolute',
+          top: 'calc(var(--nav-h) + 12px)',
+          left: '154px',
+          right: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          zIndex: 50,
+          pointerEvents: 'none',
+        }}
+      >
+        {/* Row 1: Camera Segments, Quality Dropdown, Profile Button, Settings Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', pointerEvents: 'auto' }}>
+          {/* Camera Mode Segment */}
+          <div className="world-pill" role="group" aria-label="Camera mode" style={{ padding: 4, gap: 4 }}>
+            <button
+              className={view === '1p' ? 'world-active-lime' : ''}
+              onClick={() => setView('1p')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: view === '1p' ? '#0f172a' : '#cbd5e1',
+                padding: '7px 15px',
+                borderRadius: 9999,
+                fontSize: 13,
+                fontWeight: view === '1p' ? 700 : 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s',
+              }}
+            >
+              <span>🖥️</span>
+              <span>1P</span>
+            </button>
+            <button
+              className={view === '3p' ? 'world-active-lime' : ''}
+              onClick={() => setView('3p')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: view === '3p' ? '#0f172a' : '#cbd5e1',
+                padding: '7px 15px',
+                borderRadius: 9999,
+                fontSize: 13,
+                fontWeight: view === '3p' ? 700 : 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s',
+              }}
+            >
+              <span>👥</span>
+              <span>3P</span>
+            </button>
+            <button
+              className={view === 'free' ? 'world-active-lime' : ''}
+              onClick={() => setView(view === 'free' ? '3p' : 'free')}
+              title="Free fly — WASD move · Space/E up · Q down · Shift fast"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: view === 'free' ? '#0f172a' : '#cbd5e1',
+                padding: '7px 15px',
+                borderRadius: 9999,
+                fontSize: 13,
+                fontWeight: view === 'free' ? 700 : 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s',
+              }}
+            >
+              <span>🎁</span>
+              <span>Free</span>
+            </button>
+          </div>
+
+          {/* Quality Selector Dropdown */}
+          <QualitySelector />
+
+          {/* Profile Circle Button */}
+          <Link
+            href="/profile"
+            className="world-circle-btn"
+            title="My Profile & Properties"
+            style={{ textDecoration: 'none' }}
           >
-            🪂 Free
+            <span style={{ fontSize: 18 }}>👤</span>
+            <span
+              style={{
+                position: 'absolute',
+                bottom: 3,
+                right: 3,
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                background: '#4ade80',
+                border: '2px solid #0f172a',
+                boxShadow: '0 0 8px #4ade80',
+              }}
+            />
+          </Link>
+
+          {/* Settings Circle Button */}
+          <SettingsPanel />
+
+          {/* Search bar inside pill */}
+          <div className="search" style={{ minWidth: 200, maxWidth: 280 }}>
+            <input
+              placeholder="Search city…"
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              aria-label="Search"
+              style={{
+                background: 'rgba(18, 25, 42, 0.78)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255, 255, 255, 0.16)',
+                borderRadius: 9999,
+                color: '#fff',
+                fontSize: 13,
+                padding: '7px 14px 7px 30px',
+              }}
+            />
+            {results.length > 0 && (
+              <ul className="glass" style={{ background: 'rgba(18, 25, 42, 0.95)', borderRadius: 14 }}>
+                {results.map(r => (
+                  <li key={r.id} onClick={() => go(r.id)}>
+                    <b>{r.name}</b>
+                    <span>{r.sub}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* Row 2: Day/Night Switch, Time & Online Status Pill, Segmented Quality */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', pointerEvents: 'auto' }}>
+          <DayNightToggle />
+          <TimeStatusPill onToggleOnline={() => setOnlinePanelOpen(o => !o)} />
+          <SegmentedQuality />
+        </div>
+
+        {/* Row 3: District Capsule, Prev/Next Arrows, Open Map */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', pointerEvents: 'auto' }}>
+          {/* Location / District Capsule */}
+          <div
+            className="world-pill"
+            onClick={exploreDistrict}
+            style={{
+              padding: '4px 16px 4px 6px',
+              gap: 12,
+              cursor: 'pointer',
+            }}
+            title="Click to explore next district"
+          >
+            {/* Thumbnail */}
+            <div
+              style={{
+                width: 54,
+                height: 34,
+                borderRadius: 12,
+                overflow: 'hidden',
+                background: 'linear-gradient(135deg, #1e3a8a, #0ea5e9)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ fontSize: 16 }}>🏙️</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: '#38bdf8', fontSize: 15 }}>📍</span>
+              <span style={{ fontWeight: 700, fontSize: 13, color: '#ffffff' }}>
+                {area?.name || 'Civic Plaza'}
+              </span>
+            </div>
+            <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 6px #4ade80' }} />
+              <span style={{ color: '#94a3b8' }}>
+                Discovered <b style={{ color: '#e2e8f0' }}>{Math.min(found.length, totalAreas)}</b> / {totalAreas}
+              </span>
+            </div>
+            <span style={{ fontSize: 10, color: '#94a3b8' }}>▾</span>
+          </div>
+
+          {/* Prev Arrow */}
+          <button
+            className="world-circle-btn"
+            style={{ width: 40, height: 40, fontSize: 18 }}
+            onClick={prevDistrict}
+            title="Previous District"
+          >
+            ‹
+          </button>
+
+          {/* Next Arrow */}
+          <button
+            className="world-circle-btn"
+            style={{ width: 40, height: 40, fontSize: 18 }}
+            onClick={exploreDistrict}
+            title="Next District"
+          >
+            ›
+          </button>
+
+          {/* Open Map Button */}
+          <button
+            className="world-pill"
+            onClick={() => setMapOpen(true)}
+            style={{
+              padding: '9px 18px',
+              gap: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              color: '#ffffff',
+            }}
+            title="Open City Map (M)"
+          >
+            <span style={{ fontSize: 15 }}>🗺️</span>
+            <span>Open Map</span>
+            <span style={{ fontSize: 12, color: '#94a3b8' }}>›</span>
           </button>
         </div>
-        <select className="qsel" value={quality} onChange={e => setQuality(e.target.value as Quality)} aria-label="Graphics quality">{(Object.keys(QUALITY) as Quality[]).map(k => <option key={k} value={k}>{QUALITY[k].label.split(' ')[0]}</option>)}</select>
-
-        {/* Profile Link */}
-        <Link
-          href="/profile"
-          className="glass"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '4px 11px',
-            borderRadius: 20,
-            border: '1px solid rgba(255,255,255,0.18)',
-            background: 'rgba(10,16,30,0.6)',
-            color: '#e2e8f0',
-            fontSize: 13,
-            fontWeight: 600,
-            textDecoration: 'none',
-            backdropFilter: 'blur(8px)',
-            transition: 'background 0.15s',
-          }}
-          title="My Profile & Properties"
-        >
-          👤 Profile
-        </Link>
-
-        {/* Settings Panel */}
-        <SettingsPanel />
-
-        {/* Live Online Explorers Panel */}
-        <OnlinePlayersPanel myName={myName} myColor={myColor} remotePlayers={remotePlayers} />
       </div>
       {marketBanner && (
         <div
@@ -740,27 +1016,86 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
           <span style={{ color: '#94a3b8', fontSize: '0.76rem' }}>drag to look</span>
         </div>
       )}
-      <div className="hud-bl">
-        <div className="inv glass" aria-label="Inventory"><span><i className="w" />Wood <b>{inv.wood}</b></span><span><i className="s" />Stone <b>{inv.stone}</b></span><span><i className="c" />Crystal <b>{inv.crystal}</b></span></div>
-        {help && <div className="help glass"><div className="keys"><span /><kbd>W</kbd><span /><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div><span>{KEYS_HINT}</span></div>}
-        <button className="btn outline sm glass" onClick={() => setHelp(!help)} aria-expanded={help}>{help ? 'Hide controls' : 'Controls'}</button>
-      </div>
-      <div className="hud-br">
-        {district && <span className="dist-label glass">District: {district}</span>}
-        <button
-          className="btn glass"
-          style={{
-            background: 'rgba(10, 16, 30, 0.55)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(34, 211, 238, 0.45)',
-            color: '#ffffff',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
-          }}
-          onClick={exploreDistrict}
-        >
-          Explore District ↗
-        </button>
+      {/* ── Redesigned Bottom Bar (4-circle Dock & Live Broadcast Pill) ── */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '16px',
+          left: '16px',
+          right: '16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          pointerEvents: 'none',
+          zIndex: 60,
+        }}
+      >
+        {/* Bottom-Left 4-circle Dock Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', pointerEvents: 'auto' }}>
+          <button
+            className="world-circle-btn"
+            onClick={() => setView(view === '1p' ? '3p' : view === '3p' ? 'free' : '1p')}
+            title="Cycle Camera View (1P / 3P / Free)"
+          >
+            🖥️
+          </button>
+          <button
+            className="world-circle-btn"
+            onClick={exploreDistrict}
+            title="Teleport to Next District / Landmark"
+          >
+            📍
+          </button>
+          <button
+            className="world-circle-btn"
+            onClick={() => setMapOpen(true)}
+            title="City Map / Layers (M)"
+          >
+            🥞
+          </button>
+          <button
+            className="world-circle-btn"
+            onClick={() => {
+              if (nearPlot) {
+                const s = JSON.parse(localStorage.getItem('thecity.saved') || '[]');
+                const n = s.includes(nearPlot) ? s.filter((x: string) => x !== nearPlot) : [...s, nearPlot];
+                localStorage.setItem('thecity.saved', JSON.stringify(n));
+                setToast(s.includes(nearPlot) ? 'Removed bookmark' : 'Saved plot bookmark!');
+                setTimeout(() => setToast(''), 2500);
+              } else {
+                setToast('Walk near a building to bookmark it');
+                setTimeout(() => setToast(''), 2500);
+              }
+            }}
+            title="Bookmark Current Building"
+          >
+            🔖
+          </button>
+        </div>
+
+        {/* Bottom-Right Live Broadcast Pill */}
+        <div style={{ position: 'relative', pointerEvents: 'auto' }}>
+          <button
+            className="world-live-pill"
+            onClick={() => setOnlinePanelOpen(o => !o)}
+            title="Live Explorers Online"
+          >
+            <span style={{ fontSize: 16 }}>📡</span>
+            <span>Live</span>
+            <span style={{ background: 'rgba(74, 222, 128, 0.25)', padding: '2px 8px', borderRadius: 999, fontSize: 11, color: '#4ade80' }}>
+              {remotePlayers.length + 1}
+            </span>
+          </button>
+
+          {/* Online Players Dropdown anchored to bottom right */}
+          <OnlinePlayersPanel
+            myName={myName}
+            myColor={myColor}
+            remotePlayers={remotePlayers}
+            open={onlinePanelOpen}
+            setOpen={setOnlinePanelOpen}
+          />
+        </div>
       </div>
       {nearRes && !nearP && <div className="hint glass">Press <kbd>F</kbd> · Gather {nearRes.type}</div>}
       {showBuildingDetails && near && (
