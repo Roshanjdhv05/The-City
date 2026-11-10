@@ -1,132 +1,282 @@
 'use client';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useState } from 'react';
 import Nav from '@/components/Nav';
 
 const CityHeroScene = dynamic(() => import('@/components/CityHeroScene'), { ssr: false });
 const PropertyCustomizer = dynamic(() => import('@/components/PropertyCustomizer'), { ssr: false });
 
-// ── Category cards for the "Discover Businesses" carousel ───────────────────
+// ── Professional SVG icons for each category ─────────────────────────────────
 const CATEGORIES = [
-  { icon: '💻', label: 'Software & Tech', count: '120+ Stores', color: '#dbeafe' },
-  { icon: '🛍️', label: 'E-Commerce & Retail', count: '80+ Stores', color: '#fef3c7' },
-  { icon: '🎮', label: 'Gaming & Entertainment', count: '60+ Stores', color: '#ede9fe' },
-  { icon: '🤖', label: 'AI & Innovation', count: '70+ Stores', color: '#dcfce7' },
-  { icon: '🏢', label: 'Real Estate', count: '50+ Stores', color: '#fce7f3' },
-  { icon: '📸', label: 'Creative Studios', count: '40+ Stores', color: '#e0f2fe' },
+  {
+    label: 'Software & Tech',
+    count: '120+ Stores',
+    gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+    bg: '#eff6ff',
+    text: '#1d4ed8',
+    svg: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
+        <line x1="14" y1="4" x2="10" y2="20" />
+      </svg>
+    ),
+  },
+  {
+    label: 'E-Commerce & Retail',
+    count: '80+ Stores',
+    gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+    bg: '#fffbeb',
+    text: '#d97706',
+    svg: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+        <line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Gaming & Entertainment',
+    count: '60+ Stores',
+    gradient: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+    bg: '#f5f3ff',
+    text: '#6d28d9',
+    svg: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="6" width="20" height="12" rx="4" />
+        <line x1="6" y1="12" x2="10" y2="12" /><line x1="8" y1="10" x2="8" y2="14" />
+        <circle cx="15" cy="10" r="1" fill="currentColor" /><circle cx="17" cy="13" r="1" fill="currentColor" />
+      </svg>
+    ),
+  },
+  {
+    label: 'AI & Innovation',
+    count: '70+ Stores',
+    gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    bg: '#ecfdf5',
+    text: '#059669',
+    svg: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 110 2h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 110-2h1a7 7 0 017-7h1V5.73A2 2 0 0110 4a2 2 0 012-2z" />
+        <circle cx="8.5" cy="13.5" r="1.5" fill="currentColor" /><circle cx="15.5" cy="13.5" r="1.5" fill="currentColor" />
+        <path d="M9 17c.83 1 5.17 1 6 0" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Real Estate',
+    count: '50+ Stores',
+    gradient: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)',
+    bg: '#fdf2f8',
+    text: '#be185d',
+    svg: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Creative Studios',
+    count: '40+ Stores',
+    gradient: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+    bg: '#ecfeff',
+    text: '#0891b2',
+    svg: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Finance & Banking',
+    count: '35+ Stores',
+    gradient: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+    bg: '#f0f9ff',
+    text: '#0284c7',
+    svg: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Health & Wellness',
+    count: '45+ Stores',
+    gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+    bg: '#fff7ed',
+    text: '#ea580c',
+    svg: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Education & Learning',
+    count: '55+ Stores',
+    gradient: 'linear-gradient(135deg, #84cc16 0%, #65a30d 100%)',
+    bg: '#f7fee7',
+    text: '#65a30d',
+    svg: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+        <path d="M6 12v5c3 3 9 3 12 0v-5" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Food & Dining',
+    count: '90+ Stores',
+    gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+    bg: '#fef2f2',
+    text: '#dc2626',
+    svg: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8h1a4 4 0 010 8h-1" /><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z" />
+        <line x1="6" y1="1" x2="6" y2="4" /><line x1="10" y1="1" x2="10" y2="4" /><line x1="14" y1="1" x2="14" y2="4" />
+      </svg>
+    ),
+  },
 ];
 
-function CategorySlider() {
-  const [page, setPage] = useState(0);
-  const perPage = 5;
-  const pages = Math.ceil(CATEGORIES.length / perPage);
-  const start = page * perPage;
-  const visible = CATEGORIES.slice(start, start + perPage);
+// ── Infinite auto-scroll marquee track ───────────────────────────────────────
+function DiscoverMarquee() {
+  // Duplicate for seamless loop
+  const all = [...CATEGORIES, ...CATEGORIES];
 
   return (
-    <div style={{ position: 'relative', width: '100%' }}>
-      {/* Previous button */}
-      <button
-        onClick={() => setPage((p) => Math.max(0, p - 1))}
-        disabled={page === 0}
+    <div
+      style={{
+        overflow: 'hidden',
+        width: '100%',
+        position: 'relative',
+        // fade edges
+      }}
+    >
+      {/* Left & right fade masks */}
+      <div
         style={{
-          position: 'absolute', left: '-24px', top: '50%', transform: 'translateY(-50%)',
-          width: 44, height: 44, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(203,213,225,0.7)',
-          boxShadow: '0 4px 14px rgba(0,0,0,0.08)', cursor: page === 0 ? 'not-allowed' : 'pointer',
-          opacity: page === 0 ? 0.4 : 1, fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 2, transition: 'opacity 0.2s',
+          position: 'absolute', top: 0, left: 0, bottom: 0, width: '80px', zIndex: 2,
+          background: 'linear-gradient(to right, #ffffff 0%, transparent 100%)',
+          pointerEvents: 'none',
         }}
-        aria-label="Previous"
-      >
-        ‹
-      </button>
+      />
+      <div
+        style={{
+          position: 'absolute', top: 0, right: 0, bottom: 0, width: '80px', zIndex: 2,
+          background: 'linear-gradient(to left, #ffffff 0%, transparent 100%)',
+          pointerEvents: 'none',
+        }}
+      />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
-        {visible.map((cat) => (
+      {/* Scrolling track */}
+      <div
+        className="marquee-track"
+        style={{
+          display: 'flex',
+          gap: '1.25rem',
+          width: 'max-content',
+        }}
+      >
+        {all.map((cat, i) => (
           <Link
-            key={cat.label}
+            key={i}
             href="/city"
+            className="marquee-card"
             style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
-              gap: '0.75rem', padding: '1.5rem 0.75rem',
-              background: 'rgba(255,255,255,0.95)', borderRadius: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.9rem',
+              padding: '1.6rem 1.4rem',
+              background: '#ffffff',
+              borderRadius: '24px',
               border: '1px solid rgba(226,232,240,0.9)',
-              boxShadow: '0 2px 12px rgba(15,23,42,0.05)',
-              textDecoration: 'none', transition: 'transform 0.2s, box-shadow 0.2s',
+              boxShadow: '0 4px 20px rgba(15,23,42,0.06)',
+              textDecoration: 'none',
+              minWidth: '170px',
+              flexShrink: 0,
+              transition: 'transform 0.25s ease, box-shadow 0.25s ease',
               cursor: 'pointer',
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
+            {/* Icon circle */}
             <div
               style={{
-                width: 72, height: 72, borderRadius: '20px',
-                background: cat.color, display: 'flex',
-                alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem',
+                width: 68, height: 68, borderRadius: '20px',
+                background: cat.bg,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: cat.text,
+                position: 'relative',
+                flexShrink: 0,
               }}
             >
-              {cat.icon}
+              {/* Gradient glow behind icon */}
+              <div
+                style={{
+                  position: 'absolute', inset: 0, borderRadius: '20px',
+                  background: cat.gradient, opacity: 0.12,
+                }}
+              />
+              {cat.svg}
             </div>
+
+            {/* Label */}
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
+              <div
+                style={{
+                  fontSize: '0.86rem', fontWeight: 700, color: '#0f172a',
+                  lineHeight: 1.25, marginBottom: '5px',
+                }}
+              >
                 {cat.label}
               </div>
               <div
                 style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  gap: '4px', marginTop: '6px',
-                  fontSize: '0.78rem', fontWeight: 600, color: '#64748b',
+                  display: 'inline-flex', alignItems: 'center', gap: '4px',
+                  background: cat.bg, color: cat.text,
+                  padding: '3px 10px', borderRadius: '999px',
+                  fontSize: '0.72rem', fontWeight: 700,
                 }}
               >
                 {cat.count}
-                <span
-                  style={{
-                    width: 20, height: 20, borderRadius: '50%',
-                    background: '#eff6ff', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontSize: 11, color: '#2563eb',
-                  }}
-                >
-                  →
-                </span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
               </div>
             </div>
+
+            {/* Bottom gradient accent bar */}
+            <div
+              style={{
+                position: 'absolute', bottom: 0, left: 0, right: 0,
+                height: '3px', background: cat.gradient, opacity: 0.7,
+              }}
+            />
           </Link>
         ))}
       </div>
 
-      {/* Next button */}
-      <button
-        onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}
-        disabled={page === pages - 1}
-        style={{
-          position: 'absolute', right: '-24px', top: '50%', transform: 'translateY(-50%)',
-          width: 44, height: 44, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(203,213,225,0.7)',
-          boxShadow: '0 4px 14px rgba(0,0,0,0.08)', cursor: page === pages - 1 ? 'not-allowed' : 'pointer',
-          opacity: page === pages - 1 ? 0.4 : 1, fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 2, transition: 'opacity 0.2s',
-        }}
-        aria-label="Next"
-      >
-        ›
-      </button>
-
-      {/* Pagination dots */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '1.5rem' }}>
-        {Array.from({ length: pages }, (_, i) => (
-          <button
-            key={i}
-            onClick={() => setPage(i)}
-            style={{
-              width: i === page ? 24 : 8, height: 8, borderRadius: '999px',
-              background: i === page ? '#2563eb' : '#cbd5e1',
-              border: 'none', cursor: 'pointer',
-              transition: 'all 0.25s ease', padding: 0,
-            }}
-            aria-label={`Page ${i + 1}`}
-          />
-        ))}
-      </div>
+      <style>{`
+        .marquee-track {
+          animation: marqueeScroll 38s linear infinite;
+        }
+        .marquee-track:hover {
+          animation-play-state: paused;
+        }
+        @keyframes marqueeScroll {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .marquee-card:hover {
+          transform: translateY(-6px) scale(1.03);
+          box-shadow: 0 16px 40px rgba(15,23,42,0.13) !important;
+          border-color: rgba(37,99,235,0.3) !important;
+        }
+      `}</style>
     </div>
   );
 }
@@ -255,40 +405,6 @@ export default function Home() {
                   Watch Demo
                 </Link>
               </div>
-
-              {/* Social proof strip */}
-              <div
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '1rem',
-                  padding: '0.85rem 1.3rem',
-                  background: 'rgba(255, 255, 255, 0.72)',
-                  backdropFilter: 'blur(14px)',
-                  border: '1px solid rgba(226, 232, 240, 0.8)',
-                  borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
-                  width: 'fit-content',
-                }}
-              >
-                <div style={{ display: 'flex' }}>
-                  {['🧑‍💼', '👩‍💻', '👨‍🎨', '🧑‍🚀'].map((e, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        width: 32, height: 32, borderRadius: '50%',
-                        background: `hsl(${200 + i * 40},70%,65%)`,
-                        border: '2px solid #fff', display: 'flex', alignItems: 'center',
-                        justifyContent: 'center', fontSize: 14,
-                        marginLeft: i > 0 ? -8 : 0,
-                      }}
-                    >
-                      {e}
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a' }}>2,400+ Businesses</div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>already in the city</div>
-                </div>
-              </div>
             </div>
 
             {/* ── RIGHT: Procedural 3D City Scene ── */}
@@ -309,51 +425,110 @@ export default function Home() {
         </section>
 
         {/* ════════════════════════════════════════════
-            SECTION 2 — Discover Businesses
+            SECTION 2 — Discover Businesses (Auto-Scroll Marquee)
             ════════════════════════════════════════════ */}
         <section
           style={{
-            padding: 'clamp(4rem, 7vh, 6rem) clamp(1.5rem, 5vw, 3.5rem)',
+            padding: 'clamp(4rem, 7vh, 6rem) 0',
             background: '#ffffff',
+            overflow: 'hidden',
           }}
         >
-          <div style={{ maxWidth: '1340px', margin: '0 auto' }}>
-            {/* Section badge & heading */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.2rem', marginBottom: '2.8rem' }}>
-              <div
-                style={{
-                  width: 36, height: 36, borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                  color: '#fff', fontSize: '0.9rem', fontWeight: 800,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                2
-              </div>
+          {/* Section heading (padded) */}
+          <div style={{ maxWidth: '1340px', margin: '0 auto', padding: '0 clamp(1.5rem, 5vw, 3.5rem)', marginBottom: '3rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
               <div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
-                  Discover
+                {/* Step badge */}
+                <div
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    background: 'linear-gradient(135deg, rgba(37,99,235,0.08), rgba(99,102,241,0.08))',
+                    border: '1px solid rgba(37,99,235,0.18)',
+                    padding: '5px 14px', borderRadius: '999px',
+                    fontSize: '0.76rem', fontWeight: 800, color: '#2563eb',
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    marginBottom: '0.75rem',
+                  }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb', display: 'inline-block' }} />
+                  Step 2 · Discover
                 </div>
+
                 <h2
                   style={{
-                    margin: 0, fontSize: 'clamp(1.8rem, 3.5vw, 2.9rem)',
+                    margin: 0,
+                    fontSize: 'clamp(1.8rem, 3.5vw, 2.9rem)',
                     fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', lineHeight: 1.1,
                   }}
                 >
-                  Discover <span style={{ color: '#2563eb' }}>Businesses</span>
+                  Discover{' '}
+                  <span
+                    style={{
+                      background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                    }}
+                  >
+                    Businesses
+                  </span>
                 </h2>
-                <p style={{ margin: '0.5rem 0 0', color: '#64748b', fontSize: '1rem', lineHeight: 1.5 }}>
-                  From startups to global brands — explore a diverse range of businesses in Nextown's virtual marketplace.
+                <p style={{ margin: '0.6rem 0 0', color: '#64748b', fontSize: '1rem', lineHeight: 1.55, maxWidth: '52ch' }}>
+                  From startups to global brands — explore a diverse range of businesses across Nextown&apos;s virtual marketplace.
                 </p>
               </div>
+
+              {/* CTA link */}
+              <Link
+                href="/city"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  padding: '0.75rem 1.5rem',
+                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                  color: '#ffffff', borderRadius: '999px',
+                  fontSize: '0.88rem', fontWeight: 700,
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 16px rgba(37,99,235,0.3)',
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Browse All
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </Link>
             </div>
 
-            {/* Category Slider */}
-            <div style={{ position: 'relative', padding: '0 1.5rem' }}>
-              <CategorySlider />
+            {/* Stats row */}
+            <div style={{ display: 'flex', gap: '2rem', marginTop: '1.6rem', flexWrap: 'wrap' }}>
+              {[
+                { n: '10', label: 'Categories', icon: '⬡' },
+                { n: '460+', label: 'Plots Available', icon: '📍' },
+                { n: '9', label: 'Districts', icon: '🏙️' },
+              ].map((s) => (
+                <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    style={{
+                      width: 36, height: 36, borderRadius: '10px',
+                      background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '1rem',
+                    }}
+                  >
+                    {s.icon}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{s.n}</div>
+                    <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>{s.label}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
+
+          {/* Auto-scrolling marquee */}
+          <DiscoverMarquee />
         </section>
 
         {/* ════════════════════════════════════════════
@@ -402,7 +577,7 @@ export default function Home() {
                 position: 'relative', overflow: 'hidden',
               }}
             >
-              {/* Background planes silhouette decoration */}
+              {/* Background decoration */}
               <div
                 style={{
                   position: 'absolute', right: '15%', top: '50%', transform: 'translateY(-55%)',
