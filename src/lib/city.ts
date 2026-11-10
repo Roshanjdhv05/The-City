@@ -49,38 +49,46 @@ export function generateCity(): { plots: Plot[]; roads: Road[] } {
   const ok = (cand: Plot, m = 1.5) => !roads.some(r => plotHitsRoad(cand, r, m)) && !plots.some(o => polysOverlap(plotPoly(cand, 0.2), plotPoly(o))) && Math.hypot(cand.x, cand.z) > CITY.plazaR + 16;
   DISTRICTS.forEach((D, k) => {
     const c = 20 + 40 * k, U = bearingDir(c), V: Pt = [Math.cos(c * D2R), Math.sin(c * D2R)], d = CITY.rowD; let n = 1;
-    CITY.crossU.forEach((u, j) => ([{ side: -1, face: 1 }, { side: 1, face: -1 }]).forEach(({ side, face }, ri) => {
-      const uc = u + side * (CITY.crossW / 2 + CITY.sw + d / 2), rot = face > 0 ? Math.PI - c * D2R : -c * D2R;     // inner row faces outward (+U), outer row faces inward
-      for (const s of [-1, 1]) {
-        let off = CITY.radialW / 2 + CITY.sw + 1, i = 0;
-        for (let guard = 0; guard < 20; guard++) {
-          // Try preferred width first; fall back to smaller widths to fill corner gaps next to boundary roads
-          const prefW = WS[(i + j + ri) % WS.length];
-          const widths: number[] = [prefW, 14, 12, 10].filter((w, idx, arr) => arr.indexOf(w) === idx);
-          let placed: Plot | null = null;
-          for (const w of widths) {
-            const v = s * (off + w / 2), cand: Plot = { id: '', district: D.name, category: D.cat, tier: 'premium', price: 0, x: r2(uc * U[0] + v * V[0]), z: r2(uc * U[1] + v * V[1]), rot: Math.round(rot * 1e6) / 1e6, w, d, status: 'available' };
-            if (ok(cand)) { placed = cand; break; }
+    for (let j = 0; j < CITY.crossU.length; j++) {
+      if (n > 50) break;
+      const u = CITY.crossU[j];
+      const rows = [{ side: -1, face: 1 }, { side: 1, face: -1 }];
+      for (let ri = 0; ri < rows.length; ri++) {
+        if (n > 50) break;
+        const { side, face } = rows[ri];
+        const uc = u + side * (CITY.crossW / 2 + CITY.sw + d / 2), rot = face > 0 ? Math.PI - c * D2R : -c * D2R;     // inner row faces outward (+U), outer row faces inward
+        for (const s of [-1, 1]) {
+          if (n > 50) break;
+          let off = CITY.radialW / 2 + CITY.sw + 1, i = 0;
+          for (let guard = 0; guard < 20; guard++) {
+            if (n > 50) break;
+            // Try preferred width first; fall back to smaller widths to fill corner gaps next to boundary roads
+            const prefW = WS[(i + j + ri) % WS.length];
+            const widths: number[] = [prefW, 14, 12, 10].filter((w, idx, arr) => arr.indexOf(w) === idx);
+            let placed: Plot | null = null;
+            for (const w of widths) {
+              const v = s * (off + w / 2), cand: Plot = { id: '', district: D.name, category: D.cat, tier: 'premium', price: 0, x: r2(uc * U[0] + v * V[0]), z: r2(uc * U[1] + v * V[1]), rot: Math.round(rot * 1e6) / 1e6, w, d, status: 'available' };
+              if (ok(cand)) { placed = cand; break; }
+            }
+            if (!placed) break;
+            const plotNum = n++;
+            placed.id = `${D.code}-${String(plotNum).padStart(3, '0')}`;
+            
+            // Exactly 25 buildings in each market permanently locked; exactly 25 buildings available to claim
+            if (plotNum <= 25) {
+              placed.status = 'reserved';
+              placed.tier = 'featured';
+              placed.price = 0;
+            } else {
+              placed.status = 'available';
+              placed.tier = 'free';
+              placed.price = 0;
+            }
+            plots.push(placed); off += placed.w + 1.5; i++;
           }
-          if (!placed) break;
-          const isCorner = placed.w <= 10;
-          const plotNum = n++;
-          placed.id = `${D.code}-${String(plotNum).padStart(3, '0')}`;
-          
-          // Exactly 25 buildings in each market permanently locked; all others free to claim
-          if (plotNum <= 25) {
-            placed.status = 'reserved';
-            placed.tier = 'featured';
-            placed.price = 0;
-          } else {
-            placed.status = 'available';
-            placed.tier = 'free';
-            placed.price = 0;
-          }
-          plots.push(placed); off += placed.w + 1.5; i++;
         }
       }
-    }));
+    }
   });
   return { plots, roads };
 }

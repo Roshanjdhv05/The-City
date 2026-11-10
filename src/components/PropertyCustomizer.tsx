@@ -2,229 +2,265 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 interface BuildingStyle {
   id: string;
   name: string;
-  theme: string;
+  file: string;
   accent: string;
-  glass: string;
   icon: string;
+  tag: string;
 }
 
 const STYLES: BuildingStyle[] = [
-  { id: 'corporate', name: 'Corporate HQ', theme: '#1e293b', accent: '#2563eb', glass: '#38bdf8', icon: '🏢' },
-  { id: 'modern', name: 'Modern Glass', theme: '#0f172a', accent: '#06b6d4', glass: '#67e8f9', icon: '🏙️' },
-  { id: 'boutique', name: 'Boutique Store', theme: '#334155', accent: '#f59e0b', glass: '#fde047', icon: '🏪' },
-  { id: 'studio', name: 'Cyber Studio', theme: '#18181b', accent: '#8b5cf6', glass: '#c084fc', icon: '🔮' },
-  { id: 'minimal', name: 'Eco Pavilion', theme: '#14532d', accent: '#22c55e', glass: '#86efac', icon: '🌿' },
-  { id: 'tower', name: 'Sky Highrise', theme: '#1e1b4b', accent: '#ec4899', glass: '#f472b6', icon: '🏛️' },
+  {
+    id: 'j_tower',
+    name: 'J Enterprise Tower',
+    file: '/01_J_Enterprise_Tower.glb',
+    accent: '#2563eb',
+    icon: '🏢',
+    tag: 'Flagship Corporate Tower',
+  },
+  {
+    id: 'pyramid',
+    name: 'Pyramid HQ',
+    file: '/02_Pyramid_HQ.glb',
+    accent: '#8b5cf6',
+    icon: '🔮',
+    tag: 'Cyber Futuristic Pyramid',
+  },
+  {
+    id: 'crown',
+    name: 'Golden Crown Tower',
+    file: '/03_Golden_Crown_Tower.glb',
+    accent: '#f59e0b',
+    icon: '👑',
+    tag: 'Luxury Highrise Penthouse',
+  },
+  {
+    id: 'dome',
+    name: 'Dome Tower',
+    file: '/04_Dome_Tower.glb',
+    accent: '#06b6d4',
+    icon: '🏛️',
+    tag: 'Grand Architectural Rotunda',
+  },
+  {
+    id: 'blue_tower',
+    name: 'Blue Glass Tower',
+    file: '/05_Blue_Tower.glb',
+    accent: '#3b82f6',
+    icon: '🏙️',
+    tag: 'Modern Sky Spire',
+  },
 ];
 
 export default function PropertyCustomizer() {
   const [selectedStyle, setSelectedStyle] = useState<BuildingStyle>(STYLES[0]);
   const [businessName, setBusinessName] = useState('J ENTERPRISE');
+  const [loadingModel, setLoadingModel] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
-  const buildingMeshRef = useRef<THREE.Group | null>(null);
-  const signTextTextureRef = useRef<{ updateText: (txt: string, col: string) => void } | null>(null);
+  const buildingGroupRef = useRef<THREE.Group | null>(null);
+  const signTextureUpdaterRef = useRef<((txt: string, accentHex: string) => void) | null>(null);
 
+  // Initialize Three.js scene once
   useEffect(() => {
     const container = canvasRef.current;
     if (!container) return;
 
-    const width = container.clientWidth || 520;
-    const height = container.clientHeight || 420;
+    const width = container.clientWidth || 540;
+    const height = container.clientHeight || 440;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
-    camera.position.set(10, 7.5, 12);
-    camera.lookAt(0, 2.2, 0);
+    const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 100);
+    camera.position.set(11, 8.5, 13);
+    camera.lookAt(0, 2.5, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.25;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
-    // Lights
+    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
     scene.add(ambientLight);
 
-    const sun = new THREE.DirectionalLight(0xffffff, 2.0);
-    sun.position.set(12, 18, 10);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xcfd8dc, 0.85);
+    scene.add(hemiLight);
+
+    const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+    sun.position.set(14, 22, 12);
     sun.castShadow = true;
     sun.shadow.mapSize.width = 1024;
     sun.shadow.mapSize.height = 1024;
+    sun.shadow.bias = -0.0005;
     scene.add(sun);
 
-    const fill = new THREE.DirectionalLight(0x93c5fd, 0.8);
-    fill.position.set(-10, 8, -8);
+    const fill = new THREE.DirectionalLight(0x93c5fd, 0.9);
+    fill.position.set(-12, 10, -10);
     scene.add(fill);
 
     // Pedestal Plaza
-    const plazaGeo = new THREE.BoxGeometry(11, 0.5, 9);
-    const plazaMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.8 });
+    const plazaGeo = new THREE.CylinderGeometry(6.4, 6.7, 0.5, 48);
+    const plazaMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7 });
     const plaza = new THREE.Mesh(plazaGeo, plazaMat);
     plaza.position.y = -0.25;
     plaza.receiveShadow = true;
     scene.add(plaza);
 
-    // Ground Steps
-    const step1 = new THREE.Mesh(new THREE.BoxGeometry(7, 0.2, 2.5), plazaMat);
-    step1.position.set(0, 0.1, 3.8);
-    step1.receiveShadow = true;
-    scene.add(step1);
+    // Plaza Steps
+    const stepGeo = new THREE.BoxGeometry(4.8, 0.18, 1.6);
+    const step = new THREE.Mesh(stepGeo, plazaMat);
+    step.position.set(0, 0.08, 4.2);
+    step.receiveShadow = true;
+    scene.add(step);
 
-    // Building Group
-    const bGroup = new THREE.Group();
-    scene.add(bGroup);
-    buildingMeshRef.current = bGroup;
+    // Palm trees on plaza edge
+    [[-4.2, 2.4], [4.2, 2.4], [-3.8, -2.8], [3.8, -2.8]].forEach((pos) => {
+      const tg = new THREE.Group();
+      tg.position.set(pos[0], 0, pos[1]);
+      const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.12, 1.6, 8),
+        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 })
+      );
+      trunk.position.y = 0.8;
+      trunk.castShadow = true;
+      tg.add(trunk);
 
-    // Main Structure
-    const wallMat = new THREE.MeshStandardMaterial({ color: selectedStyle.theme, roughness: 0.4 });
-    const glassMat = new THREE.MeshStandardMaterial({
-      color: selectedStyle.glass,
-      roughness: 0.1,
-      metalness: 0.3,
-      transparent: true,
-      opacity: 0.82,
+      const leaves = new THREE.Mesh(
+        new THREE.SphereGeometry(0.85, 8, 8),
+        new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 })
+      );
+      leaves.scale.set(1, 0.7, 1);
+      leaves.position.y = 1.7;
+      leaves.castShadow = true;
+      tg.add(leaves);
+
+      scene.add(tg);
     });
-    const accentMat = new THREE.MeshStandardMaterial({ color: selectedStyle.accent, roughness: 0.3 });
 
-    // Lower floors
-    const b1 = new THREE.Mesh(new THREE.BoxGeometry(6.4, 4.2, 5.2), wallMat);
-    b1.position.y = 2.1;
-    b1.castShadow = true;
-    b1.receiveShadow = true;
-    bGroup.add(b1);
+    // Building Container Group (swapped when style changes)
+    const buildingGroup = new THREE.Group();
+    scene.add(buildingGroup);
+    buildingGroupRef.current = buildingGroup;
 
-    // Large glass curtain windows
-    const win1 = new THREE.Mesh(new THREE.BoxGeometry(5.8, 3.6, 0.2), glassMat);
-    win1.position.set(0, 2.1, 2.62);
-    bGroup.add(win1);
-
-    // Modern frame borders
-    const frameTop = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.3, 5.4), accentMat);
-    frameTop.position.y = 4.25;
-    frameTop.castShadow = true;
-    bGroup.add(frameTop);
-
-    // Entrance canopy
-    const canopy = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.18, 1.4), accentMat);
-    canopy.position.set(0, 1.6, 3.1);
-    canopy.castShadow = true;
-    bGroup.add(canopy);
-
-    // Columns
-    const colMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
-    const colL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.6), colMat);
-    colL.position.set(-1.6, 0.8, 3.6);
-    bGroup.add(colL);
-    const colR = colL.clone();
-    colR.position.x = 1.6;
-    bGroup.add(colR);
-
-    // Planters & trees
-    const planterGeo = new THREE.CylinderGeometry(0.45, 0.4, 0.5, 16);
-    const planterMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
-    const pL = new THREE.Mesh(planterGeo, planterMat);
-    pL.position.set(-3.2, 0.25, 3.4);
-    pL.castShadow = true;
-    scene.add(pL);
-    const pR = pL.clone();
-    pR.position.x = 3.2;
-    scene.add(pR);
-
-    // Palm Tree Foliage
-    const treeTrunkGeo = new THREE.CylinderGeometry(0.09, 0.12, 1.4);
-    const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f });
-    const treeLeavesGeo = new THREE.SphereGeometry(0.8, 8, 8);
-    const treeLeavesMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.9 });
-
-    const trunkL = new THREE.Mesh(treeTrunkGeo, treeTrunkMat);
-    trunkL.position.set(-3.2, 1.1, 3.4);
-    trunkL.castShadow = true;
-    scene.add(trunkL);
-    const leavesL = new THREE.Mesh(treeLeavesGeo, treeLeavesMat);
-    leavesL.position.set(-3.2, 1.9, 3.4);
-    leavesL.castShadow = true;
-    scene.add(leavesL);
-
-    const trunkR = trunkL.clone();
-    trunkR.position.x = 3.2;
-    scene.add(trunkR);
-    const leavesR = leavesL.clone();
-    leavesR.position.x = 3.2;
-    scene.add(leavesR);
-
-    // Signboard canvas texture
+    // Front Illuminated Signboard with Business Name
     const signCanvas = document.createElement('canvas');
     signCanvas.width = 512;
     signCanvas.height = 128;
     const signCtx = signCanvas.getContext('2d')!;
 
     const drawSign = (text: string, accentHex: string) => {
-      signCtx.fillStyle = '#090d16';
+      signCtx.fillStyle = '#0a0f1d';
       signCtx.fillRect(0, 0, 512, 128);
       signCtx.strokeStyle = accentHex;
-      signCtx.lineWidth = 6;
+      signCtx.lineWidth = 8;
       signCtx.strokeRect(4, 4, 504, 120);
 
+      // Accent pill dot
+      signCtx.fillStyle = accentHex;
+      signCtx.beginPath();
+      signCtx.arc(36, 64, 10, 0, Math.PI * 2);
+      signCtx.fill();
+
       signCtx.fillStyle = '#ffffff';
-      signCtx.font = 'bold 44px sans-serif';
+      signCtx.font = 'bold 38px sans-serif';
       signCtx.textAlign = 'center';
       signCtx.textBaseline = 'middle';
-      signCtx.fillText(text.toUpperCase() || 'YOUR BUSINESS', 256, 64);
+      signCtx.fillText((text || 'YOUR BUSINESS').toUpperCase(), 270, 64);
     };
 
     drawSign(businessName, selectedStyle.accent);
     const signTex = new THREE.CanvasTexture(signCanvas);
     const signMat = new THREE.MeshBasicMaterial({ map: signTex });
-    const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 0.8), signMat);
-    signMesh.position.set(0, 3.4, 2.66);
-    bGroup.add(signMesh);
+    const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.9), signMat);
+    signMesh.position.set(0, 0.9, 4.5);
+    scene.add(signMesh);
 
-    signTextTextureRef.current = {
-      updateText: (txt: string, accentHex: string) => {
-        drawSign(txt, accentHex);
-        signTex.needsUpdate = true;
-        wallMat.color.set(selectedStyle.theme);
-        accentMat.color.set(accentHex);
-        glassMat.color.set(selectedStyle.glass);
-      },
+    // Signboard back frame & posts
+    const signBack = new THREE.Mesh(
+      new THREE.BoxGeometry(3.68, 0.98, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 })
+    );
+    signBack.position.set(0, 0.9, 4.45);
+    signBack.castShadow = true;
+    scene.add(signBack);
+
+    const postGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.9, 8);
+    const postMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+    const postL = new THREE.Mesh(postGeo, postMat);
+    postL.position.set(-1.6, 0.45, 4.45);
+    scene.add(postL);
+    const postR = postL.clone();
+    postR.position.x = 1.6;
+    scene.add(postR);
+
+    signTextureUpdaterRef.current = (txt: string, accentHex: string) => {
+      drawSign(txt, accentHex);
+      signTex.needsUpdate = true;
     };
 
-    // Mouse tilt interaction
+    // Mouse tilt & drag interaction
     let mouseX = 0;
     let mouseY = 0;
-    const onMouseMove = (e: MouseEvent) => {
+    let isDragging = false;
+    let previousMouseX = 0;
+    let userRotationY = 0;
+
+    const onPointerDown = (e: MouseEvent) => {
+      isDragging = true;
+      previousMouseX = e.clientX;
+    };
+
+    const onPointerMove = (e: MouseEvent) => {
       const rect = container.getBoundingClientRect();
       mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouseY = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+
+      if (isDragging) {
+        const deltaX = e.clientX - previousMouseX;
+        userRotationY += deltaX * 0.01;
+        previousMouseX = e.clientX;
+      }
     };
-    container.addEventListener('mousemove', onMouseMove);
+
+    const onPointerUp = () => {
+      isDragging = false;
+    };
+
+    container.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
 
     // Render loop
     let raf = 0;
     const render = () => {
       raf = requestAnimationFrame(render);
-      // Gentle floating animation
-      camera.position.x += (10 + mouseX * 2.5 - camera.position.x) * 0.05;
-      camera.position.y += (7.5 + mouseY * 1.5 - camera.position.y) * 0.05;
-      camera.lookAt(0, 2.2, 0);
 
-      // Slow idle rotation
-      bGroup.rotation.y = Math.sin(Date.now() * 0.0006) * 0.08;
+      // Camera gently tracks cursor tilt
+      camera.position.x += (11 + mouseX * 2.2 - camera.position.x) * 0.05;
+      camera.position.y += (8.5 + mouseY * 1.4 - camera.position.y) * 0.05;
+      camera.lookAt(0, 2.5, 0);
+
+      // Building rotates with user drag + subtle idle breathing
+      if (buildingGroup) {
+        if (!isDragging) {
+          userRotationY += 0.003; // Gentle idle rotation
+        }
+        buildingGroup.rotation.y = userRotationY;
+      }
 
       renderer.render(scene, camera);
     };
     render();
 
-    // Resize
+    // Resize observer
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const w = entry.contentRect.width;
@@ -240,19 +276,69 @@ export default function PropertyCustomizer() {
 
     return () => {
       cancelAnimationFrame(raf);
-      container.removeEventListener('mousemove', onMouseMove);
+      container.removeEventListener('mousedown', onPointerDown);
+      window.removeEventListener('mousemove', onPointerMove);
+      window.removeEventListener('mouseup', onPointerUp);
       ro.disconnect();
       renderer.dispose();
-      if (renderer.domElement && renderer.domElement.parentNode) {
+      if (renderer.domElement.parentNode) {
         renderer.domElement.parentNode.removeChild(renderer.domElement);
       }
     };
   }, []);
 
-  // Update 3D sign & materials when style or name changes
+  // Load the 3D GLB model whenever selectedStyle changes
   useEffect(() => {
-    if (signTextTextureRef.current) {
-      signTextTextureRef.current.updateText(businessName, selectedStyle.accent);
+    const group = buildingGroupRef.current;
+    if (!group) return;
+
+    setLoadingModel(true);
+
+    const loader = new GLTFLoader();
+    loader.load(
+      selectedStyle.file,
+      (gltf) => {
+        // Clear previous building meshes
+        while (group.children.length > 0) {
+          group.remove(group.children[0]);
+        }
+
+        const model = gltf.scene;
+
+        // Auto-scale and center nicely on the plaza
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const targetHeight = 5.4;
+        const scale = targetHeight / (size.y || maxDim || 1);
+
+        model.scale.setScalar(scale);
+        // Center horizontally, place bottom on y=0 (surface of the plaza)
+        model.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
+
+        model.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        group.add(model);
+        setLoadingModel(false);
+      },
+      undefined,
+      (err) => {
+        console.error('Error loading building GLB:', err);
+        setLoadingModel(false);
+      }
+    );
+  }, [selectedStyle]);
+
+  // Update signboard text & accent when name or style changes
+  useEffect(() => {
+    if (signTextureUpdaterRef.current) {
+      signTextureUpdaterRef.current(businessName, selectedStyle.accent);
     }
   }, [businessName, selectedStyle]);
 
@@ -295,7 +381,7 @@ export default function PropertyCustomizer() {
               margin: 0,
             }}
           >
-            Choose a style, customize your building and claim your space in Nextown.
+            Choose from authentic Nextown landmark towers, customize your building and claim your space in the city.
           </p>
         </div>
 
@@ -315,8 +401,8 @@ export default function PropertyCustomizer() {
               color: '#1d4ed8',
             }}
           >
-            <span>🎁</span>
-            <span>Multiple Styles</span>
+            <span>🏢</span>
+            <span>5 Official Towers</span>
           </div>
 
           <div
@@ -334,7 +420,7 @@ export default function PropertyCustomizer() {
             }}
           >
             <span>⛶</span>
-            <span>Custom Branding</span>
+            <span>Custom Name Sign</span>
           </div>
 
           <div
@@ -352,7 +438,7 @@ export default function PropertyCustomizer() {
             }}
           >
             <span>🔗</span>
-            <span>Attach Your Website</span>
+            <span>Attach Website</span>
           </div>
         </div>
 
@@ -386,27 +472,63 @@ export default function PropertyCustomizer() {
         style={{
           position: 'relative',
           width: '100%',
-          height: '400px',
+          height: '420px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
         <div ref={canvasRef} style={{ width: '100%', height: '100%', cursor: 'grab' }} />
+
+        {/* Loading Spinner */}
+        {loadingModel && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(255, 255, 255, 0.7)',
+              backdropFilter: 'blur(6px)',
+              borderRadius: '24px',
+              zIndex: 10,
+              gap: '8px',
+            }}
+          >
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: '50%',
+                border: '3px solid rgba(37, 99, 235, 0.2)',
+                borderTopColor: '#2563eb',
+                animation: 'spin 0.8s linear infinite',
+              }}
+            />
+            <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#1e3a8a' }}>
+              Loading 3D Model…
+            </span>
+          </div>
+        )}
+
         <div
           style={{
             position: 'absolute',
             bottom: '12px',
             fontSize: '0.72rem',
             fontWeight: 600,
-            color: '#94a3b8',
-            background: 'rgba(255, 255, 255, 0.85)',
-            padding: '3px 10px',
+            color: '#64748b',
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(8px)',
+            padding: '4px 12px',
             borderRadius: '999px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
             pointerEvents: 'none',
           }}
         >
-          Hover & move cursor to tilt view
+          ↔ Drag to rotate building · Tilt view
         </div>
       </div>
 
@@ -416,7 +538,7 @@ export default function PropertyCustomizer() {
           display: 'flex',
           flexDirection: 'column',
           gap: '1.25rem',
-          background: 'rgba(255, 255, 255, 0.8)',
+          background: 'rgba(255, 255, 255, 0.85)',
           backdropFilter: 'blur(14px)',
           border: '1px solid rgba(226, 232, 240, 0.9)',
           borderRadius: '24px',
@@ -426,9 +548,9 @@ export default function PropertyCustomizer() {
       >
         <div>
           <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', display: 'block', marginBottom: '0.75rem' }}>
-            Select Style
+            Select Building Model
           </span>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {STYLES.map((st) => {
               const active = selectedStyle.id === st.id;
               return (
@@ -437,24 +559,45 @@ export default function PropertyCustomizer() {
                   onClick={() => setSelectedStyle(st)}
                   style={{
                     display: 'flex',
-                    flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px',
-                    padding: '12px 6px',
-                    borderRadius: '16px',
-                    border: active ? '2px solid #2563eb' : '1.5px solid rgba(226, 232, 240, 0.9)',
-                    background: active ? 'rgba(239, 246, 255, 0.95)' : '#ffffff',
-                    boxShadow: active ? '0 0 12px rgba(37, 99, 235, 0.25)' : 'none',
+                    gap: '10px',
+                    padding: '8px 12px',
+                    borderRadius: '14px',
+                    border: active ? `2px solid ${st.accent}` : '1.5px solid rgba(226, 232, 240, 0.9)',
+                    background: active ? `${st.accent}12` : '#ffffff',
+                    boxShadow: active ? `0 0 12px ${st.accent}33` : 'none',
                     cursor: 'pointer',
                     transition: 'all 0.18s ease',
+                    textAlign: 'left',
                   }}
                   title={st.name}
                 >
-                  <span style={{ fontSize: '1.5rem' }}>{st.icon}</span>
-                  <span style={{ fontSize: '0.68rem', fontWeight: active ? 700 : 600, color: active ? '#1d4ed8' : '#64748b', textAlign: 'center', lineHeight: 1.1 }}>
-                    {st.name}
+                  <span
+                    style={{
+                      fontSize: '1.3rem',
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      background: `${st.accent}20`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {st.icon}
                   </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: active ? 700 : 600, color: active ? st.accent : '#0f172a', lineHeight: 1.2 }}>
+                      {st.name}
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {st.tag}
+                    </div>
+                  </div>
+                  {active && (
+                    <span style={{ color: st.accent, fontWeight: 800, fontSize: '0.85rem' }}>✓</span>
+                  )}
                 </button>
               );
             })}
@@ -463,7 +606,7 @@ export default function PropertyCustomizer() {
 
         <div>
           <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', display: 'block', marginBottom: '0.5rem' }}>
-            Enter Name
+            Enter Business Name
           </label>
           <input
             type="text"
@@ -494,7 +637,7 @@ export default function PropertyCustomizer() {
             alignItems: 'center',
             justifyContent: 'center',
             gap: '0.5rem',
-            background: '#2563eb',
+            background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
             color: '#ffffff',
             padding: '0.85rem 1.4rem',
             borderRadius: '14px',
@@ -505,11 +648,16 @@ export default function PropertyCustomizer() {
             transition: 'background 0.2s ease',
           }}
         >
-          <span>Preview Building</span>
+          <span>Claim This Building</span>
           <span>→</span>
         </Link>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
-

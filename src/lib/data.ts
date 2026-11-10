@@ -15,11 +15,11 @@ export const DEMO_ADMIN = process.env.NEXT_PUBLIC_DEMO_ADMIN_EMAIL || 'admin@the
 function local(): Store[] { try { return JSON.parse(localStorage.getItem(LS) || '[]'); } catch { return []; } }
 function writeLocal(s: Store[]) { localStorage.setItem(LS, JSON.stringify(s)); }
 function ensureSeeded() {
-  if (localStorage.getItem('thecity.layoutv') !== '6') {
+  if (localStorage.getItem('thecity.layoutv') !== '7') {
     localStorage.removeItem(LSL);
     localStorage.removeItem(LSV);
-    localStorage.setItem('thecity.layoutv', '6');
-  } // circular master plan with 25 locked + free buildings per market
+    localStorage.setItem('thecity.layoutv', '7');
+  } // circular master plan with exactly 25 locked + 25 available buildings per market, central & hub locked
   if (localStorage.getItem(LSV)) return;
   // platform-owned seeds are refreshed to the current design; visit counters and user-owned stores are kept
   const ids = new Set(BASE_PLOTS.map(p => p.id)), keep = local().filter(s => ids.has(s.plotId) || s.ownerId);
@@ -73,6 +73,10 @@ export async function listStores(): Promise<Store[]> { return (await loadWorld()
 export async function purchasePlot(plotId: string, user: User, template = 'tech', over: Partial<StoreConfig> = {}): Promise<Store> {
   if (!user || !user.id) {
     throw new Error('You must be signed in with an email account to claim a building.');
+  }
+  const targetPlot = BASE_PLOTS.find(p => p.id === plotId);
+  if (targetPlot && targetPlot.status === 'reserved') {
+    throw new Error('This building is permanently locked and cannot be claimed.');
   }
   const store: Store = { plotId, ownerId: user.id, visits: 0, clicks: 0, createdAt: new Date().toISOString(), config: defaultConfig(template, { name: 'Your Store', ...over }) };
   if (supabase) {

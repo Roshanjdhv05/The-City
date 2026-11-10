@@ -1,9 +1,10 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 export default function CityHeroScene() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const zoomControlsRef = useRef<{ zoomIn: () => void; zoomOut: () => void; reset: () => void } | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -14,7 +15,7 @@ export default function CityHeroScene() {
     cv.style.height = '100%';
     cv.style.display = 'block';
     cv.style.cursor = 'grab';
-    cv.style.touchAction = 'pan-y';
+    cv.style.touchAction = 'none';
     container.appendChild(cv);
 
     // Renderer with transparent background (no bg color, blends into hero)
@@ -27,10 +28,24 @@ export default function CityHeroScene() {
     const S = new THREE.Scene();
     // No background color so it is completely transparent
 
-    // Orthographic isometric camera
-    const cam = new THREE.OrthographicCamera(-30, 30, 20, -20, 1, 300);
-    cam.position.set(60, 58, 60);
-    cam.lookAt(0, -1, 0);
+    // Orthographic camera
+    const cam = new THREE.OrthographicCamera(-30, 30, 20, -20, 1, 350);
+
+    // Dynamic Camera Spherical Coordinates for full 3D rotation, pitch (up/down) and zoom
+    const R_DIST = 96;
+    let yaw = Math.PI / 4; // Horizontal angle (45 deg)
+    let pitch = 0.76;      // Vertical angle (elevation ~43 deg)
+    let zoom = 1.0;        // Zoom multiplier
+
+    function updateCamera() {
+      cam.position.x = R_DIST * Math.cos(pitch) * Math.sin(yaw);
+      cam.position.y = R_DIST * Math.sin(pitch);
+      cam.position.z = R_DIST * Math.cos(pitch) * Math.cos(yaw);
+      cam.lookAt(0, -1, 0);
+      cam.zoom = zoom;
+      cam.updateProjectionMatrix();
+    }
+    updateCamera();
 
     // Lights
     const hemi = new THREE.HemisphereLight(0xffffff, 0x9db7a0, 0.95);
@@ -581,14 +596,16 @@ export default function CityHeroScene() {
       }
     });
 
-    // ── Mouse / Touch Pointer Interaction ───────────────────────
-    let drag = 0;
+    // ── Mouse & Touch Controls: Spin Left/Right, Tilt Up/Down, Zoom In/Out ──
     let down = false;
     let lx = 0;
+    let ly = 0;
+    let pinchDist = 0;
 
     const onPointerDown = (e: PointerEvent) => {
       down = true;
       lx = e.clientX;
+      ly = e.clientY;
       try {
         cv.setPointerCapture(e.pointerId);
       } catch {}
@@ -596,8 +613,18 @@ export default function CityHeroScene() {
 
     const onPointerMove = (e: PointerEvent) => {
       if (down) {
-        drag += (e.clientX - lx) * 0.006;
+        const dx = e.clientX - lx;
+        const dy = e.clientY - ly;
         lx = e.clientX;
+        ly = e.clientY;
+
+        // Horizontal drag: Rotates camera around island (yaw)
+        yaw += dx * 0.007;
+
+        // Vertical drag: Tilts camera up and down (pitch elevation)
+        pitch = Math.max(0.18, Math.min(1.42, pitch - dy * 0.006));
+
+        updateCamera();
       }
     };
 
@@ -609,6 +636,53 @@ export default function CityHeroScene() {
     cv.addEventListener('pointermove', onPointerMove);
     cv.addEventListener('pointerup', onPointerUp);
     cv.addEventListener('pointercancel', onPointerUp);
+
+    // Mouse wheel zoom
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY * -0.0015;
+      zoom = Math.max(0.45, Math.min(2.8, zoom + delta));
+      updateCamera();
+    };
+    cv.addEventListener('wheel', onWheel, { passive: false });
+
+    // Touch pinch to zoom
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const curDist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+        if (pinchDist > 0) {
+          const delta = (curDist - pinchDist) * 0.005;
+          zoom = Math.max(0.45, Math.min(2.8, zoom + delta));
+          updateCamera();
+        }
+        pinchDist = curDist;
+      }
+    };
+    const onTouchEnd = () => {
+      pinchDist = 0;
+    };
+    cv.addEventListener('touchmove', onTouchMove, { passive: true });
+    cv.addEventListener('touchend', onTouchEnd);
+
+    // Expose Zoom Control Buttons
+    zoomControlsRef.current = {
+      zoomIn: () => {
+        zoom = Math.min(2.8, zoom + 0.2);
+        updateCamera();
+      },
+      zoomOut: () => {
+        zoom = Math.max(0.45, zoom - 0.2);
+        updateCamera();
+      },
+      reset: () => {
+        zoom = 1.0;
+        pitch = 0.76;
+        yaw = Math.PI / 4;
+        updateCamera();
+      },
+    };
 
     // ── Responsive Resize ───────────────────────────────────────
     function resize() {
@@ -627,7 +701,7 @@ export default function CityHeroScene() {
       cam.right = vw / 2;
       cam.top = vh / 2;
       cam.bottom = -vh / 2;
-      cam.updateProjectionMatrix();
+      updateCamera();
     }
 
     const ro = new ResizeObserver(resize);
@@ -643,11 +717,13 @@ export default function CityHeroScene() {
       const dt = Math.min(0.05, t - last);
       last = t;
 
+      // Smooth idle rotation when not dragging
       if (!down) {
-        drag += dt * 0.08; // Smooth idle rotation
+        yaw += dt * 0.07;
+        updateCamera();
       }
-      W.rotation.y = drag;
 
+      // Drive cars
       cars.forEach((c) => {
         c.a += c.v * dt * 8;
         const a = c.a;
@@ -655,11 +731,13 @@ export default function CityHeroScene() {
         c.g.rotation.y = -(a + (c.v > 0 ? Math.PI / 2 : -Math.PI / 2));
       });
 
+      // Beacon lamp flashing
       const lampMat = lamp.material as THREE.MeshLambertMaterial;
       if (lampMat) {
         lampMat.color.setHex(Math.sin(t * 3) > 0 ? 0xff5a5a : 0x661f1f);
       }
 
+      // Pyramid pulsing
       if (pyrMesh) {
         const pyrMat = pyrMesh.material as THREE.MeshLambertMaterial;
         if (pyrMat && (pyrMat as any).emissiveIntensity !== undefined) {
@@ -680,6 +758,9 @@ export default function CityHeroScene() {
       cv.removeEventListener('pointermove', onPointerMove);
       cv.removeEventListener('pointerup', onPointerUp);
       cv.removeEventListener('pointercancel', onPointerUp);
+      cv.removeEventListener('wheel', onWheel);
+      cv.removeEventListener('touchmove', onTouchMove);
+      cv.removeEventListener('touchend', onTouchEnd);
       R.dispose();
       if (cv.parentNode) {
         cv.parentNode.removeChild(cv);
@@ -702,6 +783,115 @@ export default function CityHeroScene() {
         background: 'transparent',
         overflow: 'hidden',
       }}
-    />
+    >
+      {/* Floating Controls: Zoom In / Zoom Out / Reset & Hint */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '16px',
+          right: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+          zIndex: 10,
+        }}
+      >
+        <button
+          onClick={() => zoomControlsRef.current?.zoomIn()}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            background: 'rgba(255, 255, 255, 0.92)',
+            border: '1px solid rgba(203, 213, 225, 0.8)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            cursor: 'pointer',
+            fontSize: '18px',
+            fontWeight: 700,
+            color: '#1e293b',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'transform 0.15s, background 0.15s',
+          }}
+          title="Zoom In"
+        >
+          +
+        </button>
+        <button
+          onClick={() => zoomControlsRef.current?.zoomOut()}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            background: 'rgba(255, 255, 255, 0.92)',
+            border: '1px solid rgba(203, 213, 225, 0.8)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            cursor: 'pointer',
+            fontSize: '18px',
+            fontWeight: 700,
+            color: '#1e293b',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'transform 0.15s, background 0.15s',
+          }}
+          title="Zoom Out"
+        >
+          −
+        </button>
+        <button
+          onClick={() => zoomControlsRef.current?.reset()}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            background: 'rgba(255, 255, 255, 0.92)',
+            border: '1px solid rgba(203, 213, 225, 0.8)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 700,
+            color: '#1e293b',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'transform 0.15s, background 0.15s',
+          }}
+          title="Reset View"
+        >
+          ↺
+        </button>
+      </div>
+
+      {/* Floating Interaction Hint */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '16px',
+          left: '16px',
+          padding: '6px 14px',
+          borderRadius: '999px',
+          background: 'rgba(255, 255, 255, 0.82)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(203, 213, 225, 0.7)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+          fontSize: '0.74rem',
+          fontWeight: 600,
+          color: '#475569',
+          pointerEvents: 'none',
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+        }}
+      >
+        <span>↔ Drag to spin</span>
+        <span>·</span>
+        <span>↕ Tilt up/down</span>
+        <span>·</span>
+        <span>🔍 Scroll to zoom</span>
+      </div>
+    </div>
   );
 }

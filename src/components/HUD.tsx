@@ -1035,7 +1035,15 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <h3 style={{ margin: 0 }}>{near.config.name}</h3>
-                {!near.ownerId && <span className="badge" style={{ fontSize: '0.68rem', padding: '0.12rem 0.5rem', background: 'rgba(34,211,238,0.18)', color: '#22d3ee', border: '1px solid rgba(34,211,238,0.4)', borderRadius: 99 }}>Unclaimed</span>}
+                {near.plotId === 'J01' ? (
+                  <span className="badge" style={{ fontSize: '0.68rem', padding: '0.12rem 0.5rem', background: 'rgba(59,130,246,0.2)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 99 }}>🏢 Landmark · J Enterprise</span>
+                ) : nearP.status === 'reserved' ? (
+                  <span className="badge" style={{ fontSize: '0.68rem', padding: '0.12rem 0.5rem', background: 'rgba(239,68,68,0.18)', color: '#f87171', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 99 }}>🔒 Permanently Locked</span>
+                ) : !near.ownerId ? (
+                  <span className="badge" style={{ fontSize: '0.68rem', padding: '0.12rem 0.5rem', background: 'rgba(34,197,94,0.18)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 99 }}>Available · Free to Claim</span>
+                ) : (
+                  <span className="badge" style={{ fontSize: '0.68rem', padding: '0.12rem 0.5rem', background: 'rgba(234,88,12,0.18)', color: '#fb923c', border: '1px solid rgba(234,88,12,0.4)', borderRadius: 99 }}>Claimed</span>
+                )}
               </div>
               <p>{near.config.tagline || nearP.category}</p>
             </div>
@@ -1045,6 +1053,7 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
           <div className="actions">
             <button className="btn" disabled={!near.config.website} onClick={() => enter(near)}>{near.config.website ? 'Visit Website' : 'No website yet'}</button>
             {!near.ownerId && nearP.status === 'available' && <Link className="btn" href={`/buy?plot=${nearP.id}`}>Claim building</Link>}
+            {nearP.status === 'reserved' && <button className="btn" disabled style={{ opacity: 0.65, cursor: 'not-allowed' }}>🔒 Permanently Locked</button>}
             <button className="btn outline" onClick={() => { setDismissedPlot(nearPlot); setPanel(false); }}>Close</button>
           </div>
         </aside>
