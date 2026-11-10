@@ -1069,8 +1069,8 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
         <div className="modal-back" onClick={() => setMapOpen(false)}>
           <div className="map-modal" onClick={e => e.stopPropagation()} role="dialog" aria-label="City map">
             <div className="admin-map-wrap" style={{ position: 'relative' }}>
-              <div style={{ position: 'absolute', top: 12, left: 16, zIndex: 10, background: 'rgba(10, 18, 34, 0.85)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(34, 211, 238, 0.5)', color: '#22d3ee', padding: '0.45rem 1.15rem', borderRadius: 999, fontSize: '0.84rem', fontWeight: 600, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span>⚡ Click anywhere on the map or any building to teleport!</span>
+              <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', zIndex: 10, background: 'rgba(10, 18, 34, 0.88)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(34, 211, 238, 0.5)', color: '#22d3ee', padding: '0.4rem 1.1rem', borderRadius: 999, fontSize: '0.8rem', fontWeight: 600, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', gap: '0.4rem', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+                <span>⚡ Click anywhere on map to teleport</span>
               </div>
               <AdminMap
                 layout={layout}
@@ -1093,10 +1093,43 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
             </div>
             <aside className="map-side">
               <div className="row" style={{ justifyContent: 'space-between' }}><h3 style={{ margin: 0 }}>City map</h3><button className="ghost" onClick={() => setMapOpen(false)} aria-label="Close map">✕</button></div>
-              {pickP ? <>
-                <h3>{pickS ? pickS.config.name : `Plot ${pickP.id}`}</h3><p className="note">{pickP.district} · {pickP.id} · {pickP.w}×{pickP.d} m{pickS ? '' : pickP.price ? ` · $${pickP.price}/mo` : ' · Free'}</p>
-                <div className="actions-row"><button className="btn" onClick={() => guideTo(pickP.id)}>Guide me here</button><button className="btn outline" onClick={() => go(pickP.id)}>Teleport</button></div>
-              </> : <p className="note">Click any building, road or area on the map to instantly teleport there! Press M or Esc to close.</p>}
+              {pickP ? (
+                <>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '4px' }}>
+                      <h3 style={{ margin: 0 }}>{pickS ? pickS.config.name : `Plot ${pickP.id}`}</h3>
+                      {pickP.id === 'J01' ? (
+                        <span className="badge" style={{ fontSize: '0.68rem', padding: '0.12rem 0.5rem', background: 'rgba(59,130,246,0.2)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 99 }}>🏢 Landmark</span>
+                      ) : pickP.status === 'reserved' ? (
+                        <span className="badge" style={{ fontSize: '0.68rem', padding: '0.12rem 0.5rem', background: 'rgba(239,68,68,0.2)', color: '#f87171', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 99 }}>🔒 Permanently Locked</span>
+                      ) : !pickS?.ownerId ? (
+                        <span className="badge" style={{ fontSize: '0.68rem', padding: '0.12rem 0.5rem', background: 'rgba(34,197,94,0.2)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 99 }}>🟢 Available · Free</span>
+                      ) : (
+                        <span className="badge" style={{ fontSize: '0.68rem', padding: '0.12rem 0.5rem', background: 'rgba(234,88,12,0.2)', color: '#fb923c', border: '1px solid rgba(234,88,12,0.4)', borderRadius: 99 }}>🟠 Claimed</span>
+                      )}
+                    </div>
+                    <p className="note" style={{ margin: 0 }}>
+                      {pickP.district} · {pickP.id} · {pickP.w}×{pickP.d} m
+                    </p>
+                    <p style={{ fontSize: '0.78rem', color: pickP.status === 'reserved' ? '#94a3b8' : '#22c55e', margin: '4px 0 0', fontWeight: 600 }}>
+                      {pickP.id === 'J01' ? 'Official City Landmark' : pickP.status === 'reserved' ? 'Permanently locked by city' : !pickS?.ownerId ? 'Available & free to claim (1 per email)' : 'Claimed by resident'}
+                    </p>
+                  </div>
+                  <div className="actions-row" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button className="btn outline" style={{ flex: 1 }} onClick={() => guideTo(pickP.id)}>Guide me here</button>
+                      <button className="btn outline" style={{ flex: 1 }} onClick={() => go(pickP.id)}>Teleport</button>
+                    </div>
+                    {pickP.status === 'available' && !pickS?.ownerId && (
+                      <Link className="btn" href={`/buy?plot=${pickP.id}`} style={{ background: '#22c55e', color: '#fff', textDecoration: 'none', textAlign: 'center', fontWeight: 700 }}>
+                        Claim Free Building
+                      </Link>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="note">Click any building, road or area on the map to inspect or instantly teleport there! Press M or Esc to close.</p>
+              )}
             </aside>
           </div>
         </div>)}

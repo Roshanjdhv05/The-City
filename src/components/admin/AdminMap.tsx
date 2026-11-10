@@ -32,8 +32,13 @@ export default function AdminMap({ layout, stores, selected, onSelect, matches, 
 }) {
   const svg = useRef<SVGSVGElement>(null), drag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const [vb, setVb] = useState<VB>({ x: -360, y: -360, w: 720, h: 720 });
+  const [mapFilter, setMapFilter] = useState<'all' | 'available' | 'locked' | 'occupied'>('all');
   const byStore = useMemo(() => new Map(stores.map(s => [s.plotId, s])), [stores]);
   const labels = useMemo(() => { const g = new Map<string, { x: number; z: number; n: number }>(); for (const p of layout.plots) { if (p.landmark) continue; const e = g.get(p.district) || { x: 0, z: 0, n: 0 }; e.x += p.x; e.z += p.z; e.n++; g.set(p.district, e); } return Array.from(g, ([name, e]) => ({ name, x: e.x / e.n, z: e.z / e.n })); }, [layout]);
+
+  const availableCount = useMemo(() => layout.plots.filter(p => p.status === 'available' && !byStore.get(p.id)?.ownerId).length, [layout, byStore]);
+  const lockedCount = useMemo(() => layout.plots.filter(p => p.status === 'reserved').length, [layout]);
+  const occupiedCount = useMemo(() => layout.plots.filter(p => !!byStore.get(p.id)?.ownerId).length, [layout, byStore]);
 
   const fit = useCallback((extra?: ExpansionPlan | null) => {
     const el = svg.current; if (!el) return; const r = el.getBoundingClientRect(); if (!r.width) return;
@@ -54,20 +59,43 @@ export default function AdminMap({ layout, stores, selected, onSelect, matches, 
   const click = (fn: () => void) => { if (drag.current?.moved) return; fn(); };
   const zoom = (k: number) => setVb(v => ({ x: v.x + (v.w - v.w * k) / 2, y: v.y + (v.h - v.h * k) / 2, w: v.w * k, h: v.h * k }));
   const fs = Math.max(0.9, vb.w / 140), detail = vb.w < 360, far = vb.w > 300;
-  const fill = (p: Plot, occ: boolean) => {
-    if (theme === 'light') {
-      if (occ) return '#f97316';
-      if (p.status === 'reserved') return '#475569';
-      return '#22c55e';
-    }
-    return occ ? '#f97316' : p.status === 'reserved' ? 'url(#hatch)' : '#22d3ee';
-  };
+
   const roadEl = (r: Road, key: string, stroke: string, extra: Partial<React.SVGProps<SVGElement>> = {}, onClick?: () => void) => isRing(r)
     ? <circle key={key} cx={r.x0} cy={r.z0} r={r.x1} fill="none" stroke={stroke} strokeWidth={r.w} onClick={onClick} style={{ cursor: onClick ? 'pointer' : undefined }} {...(extra as any)} />
     : <line key={key} x1={r.x0} y1={r.z0} x2={r.x1} y2={r.z1} stroke={stroke} strokeWidth={r.w} onClick={onClick} style={{ cursor: onClick ? 'pointer' : undefined }} {...(extra as any)} />;
 
   return (
     <div className={`admin-map ${theme === 'light' ? 'light' : ''}`}>
+      {/* Top Filter Toolbar */}
+      <div className={`map-filter-bar ${theme === 'light' ? 'light' : ''}`}>
+        <button
+          className={mapFilter === 'all' ? 'active' : ''}
+          onClick={() => setMapFilter('all')}
+        >
+          All ({layout.plots.length})
+        </button>
+        <button
+          className={`btn-avail ${mapFilter === 'available' ? 'active' : ''}`}
+          onClick={() => setMapFilter('available')}
+        >
+          <span className="dot dot-avail" /> Available Free ({availableCount})
+        </button>
+        <button
+          className={`btn-locked ${mapFilter === 'locked' ? 'active' : ''}`}
+          onClick={() => setMapFilter('locked')}
+        >
+          <span className="dot dot-locked" /> 🔒 Locked ({lockedCount})
+        </button>
+        {occupiedCount > 0 && (
+          <button
+            className={`btn-occ ${mapFilter === 'occupied' ? 'active' : ''}`}
+            onClick={() => setMapFilter('occupied')}
+          >
+            <span className="dot dot-occ" /> Claimed ({occupiedCount})
+          </button>
+        )}
+      </div>
+
       <svg
         ref={svg}
         viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
@@ -90,7 +118,16 @@ export default function AdminMap({ layout, stores, selected, onSelect, matches, 
         role="img"
         aria-label="City map"
       >
-        <defs><pattern id="hatch" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="3" fill="#78350f" /><rect width="1.4" height="3" fill="#f59e0b" /></pattern></defs>
+        <defs>
+          <pattern id="locked-hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="4" height="4" fill="#334155" />
+            <rect width="1.6" height="4" fill="#475569" />
+          </pattern>
+          <pattern id="hatch" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="3" height="3" fill="#334155" />
+            <rect width="1.4" height="4" fill="#475569" />
+          </pattern>
+        </defs>
         <rect x={vb.x - 4000} y={vb.y - 4000} width={vb.w + 8000} height={vb.h + 8000} fill={theme === 'light' ? '#eef5ec' : '#0f2f4a'} />
         <circle cx={0} cy={0} r={layoutBounds(layout, 0).x1 + 4} fill={theme === 'light' ? '#1f6438' : '#17422c'} />
         {layout.roads.map(r => roadEl(r, r.id, theme === 'light' ? '#2d3748' : '#2c3445', {}, onSelectRoad ? () => click(() => onSelectRoad(r.id)) : undefined))}
@@ -99,13 +136,71 @@ export default function AdminMap({ layout, stores, selected, onSelect, matches, 
         {highlightRoads && layout.roads.filter(r => highlightRoads.has(r.id)).map(r => roadEl(r, 'h' + r.id, '#ef4444', { opacity: 0.6, style: { pointerEvents: 'none' } }))}
         {OBSTACLES.map(o => <g key={o.id} style={{ pointerEvents: 'none' }}><circle cx={o.cx} cy={o.cz} r={o.r} fill="#cfe7bd" opacity={0.9} /><circle cx={o.cx} cy={o.cz} r={o.r - 7} fill="none" stroke="#fff3e0" strokeWidth={5} opacity={0.7} /></g>)}
         {layout.plots.map(p => {
-          const s = byStore.get(p.id), dim = matches ? !matches.has(p.id) : false, sel = selected === p.id, P = plotPoly(p), bb = s && showBuildings ? buildingOBB(p, s.config) : null;
+          const s = byStore.get(p.id);
+          const isOcc = !!s?.ownerId;
+          const isLandmark = p.id === 'J01';
+          const isLocked = p.status === 'reserved';
+          const isAvail = p.status === 'available' && !isOcc;
+
+          let dim = matches ? !matches.has(p.id) : false;
+          if (mapFilter === 'available' && !isAvail) dim = true;
+          if (mapFilter === 'locked' && !isLocked) dim = true;
+          if (mapFilter === 'occupied' && !isOcc) dim = true;
+
+          const sel = selected === p.id;
+          const P = plotPoly(p);
+          const bb = s && showBuildings ? buildingOBB(p, s.config) : null;
+
+          let plotFill: string;
+          let plotStroke: string;
+          let buildingFill: string;
+
+          if (isOcc) {
+            plotFill = '#f97316';
+            plotStroke = sel ? '#ffffff' : '#fb923c';
+            buildingFill = '#ea580c';
+          } else if (isLandmark) {
+            plotFill = '#2563eb';
+            plotStroke = sel ? '#ffffff' : '#60a5fa';
+            buildingFill = '#1d4ed8';
+          } else if (isLocked) {
+            plotFill = theme === 'light' ? '#475569' : 'url(#locked-hatch)';
+            plotStroke = sel ? '#ffffff' : theme === 'light' ? '#334155' : '#64748b';
+            buildingFill = theme === 'light' ? '#334155' : '#1e293b';
+          } else {
+            plotFill = '#22c55e';
+            plotStroke = sel ? '#ffffff' : theme === 'light' ? '#16a34a' : '#86efac';
+            buildingFill = '#15803d';
+          }
+
           return (
-            <g key={p.id} opacity={dim ? 0.2 : 1} onClick={e => { e.stopPropagation(); click(() => onSelect(p.id)); }} style={{ cursor: 'pointer' }}>
-              <polygon points={pts(P)} fill={fill(p, !!s)} fillOpacity={s ? 0.4 : theme === 'light' ? 0.95 : 0.85} stroke={sel ? '#fff' : theme === 'light' ? (p.status === 'available' ? '#16a34a' : '#fff') : TIER_STROKE[p.tier]} strokeWidth={sel ? 1.5 : 0.5} />
-              {bb && <polygon points={pts(box(bb.cx, bb.cz, [Math.cos(bb.a), -Math.sin(bb.a)], [Math.sin(bb.a), Math.cos(bb.a)], bb.hw, bb.hd))} fill="#f97316" stroke="#fff" strokeWidth={0.25} />}
-              {showLabels && detail && <text x={p.x} y={p.z} fontSize={fs * 0.8} fill="#fff" textAnchor="middle" dominantBaseline="middle" style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#000" strokeWidth={fs * 0.12}>{s ? s.config.name : p.id}</text>}
-            </g>);
+            <g key={p.id} opacity={dim ? 0.15 : 1} onClick={e => { e.stopPropagation(); click(() => onSelect(p.id)); }} style={{ cursor: 'pointer' }}>
+              <polygon
+                points={pts(P)}
+                fill={plotFill}
+                fillOpacity={isLocked ? 0.92 : isAvail ? 0.88 : 0.9}
+                stroke={plotStroke}
+                strokeWidth={sel ? 2 : 0.6}
+              />
+              {bb && (
+                <polygon
+                  points={pts(box(bb.cx, bb.cz, [Math.cos(bb.a), -Math.sin(bb.a)], [Math.sin(bb.a), Math.cos(bb.a)], bb.hw, bb.hd))}
+                  fill={buildingFill}
+                  stroke={sel ? '#ffffff' : 'rgba(255,255,255,0.45)'}
+                  strokeWidth={0.25}
+                />
+              )}
+              {isLocked && detail && !isLandmark && (
+                <text x={p.x} y={p.z} fontSize={fs * 0.9} fill="#cbd5e1" textAnchor="middle" dominantBaseline="middle" style={{ pointerEvents: 'none' }}>🔒</text>
+              )}
+              {isAvail && detail && (
+                <text x={p.x} y={p.z} fontSize={fs * 0.72} fill="#ffffff" fontWeight={800} textAnchor="middle" dominantBaseline="middle" style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#14532d" strokeWidth={fs * 0.12}>FREE</text>
+              )}
+              {showLabels && detail && !isLocked && !isAvail && (
+                <text x={p.x} y={p.z} fontSize={fs * 0.8} fill="#fff" textAnchor="middle" dominantBaseline="middle" style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#000" strokeWidth={fs * 0.12}>{s ? s.config.name : p.id}</text>
+              )}
+            </g>
+          );
         })}
         {showLabels && far && labels.map(l => <g key={l.name} style={{ pointerEvents: 'none' }}><rect x={l.x - vb.w / 12} y={l.z - vb.w / 60} width={vb.w / 6} height={vb.w / 30} rx={vb.w / 60} fill={distColor(l.name)} opacity={0.92} /><text x={l.x} y={l.z} fontSize={vb.w / 62} fill="#fff" fontWeight={700} textAnchor="middle" dominantBaseline="middle">{l.name.replace(' District', '')}</text></g>)}
         {showLabels && far && <g style={{ pointerEvents: 'none' }}><rect x={-34} y={-7} width={68} height={14} rx={7} fill="#0f172a" /><text x={0} y={0} fontSize={7} fill="#fff" fontWeight={700} textAnchor="middle" dominantBaseline="middle">J Enterprise Tower</text></g>}
@@ -121,21 +216,17 @@ export default function AdminMap({ layout, stores, selected, onSelect, matches, 
       </div>
       {theme === 'light' ? (
         <ul className="legend admin-legend light">
-          <li><i style={{ background: '#22c55e' }} />Available (Free)</li>
-          <li><i style={{ background: '#475569' }} />Locked (25 / Market)</li>
-          <li><i style={{ background: '#f97316' }} />Occupied</li>
-          <li><i style={{ background: '#3b82f6' }} />Reserved</li>
-          <li><i style={{ background: '#a855f7' }} />Premium</li>
-          <li><i style={{ background: '#eab308' }} />Custom</li>
+          <li><i style={{ background: '#22c55e' }} />Available · Free to Claim ({availableCount})</li>
+          <li><i style={{ background: '#475569' }} />🔒 Locked ({lockedCount})</li>
+          <li><i style={{ background: '#2563eb' }} />🏢 J Enterprise Landmark</li>
+          {occupiedCount > 0 && <li><i style={{ background: '#f97316' }} />Claimed by Owner ({occupiedCount})</li>}
         </ul>
       ) : (
         <ul className="legend admin-legend">
-          <li><i style={{ background: '#22d3ee' }} />Available</li>
-          <li><i style={{ background: '#f97316' }} />Occupied</li>
-          <li><i style={{ background: '#f59e0b' }} />Reserved</li>
-          <li><i className="ring" style={{ borderColor: '#60a5fa' }} />Premium</li>
-          <li><i className="ring" style={{ borderColor: '#facc15' }} />Featured</li>
-          <li><i className="ring" style={{ borderColor: '#c084fc' }} />Corner</li>
+          <li><i style={{ background: '#22c55e' }} />Available · Free to Claim ({availableCount})</li>
+          <li><i style={{ background: '#475569' }} />🔒 Permanently Locked ({lockedCount})</li>
+          <li><i style={{ background: '#2563eb' }} />🏢 Landmark · J Enterprise</li>
+          {occupiedCount > 0 && <li><i style={{ background: '#f97316' }} />Claimed ({occupiedCount})</li>}
         </ul>
       )}
     </div>
