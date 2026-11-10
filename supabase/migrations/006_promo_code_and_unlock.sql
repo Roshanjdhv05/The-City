@@ -186,3 +186,4 @@ end;
 $$;
 
 grant execute on function public.admin_set_plot_status(text, text) to authenticated;
+

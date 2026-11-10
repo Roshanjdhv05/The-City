@@ -577,19 +577,19 @@ function Marketplace() {
                   </button>
                 </div>
 
-                {/* Central District VIP Promo Code Unlock & Free Claim Card */}
+                  {/* Central District VIP Promo Code Unlock & Free Claim Card */}
                 {(plot.district.includes('Central') || plot.id.startsWith('C0')) && st === 'reserved' && (
                   <div style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)', border: '1px solid #818cf8', borderRadius: '12px', padding: '12px 14px', marginTop: '4px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                       <span style={{ fontSize: '1.05rem' }}>🎟️</span>
-                      <span style={{ fontWeight: 800, fontSize: '0.84rem', color: '#312e81' }}>Central District VIP Promo Code</span>
+                      <span style={{ fontWeight: 800, fontSize: '0.84rem', color: '#312e81' }}>Central District VIP Access</span>
                     </div>
                     <p style={{ margin: '0 0 8px', fontSize: '0.76rem', color: '#4338ca', lineHeight: 1.35 }}>
-                      Unlock this exclusive Central District building and claim it for free using promo code <b>Jdhvpromo</b>.
+                      Have an exclusive access code? Enter it below to unlock and claim this Central District building for free.
                     </p>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <input
-                        placeholder="Enter promo code (Jdhvpromo)"
+                        placeholder="Enter promo code"
                         value={promoCode}
                         onChange={e => setPromoCode(e.target.value)}
                         disabled={busy}

@@ -784,7 +784,104 @@ export default function CityHeroScene() {
         overflow: 'hidden',
       }}
     >
-      {/* Floating Controls: Zoom In / Zoom Out / Reset & Hint */}
+      {/* ── Floating District Badges ── */}
+      {/* Top-left: Tech District */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '18%',
+          left: '4%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(14px)',
+          border: '1px solid rgba(226,232,240,0.9)',
+          borderRadius: '14px',
+          padding: '8px 14px',
+          boxShadow: '0 8px 24px rgba(15,23,42,0.1)',
+          zIndex: 10,
+          pointerEvents: 'none',
+          animation: 'floatBadge 4s ease-in-out infinite',
+        }}
+      >
+        <div style={{
+          width: 32, height: 32, borderRadius: '10px',
+          background: 'linear-gradient(135deg,#3b82f6,#2563eb)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '1rem', flexShrink: 0,
+        }}>💻</div>
+        <div>
+          <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>Tech District</div>
+          <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 600 }}>50+ Businesses</div>
+        </div>
+      </div>
+
+      {/* Top-right: Business Hub */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '12%',
+          right: '5%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(14px)',
+          border: '1px solid rgba(226,232,240,0.9)',
+          borderRadius: '14px',
+          padding: '8px 14px',
+          boxShadow: '0 8px 24px rgba(15,23,42,0.1)',
+          zIndex: 10,
+          pointerEvents: 'none',
+          animation: 'floatBadge 4s ease-in-out infinite 1.3s',
+        }}
+      >
+        <div style={{
+          width: 32, height: 32, borderRadius: '10px',
+          background: 'linear-gradient(135deg,#06b6d4,#0891b2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '1rem', flexShrink: 0,
+        }}>🤝</div>
+        <div>
+          <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>Business Hub</div>
+          <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 600 }}>Grow Together</div>
+        </div>
+      </div>
+
+      {/* Bottom-right: Creative Zone */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '22%',
+          right: '4%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(14px)',
+          border: '1px solid rgba(226,232,240,0.9)',
+          borderRadius: '14px',
+          padding: '8px 14px',
+          boxShadow: '0 8px 24px rgba(15,23,42,0.1)',
+          zIndex: 10,
+          pointerEvents: 'none',
+          animation: 'floatBadge 4s ease-in-out infinite 2.6s',
+        }}
+      >
+        <div style={{
+          width: 32, height: 32, borderRadius: '10px',
+          background: 'linear-gradient(135deg,#f59e0b,#d97706)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '1rem', flexShrink: 0,
+        }}>🎨</div>
+        <div>
+          <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>Creative Zone</div>
+          <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 600 }}>Innovate & Inspire</div>
+        </div>
+      </div>
+
+      {/* Floating Controls: Zoom In / Zoom Out / Reset */}
       <div
         style={{
           position: 'absolute',
@@ -888,10 +985,17 @@ export default function CityHeroScene() {
       >
         <span>↔ Drag to spin</span>
         <span>·</span>
-        <span>↕ Tilt up/down</span>
+        <span>↕ Tilt</span>
         <span>·</span>
-        <span>🔍 Scroll to zoom</span>
+        <span>🔍 Zoom</span>
       </div>
+
+      <style>{`
+        @keyframes floatBadge {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+      `}</style>
     </div>
   );
 }

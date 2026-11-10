@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Nav from '@/components/Nav';
 import { useStores } from '@/components/useStores';
 import { saveStore, uploadLogo, useAuth } from '@/lib/data';
@@ -24,6 +24,7 @@ function Swatches({ value, colors, onChange }: { value: string; colors: string[]
 
 function Editor() {
   const q = useSearchParams(), { user, ready } = useAuth(), { stores, reload } = useStores();
+  const router = useRouter();
   const quality = useUI(s => s.quality), setQuality = useUI(s => s.setQuality);
   const mine = stores.filter(s => s.ownerId === user?.id), plotId = q.get('plot') || mine[0]?.plotId || '';
   const store = mine.find(s => s.plotId === plotId);
@@ -31,10 +32,23 @@ function Editor() {
   useEffect(() => { if (store && !cfg) setCfg(store.config); }, [store, cfg]);
   if (!ready) return <div className="loading">Loading…</div>;
   if (!user) return <div className="panel narrow"><h1>Sign in to customize your store</h1><Link className="btn" href="/login">Sign in</Link></div>;
-  if (!store || !cfg) return <div className="panel narrow"><h1>No store to edit</h1><p>You don’t own a plot yet.</p><Link className="btn" href="/buy">Buy a plot</Link></div>;
+  if (!store || !cfg) return <div className="panel narrow"><h1>No store to edit</h1><p>You don&apos;t own a plot yet.</p><Link className="btn" href="/buy">Buy a plot</Link></div>;
   const set = (p: Partial<StoreConfig>) => setCfg({ ...cfg, ...p });
   const applyTemplate = (t: string) => setCfg({ ...defaultConfig(t), name: cfg.name, tagline: cfg.tagline, website: cfg.website, logoUrl: cfg.logoUrl, modules: cfg.modules, mode: cfg.mode, template: t });
-  const save = async () => { setStatus('Saving…'); try { await saveStore(store.plotId, cfg); reload(); setStatus('Saved'); } catch (e: any) { setStatus('Error: ' + e.message); } };
+  const save = async () => {
+    setStatus('Saving…');
+    try {
+      await saveStore(store.plotId, cfg);
+      reload();
+      setStatus('✅ Saved! Taking you to your building in the city…');
+      // Redirect to /city with the user's plot selected after a short delay
+      setTimeout(() => {
+        router.push('/city?store=' + store.plotId);
+      }, 900);
+    } catch (e: any) {
+      setStatus('Error: ' + e.message);
+    }
+  };
   const upload = async (f?: File) => { if (!f) return; try { set({ logoUrl: await uploadLogo(f, user) }); } catch (e: any) { setStatus(e.message); } };
   const modular = cfg.mode === 'modular';
   return (
@@ -59,7 +73,8 @@ function Editor() {
           <label>Floors: {cfg.floors}<input type="range" min={1} max={4} value={cfg.floors} onChange={e => set({ floors: +e.target.value })} /></label>
           {(['balcony', 'planters', 'trim'] as const).map(k => <label key={k} className="check"><input type="checkbox" checked={cfg[k]} onChange={e => set({ [k]: e.target.checked } as any)} />{k[0].toUpperCase() + k.slice(1)}</label>)}</details>}
         <details><summary>Graphics quality</summary><select value={quality} onChange={e => setQuality(e.target.value as Quality)}>{(Object.keys(QUALITY) as Quality[]).map(k => <option key={k} value={k}>{QUALITY[k].label}</option>)}</select></details>
-        <button className="btn wide" onClick={save}>Save Store</button><p className="status" role="status">{status}</p>
+        <button className="btn wide" onClick={save}>Save &amp; Go to My Building 🏙️</button>
+        <p className="status" role="status">{status}</p>
       </aside>
       <section className="stage">
         <EditorCanvas cfg={cfg} setCfg={setCfg} tool={tool} showGrid={grid} onMsg={setMsg} />

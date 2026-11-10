@@ -213,10 +213,44 @@ export async function uploadLogo(file: File, user: User): Promise<string> {
 }
 
 // ---------------- admin API (authorization is enforced by Postgres RLS + SECURITY DEFINER functions) ----------------
+export async function verifyAdminCredentials(username: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
+  const u = (username || '').trim().toLowerCase();
+  const p = (password || '').trim();
+
+  // Validate credentials requested: username 'admin', password 'adminjdhv114'
+  const isMatch = (u === 'admin' || u === 'admin@thecity.local') && p === 'adminjdhv114';
+
+  if (!isMatch) {
+    return { success: false, error: 'Invalid admin username or password.' };
+  }
+
+  const adminUser: User = {
+    id: 'admin-master',
+    email: 'admin@thecity.local',
+  };
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('thecity.admin_session', '1');
+    localStorage.setItem(LU, JSON.stringify(adminUser));
+  }
+
+  return { success: true, user: adminUser };
+}
+
+export async function adminLogout(): Promise<void> {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('thecity.admin_session');
+  }
+}
+
 export async function isAdmin(user: User | null): Promise<boolean> {
+  if (typeof window !== 'undefined' && localStorage.getItem('thecity.admin_session') === '1') {
+    return true;
+  }
   if (!user) return false;
-  if (supabase) { const { data, error } = await supabase.rpc('is_admin'); return !error && data === true; }
-  return user.email.toLowerCase() === DEMO_ADMIN.toLowerCase();
+  if (supabase) { const { data, error } = await supabase.rpc('is_admin'); if (!error && data === true) return true; }
+  const em = (user.email || '').toLowerCase();
+  return em === 'admin' || em === 'admin@thecity.local' || em === DEMO_ADMIN.toLowerCase();
 }
 export async function adminExpand(plan: ExpansionPlan) {
   if (plan.errors.length) throw new Error(plan.errors[0]);

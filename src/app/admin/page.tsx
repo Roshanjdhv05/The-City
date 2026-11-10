@@ -4,11 +4,30 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Nav from '@/components/Nav';
 import { useStores } from '@/components/useStores';
-import { useAuth, isAdmin, adminExpand, adminUpdatePlot, adminSaveStore, adminDeleteStore, adminMoveStore, adminSaveRoad, adminDeleteRoad, adminSavePlot, adminDeletePlot, findUserId, userEmails, DEMO_ADMIN } from '@/lib/data';
+import {
+  useAuth,
+  isAdmin,
+  verifyAdminCredentials,
+  adminLogout,
+  adminExpand,
+  adminUpdatePlot,
+  adminSaveStore,
+  adminDeleteStore,
+  adminMoveStore,
+  adminSaveRoad,
+  adminDeleteRoad,
+  adminSavePlot,
+  adminDeletePlot,
+  findUserId,
+  userEmails,
+  DEMO_ADMIN,
+} from '@/lib/data';
 import { DEMO } from '@/lib/supabase';
 import { DEFAULT_PARAMS, ExpandParams, LIMITS, anchorsFor, planExpansion } from '@/lib/expansion';
 import { TEMPLATES, defaultConfig } from '@/lib/templates';
 import { defaultPlace, getPlace, placementError, footprint, PRICE } from '@/lib/plots';
+import { DISTRICTS } from '@/lib/city';
+import { computeStats } from '@/lib/stats';
 import { Layout, makeLayout, checkPlot, checkRoad, snapPlotToRoad, validateNetwork, isRing, roadLen } from '@/lib/layout';
 import type { Plot, Road, StoreConfig, Tier } from '@/lib/types';
 const AdminMap = dynamic(() => import('@/components/admin/AdminMap'), { ssr: false, loading: () => <div className="loading">Loading map…</div> });
@@ -42,15 +61,41 @@ const Issues = ({ c }: { c: { errors: string[]; warnings: string[] } }) => <>{c.
 export default function Admin() {
   const { user, ready, init } = useAuth(), { stores, layout, reload } = useStores();
   const [allowed, setAllowed] = useState<null | boolean>(null);
-  const [sel, setSel] = useState<string | null>(null), [tab, setTab] = useState<'plot' | 'roads' | 'expand' | 'owners' | 'network'>('plot'), [q, setQ] = useState(''), [labels, setLabels] = useState(true), [builds, setBuilds] = useState(true), [fitKey, setFitKey] = useState(0);
+  const [sel, setSel] = useState<string | null>(null);
+  const [tab, setTab] = useState<'overview' | 'plot' | 'promo' | 'owners' | 'roads' | 'expand' | 'network'>('overview');
+  const [q, setQ] = useState(''), [labels, setLabels] = useState(true), [builds, setBuilds] = useState(true), [fitKey, setFitKey] = useState(0);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null), [modal, setModal] = useState<Modal>(null), [busy, setBusy] = useState(false);
   const [emails, setEmails] = useState<Record<string, string>>({});
   const [pd, setPd] = useState<PD | null>(null), [bd, setBd] = useState<BD | null>(null), [gd, setGd] = useState<GD | null>(null), [moveTo, setMoveTo] = useState('');
   const [ep, setEp] = useState<ExpandParams>(DEFAULT_PARAMS);
   const [selRoad, setSelRoad] = useState<string | null>(null), [rd, setRd] = useState<(Road & { isNew?: boolean }) | null>(null), [roadQ, setRoadQ] = useState('');
   const [np, setNp] = useState<GD & { district: string; category: string; tier: Tier; price: number }>({ x: 0, z: 0, deg: 0, w: 12, d: 13.6, district: 'New District', category: 'Mixed', tier: 'premium', price: 299 });
+
+  // Admin Login Form State
+  const [loginUser, setLoginUser] = useState('admin');
+  const [loginPass, setLoginPass] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [loginErr, setLoginErr] = useState('');
+  const [loginBusy, setLoginBusy] = useState(false);
+
+  // Redemptions list
+  const [redemptions, setRedemptions] = useState<any[]>([]);
+
   useEffect(() => { init(); }, [init]);
-  useEffect(() => { if (ready) isAdmin(user).then(setAllowed); }, [user, ready]);
+  useEffect(() => {
+    if (ready) {
+      isAdmin(user).then(setAllowed);
+    }
+  }, [user, ready]);
+
+  useEffect(() => {
+    try {
+      const r = JSON.parse(localStorage.getItem('thecity.promo_redemptions') || '[]');
+      setRedemptions(r);
+    } catch {}
+  }, [tab, layout.version]);
+
+  const stats = useMemo(() => computeStats(layout, stores), [layout, stores]);
 
   const plot = layout.byId.get(sel || '') as Plot | undefined, store = stores.find(s => s.plotId === sel);
   useEffect(() => { const ids = stores.map(s => s.ownerId).filter((x): x is string => !!x && !x.startsWith('demo-')); if (allowed && ids.length) userEmails(Array.from(new Set(ids))).then(setEmails); }, [stores, allowed]);
@@ -98,6 +143,7 @@ export default function Admin() {
     try { await fn(); await reload(); setMsg({ ok: true, text: ok }); } catch (e: any) { setMsg({ ok: false, text: e.message }); } finally { setBusy(false); setModal(null); }
   };
   const resolveOwner = async (): Promise<string | null> => { const e = bd!.ownerEmail.trim(); if (!e) return store?.ownerId ?? null; const id = await findUserId(e); if (!id) throw new Error(`No user found with email ${e}.`); return id; };
+
   const saveBuilding = () => run(async () => { await adminSaveStore(plot!.id, await resolveOwner(), cfg!); }, store ? 'Building updated.' : 'Building placed.');
   const removeBuilding = () => run(async () => { await adminDeleteStore(plot!.id); }, 'Building removed.');
   const moveBuilding = () => run(async () => { const t = layout.byId.get(moveTo)!; await adminMoveStore(plot!.id, moveTo, { ...store!.config, place: defaultPlace(t, store!.config) }); setSel(moveTo); }, `Building moved to ${moveTo}.`);
@@ -114,26 +160,286 @@ export default function Admin() {
   const confirmExpand = () => run(async () => { await adminExpand(plan!); setFitKey(k => k + 1); setTab('plot'); }, `Added region ${plan!.region.id}: ${plan!.plots.length} plots and ${plan!.roads.length} roads. The 3D world now includes them.`);
   const newRoad = () => { let n = 1; while (layout.roads.some(r => r.id === `ST-${n}`)) n++; setRd({ id: `ST-${n}`, kind: 'seg', x0: 0, z0: 0, x1: 0, z1: 0, w: 10, isNew: true }); setSelRoad(null); };
 
-  if (!ready || allowed === null) return <div className="page dark"><Nav /><div className="loading">Checking access…</div></div>;
-  if (!user || !allowed) return (
-    <div className="page dark"><Nav /><div className="panel narrow"><h1>Administrators only</h1>
-      <p>{user ? 'Your account is not an administrator.' : 'Sign in with an administrator account to continue.'}</p>
-      {!user && <Link className="btn" href="/login">Sign in</Link>}
-      {DEMO && <p className="note">Demo mode: the administrator account is <code>{DEMO_ADMIN}</code> (any password). This is a local development shortcut, not security. Real authorization needs Supabase (see README).</p>}</div></div>
-  );
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginBusy(true);
+    setLoginErr('');
+    try {
+      const res = await verifyAdminCredentials(loginUser, loginPass);
+      if (!res.success) {
+        setLoginErr(res.error || 'Invalid credentials.');
+      } else {
+        setAllowed(true);
+        await reload();
+      }
+    } catch (err: any) {
+      setLoginErr(err.message || 'Login failed.');
+    } finally {
+      setLoginBusy(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await adminLogout();
+    setAllowed(false);
+  };
+
+  // ── Admin Login Screen when unauthenticated ──
+  if (!ready || allowed === null) {
+    return (
+      <div className="page dark">
+        <Nav />
+        <div className="loading" style={{ padding: '6rem 2rem', textAlign: 'center' }}>
+          Checking administrator authorization…
+        </div>
+      </div>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <div className="page dark" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Nav />
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '2rem 1rem',
+            background: 'radial-gradient(circle at 50% 30%, rgba(34, 211, 238, 0.08) 0%, rgba(10, 18, 34, 0.98) 70%)',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '440px',
+              background: 'rgba(15, 23, 42, 0.92)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(34, 211, 238, 0.35)',
+              borderRadius: '20px',
+              padding: '2.4rem',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(34, 211, 238, 0.15)',
+            }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: '1.8rem' }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(59, 130, 246, 0.2))',
+                  border: '1px solid rgba(34, 211, 238, 0.5)',
+                  fontSize: '1.8rem',
+                  marginBottom: '0.8rem',
+                }}
+              >
+                🔐
+              </div>
+              <h1 style={{ margin: '0 0 6px', fontSize: '1.6rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.02em' }}>
+                Admin Portal Login
+              </h1>
+              <p style={{ margin: 0, fontSize: '0.86rem', color: '#94a3b8' }}>
+                Sign in to manage building unlocks, promo codes &amp; city operations.
+              </p>
+            </div>
+
+            <form onSubmit={handleLogin} style={{ display: 'grid', gap: '1.1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                  Admin Username
+                </label>
+                <input
+                  type="text"
+                  value={loginUser}
+                  onChange={e => setLoginUser(e.target.value)}
+                  placeholder="admin"
+                  required
+                  autoFocus
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    border: '1px solid #334155',
+                    color: '#f8fafc',
+                    fontSize: '0.92rem',
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                  Password
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    value={loginPass}
+                    onChange={e => setLoginPass(e.target.value)}
+                    placeholder="Enter admin password"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 42px 10px 14px',
+                      borderRadius: '10px',
+                      background: 'rgba(30, 41, 59, 0.8)',
+                      border: '1px solid #334155',
+                      color: '#f8fafc',
+                      fontSize: '0.92rem',
+                      outline: 'none',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#94a3b8',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                    }}
+                  >
+                    {showPass ? '🙈' : '👁️'}
+                  </button>
+                </div>
+              </div>
+
+              {loginErr && (
+                <div
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    color: '#f87171',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  {loginErr}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loginBusy}
+                className="btn"
+                style={{
+                  width: '100%',
+                  padding: '11px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  border: 'none',
+                  cursor: loginBusy ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  marginTop: '0.4rem',
+                }}
+              >
+                <span>{loginBusy ? 'Verifying…' : 'Sign In as Administrator →'}</span>
+              </button>
+            </form>
+
+            <div style={{ marginTop: '1.6rem', paddingTop: '1.2rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '0.76rem', color: '#64748b', textAlign: 'center' }}>
+              Authorized personnel only. Contact city administration for access.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Authenticated Admin Portal ──
   const plotsFree = layout.plots.filter(p => !stores.some(s => s.plotId === p.id) && p.id !== plot?.id), fp = cfg ? footprint(cfg) : null;
   const roadList = layout.roads.filter(r => !roadQ || r.id.toLowerCase().includes(roadQ.toLowerCase()));
-  const TABS: [typeof tab, string][] = [['plot', 'Plot'], ['roads', 'Roads'], ['expand', 'Expand'], ['owners', 'Owners'], ['network', 'Network']];
+  const TABS: [typeof tab, string][] = [
+    ['overview', '📊 Dashboard'],
+    ['plot', '🗺️ Map & Plots'],
+    ['promo', '🎟️ Promo Codes'],
+    ['owners', '🏪 Stores & Owners'],
+    ['roads', '🛣️ Roads'],
+    ['expand', '🏗️ Expand'],
+    ['network', '🌐 Network'],
+  ];
 
   return (
     <div className="page dark admin"><Nav />
+      {/* ── Executive Admin Top Banner ── */}
+      <div
+        style={{
+          background: 'linear-gradient(90deg, #0f172a 0%, #1e293b 100%)',
+          borderBottom: '1px solid rgba(34, 211, 238, 0.25)',
+          padding: '10px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '1.25rem' }}>🏢</span>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontWeight: 800, color: '#f8fafc', fontSize: '0.98rem' }}>The City Master Admin Console</span>
+              <span style={{ background: 'rgba(34, 211, 238, 0.15)', color: '#22d3ee', border: '1px solid rgba(34, 211, 238, 0.4)', borderRadius: '999px', padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700 }}>
+                👑 Super Admin: admin
+              </span>
+            </div>
+            <div style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
+              Connected to Master World State &middot; Full Urban &amp; Building Authority
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '6px', fontSize: '0.76rem', fontWeight: 700 }}>
+            <span style={{ background: '#1e293b', border: '1px solid #334155', color: '#f8fafc', padding: '3px 8px', borderRadius: '6px' }}>
+              Plots: {layout.plots.length}
+            </span>
+            <span style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1px solid rgba(34, 197, 94, 0.4)', color: '#4ade80', padding: '3px 8px', borderRadius: '6px' }}>
+              🟢 Available: {stats.available}
+            </span>
+            <span style={{ background: 'rgba(100, 116, 139, 0.2)', border: '1px solid #475569', color: '#cbd5e1', padding: '3px 8px', borderRadius: '6px' }}>
+              🔒 Locked: {stats.reserved}
+            </span>
+            <span style={{ background: 'rgba(249, 115, 22, 0.15)', border: '1px solid rgba(249, 115, 22, 0.4)', color: '#fb923c', padding: '3px 8px', borderRadius: '6px' }}>
+              🟠 Claimed: {stores.filter(s => s.ownerId).length}
+            </span>
+          </div>
+          <Link href="/city" className="btn sm outline" style={{ fontSize: '0.78rem' }}>
+            Enter 3D City 🌐
+          </Link>
+          <button onClick={handleLogout} className="btn sm danger" style={{ fontSize: '0.78rem' }}>
+            Admin Logout 🚪
+          </button>
+        </div>
+      </div>
+
       <div className="admin-grid">
         <section className="admin-main">
           <div className="admin-bar">
             <input placeholder="Search plot ID, store, owner, district…" value={q} onChange={e => setQ(e.target.value)} aria-label="Search map" />
             <label className="check"><input type="checkbox" checked={labels} onChange={e => setLabels(e.target.checked)} />Labels</label>
             <label className="check"><input type="checkbox" checked={builds} onChange={e => setBuilds(e.target.checked)} />Buildings</label>
-            <span className="stat">{layout.plots.length} plots · {stores.length} buildings · {layout.roads.length} roads · {layout.regions.length} expansions · source: {layout.source}</span>
+            <span className="stat">{layout.plots.length} plots · {stores.length} buildings · {layout.roads.length} roads · {layout.regions.length} expansions</span>
           </div>
           <AdminMap layout={layout} stores={stores} selected={sel} onSelect={id => { setSel(id); if (id && tab !== 'plot') setTab('plot'); }} matches={matches} preview={plan} showLabels={labels} showBuildings={builds} fitKey={fitKey}
             selectedRoad={selRoad} onSelectRoad={id => { setSelRoad(id); setTab('roads'); }} highlightRoads={net && !net.connected ? new Set(net.components.slice(1).flat()) : null} />
@@ -142,9 +448,99 @@ export default function Admin() {
           <div className="seg wide">{TABS.map(([k, l]) => <button key={k} className={tab === k ? 'on' : ''} onClick={() => { setTab(k); if (k === 'expand') setFitKey(x => x + 1); }}>{l}</button>)}</div>
           {msg && <p className={msg.ok ? 'ok-msg' : 'err'} role="status">{msg.text}</p>}
 
+          {/* ── 1. Overview Dashboard Tab ── */}
+          {tab === 'overview' && (
+            <div style={{ display: 'grid', gap: '14px' }}>
+              <div>
+                <h2 style={{ margin: '0 0 4px', fontSize: '1.25rem' }}>Executive City Overview</h2>
+                <p className="note" style={{ margin: 0 }}>Comprehensive metrics across all 11 city districts &amp; infrastructure.</p>
+              </div>
+
+              {/* Metric Cards Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '10px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Total City Plots</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f8fafc', marginTop: '2px' }}>{layout.plots.length}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Master circular layout</div>
+                </div>
+                <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '10px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#86efac', textTransform: 'uppercase', fontWeight: 700 }}>Available Free</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#4ade80', marginTop: '2px' }}>{stats.available}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#86efac' }}>25 in each market</div>
+                </div>
+                <div style={{ background: 'rgba(71, 85, 105, 0.25)', border: '1px solid #475569', borderRadius: '10px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#cbd5e1', textTransform: 'uppercase', fontWeight: 700 }}>Permanently Locked</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#94a3b8', marginTop: '2px' }}>{stats.reserved}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>25/market + Central + Hub</div>
+                </div>
+                <div style={{ background: 'rgba(249, 115, 22, 0.1)', border: '1px solid rgba(249, 115, 22, 0.3)', borderRadius: '10px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#fdba74', textTransform: 'uppercase', fontWeight: 700 }}>Claimed by Residents</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fb923c', marginTop: '2px' }}>{stores.filter(s => s.ownerId).length}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#fdba74' }}>Active citizen stores</div>
+                </div>
+              </div>
+
+              {/* Promo Highlight Banner */}
+              <div style={{ background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(99, 102, 241, 0.1))', border: '1px solid rgba(99, 102, 241, 0.4)', borderRadius: '12px', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>🎟️</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.84rem', color: '#a5b4fc' }}>Active Promo Code: Jdhvpromo</span>
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#c7d2fe', marginTop: '2px' }}>
+                    Central District VIP unlock &middot; {redemptions.length} redeemed
+                  </div>
+                </div>
+                <button className="btn sm" onClick={() => setTab('promo')} style={{ background: '#4f46e5', color: '#fff', fontSize: '0.74rem' }}>
+                  Manage Promo &rarr;
+                </button>
+              </div>
+
+              {/* District Breakdown Table */}
+              <div>
+                <h3 style={{ margin: '8px 0 6px', fontSize: '0.92rem' }}>District Allocation</h3>
+                <div style={{ maxHeight: '220px', overflowY: 'auto', border: '1px solid #334155', borderRadius: '8px' }}>
+                  <table style={{ width: '100%', fontSize: '0.74rem', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ background: '#1e293b', borderBottom: '1px solid #334155', color: '#94a3b8' }}>
+                        <th style={{ padding: '6px 8px' }}>District</th>
+                        <th style={{ padding: '6px 8px' }}>Total</th>
+                        <th style={{ padding: '6px 8px' }}>Locked</th>
+                        <th style={{ padding: '6px 8px' }}>Free</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: '1px solid #1e293b' }}>
+                        <td style={{ padding: '5px 8px', fontWeight: 600 }}>Civic Plaza (J01)</td>
+                        <td style={{ padding: '5px 8px' }}>1</td>
+                        <td style={{ padding: '5px 8px', color: '#94a3b8' }}>1 (🔒)</td>
+                        <td style={{ padding: '5px 8px', color: '#64748b' }}>0</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid #1e293b' }}>
+                        <td style={{ padding: '5px 8px', fontWeight: 600 }}>Central District (C01-C09)</td>
+                        <td style={{ padding: '5px 8px' }}>9</td>
+                        <td style={{ padding: '5px 8px', color: '#94a3b8' }}>9 (🔒)</td>
+                        <td style={{ padding: '5px 8px', color: '#a5b4fc' }}>Promo Jdhvpromo</td>
+                      </tr>
+                      {DISTRICTS.map(d => (
+                        <tr key={d.code} style={{ borderBottom: '1px solid #1e293b' }}>
+                          <td style={{ padding: '5px 8px', fontWeight: 600 }}>{d.name}</td>
+                          <td style={{ padding: '5px 8px' }}>50</td>
+                          <td style={{ padding: '5px 8px', color: '#94a3b8' }}>25</td>
+                          <td style={{ padding: '5px 8px', color: '#4ade80' }}>25</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── 2. Plots & Buildings Management Tab ── */}
           {tab === 'plot' && !plot && <>
-            <p className="note">Click a plot on the map to manage it, or add a new plot below.</p>
-            <details><summary>Add a plot</summary>
+            <p className="note">Click any building on the map to inspect, unlock/lock, or reassign ownership.</p>
+            <details><summary>Add a new plot</summary>
               <div className="grid2"><Num label="X (m)" step={0.5} value={np.x} onChange={n => setNp({ ...np, x: n })} /><Num label="Z (m)" step={0.5} value={np.z} onChange={n => setNp({ ...np, z: n })} />
                 <Num label="Facing (°)" value={np.deg} onChange={n => setNp({ ...np, deg: n })} /><Num label="Width (m)" step={0.5} value={np.w} onChange={n => setNp({ ...np, w: n })} /><Num label="Depth (m)" step={0.5} value={np.d} onChange={n => setNp({ ...np, d: n })} />
                 <label>Tier<select value={np.tier} onChange={e => setNp({ ...np, tier: e.target.value as Tier, price: PRICE[e.target.value as Tier] })}>{['free', 'premium', 'featured', 'corner'].map(t => <option key={t}>{t}</option>)}</select></label></div>
@@ -219,6 +615,65 @@ export default function Admin() {
               <button className="btn sm danger" onClick={() => setModal('remove')}>Remove building…</button></details>}
           </>)}
 
+          {/* ── 3. Promo Codes Management Tab ── */}
+          {tab === 'promo' && (
+            <div style={{ display: 'grid', gap: '14px' }}>
+              <div>
+                <h2 style={{ margin: '0 0 4px', fontSize: '1.25rem' }}>Promo Code Manager</h2>
+                <p className="note" style={{ margin: 0 }}>Special access promo codes for unlocking exclusive city sectors.</p>
+              </div>
+
+              {/* Promo Code Card */}
+              <div style={{ background: '#1e293b', border: '1px solid #4338ca', borderRadius: '12px', padding: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>🎟️</span>
+                    <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc' }}>Jdhvpromo</span>
+                  </div>
+                  <span style={{ background: '#dcfce7', color: '#15803d', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '999px' }}>
+                    ACTIVE &middot; UNLIMITED
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gap: '6px', fontSize: '0.78rem', color: '#cbd5e1', borderTop: '1px solid #334155', paddingTop: '8px' }}>
+                  <div><b>Target District:</b> Central District (C01 &ndash; C09)</div>
+                  <div><b>Benefit:</b> Instant unlock &amp; 100% Free building claim</div>
+                  <div><b>Total Redemptions:</b> {redemptions.length} user claims</div>
+                </div>
+              </div>
+
+              {/* Redemptions Log */}
+              <div>
+                <h3 style={{ margin: '8px 0 6px', fontSize: '0.92rem' }}>Recent Redemptions Log</h3>
+                {redemptions.length === 0 ? (
+                  <p className="note">No Central District promo redemptions logged yet. Users can enter code <b>Jdhvpromo</b> on the Buy page.</p>
+                ) : (
+                  <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #334155', borderRadius: '8px' }}>
+                    <table style={{ width: '100%', fontSize: '0.74rem', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ background: '#1e293b', borderBottom: '1px solid #334155', color: '#94a3b8' }}>
+                          <th style={{ padding: '6px 8px' }}>Plot</th>
+                          <th style={{ padding: '6px 8px' }}>Resident</th>
+                          <th style={{ padding: '6px 8px' }}>Time</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {redemptions.map((r, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid #1e293b' }}>
+                            <td style={{ padding: '5px 8px', fontWeight: 700, color: '#22d3ee' }}>{r.plotId}</td>
+                            <td style={{ padding: '5px 8px' }}>{r.userEmail || r.userId}</td>
+                            <td style={{ padding: '5px 8px', color: '#64748b' }}>{new Date(r.at).toLocaleDateString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── 4. Roads Tab ── */}
           {tab === 'roads' && (<>
             <h2>Roads &amp; entrances</h2>
             <p className="note">Ring roads, radial boundary roads (market entrances), district spines and cross streets. Click a road on the map or pick one below.</p>
@@ -235,6 +690,7 @@ export default function Admin() {
             </div>}
           </>)}
 
+          {/* ── 5. Network Tab ── */}
           {tab === 'network' && net && (<>
             <h2>Network check</h2>
             <p className="note">Validated from the actual plot and road geometry: road connectivity, every storefront entrance facing a road or sidewalk, and overlaps.</p>
@@ -245,12 +701,14 @@ export default function Admin() {
             {net.overlaps.length > 0 && <div className="err-box"><ul>{net.overlaps.slice(0, 10).map(o => <li key={o}>{o}</li>)}</ul></div>}
           </>)}
 
+          {/* ── 6. Owners Tab ── */}
           {tab === 'owners' && (<>
             <h2>Store ownership</h2>
             <p className="note">{stores.length} buildings. Select one to reassign its owner, edit details, relocate or remove it.</p>
             <ul className="owner-list">{stores.filter(x => !matches || matches.has(x.plotId)).map(x => <li key={x.plotId}><button onClick={() => { setSel(x.plotId); setTab('plot'); }}><b>{x.config.name}</b><span>{x.plotId} · {layout.byId.get(x.plotId)?.district}</span><em>{ownerLabel(x.ownerId)}</em></button></li>)}</ul>
           </>)}
 
+          {/* ── 7. Expand Tab ── */}
           {tab === 'expand' && (<>
             <h2>Add a market district</h2>
             <p className="note">Attaches a connected block (a new entrance road from a ring gate or open road end, cross streets and rows of plots on both sides) at any bearing. Validated against the real geometry; nothing is saved until you confirm.</p>
@@ -278,9 +736,10 @@ export default function Admin() {
       {modal === 'addplot' && <Confirm title="Create plot?" label="Create plot" busy={busy} onOk={createPlot} onCancel={() => setModal(null)}><p>Add plot <b>{addPlot.id}</b> ({np.w}×{np.d} m, {np.tier}) at ({np.x}, {np.z}) facing {np.deg}°. It appears in the 3D world for every visitor.</p></Confirm>}
       {modal === 'saveroad' && rd && <Confirm title={rd.isNew ? 'Add this road?' : 'Save road changes?'} label="Save road" busy={busy} onOk={saveRoad} onCancel={() => setModal(null)}><p><b>{rd.id}</b>: {isRing(rd) ? `ring radius ${rd.x1} m` : `(${rd.x0}, ${rd.z0}) → (${rd.x1}, ${rd.z1})`}, {rd.w} m wide. Roads and sidewalks in the 3D world update from this.</p>{rCheck.warnings.map(w => <p key={w} className="note" style={{ color: '#fcd34d' }}>{w}</p>)}</Confirm>}
       {modal === 'delroad' && rd && roadDelReport && <Confirm title="Delete road?" danger label="Delete road" requireText={rd.id} busy={busy} onOk={delRoad} onCancel={() => setModal(null)}>
-        <p>Removes <b>{rd.id}</b> from the city.</p>{!roadDelReport.connected && <p className="err">Warning: this splits the road network into {roadDelReport.components.length} groups.</p>}{roadDelReport.unreachable.length > 0 && <p className="err">Warning: {roadDelReport.unreachable.length} plots lose their road access.</p>}</Confirm>}
-      {modal === 'expand' && plan && <Confirm title="Add this district?" label={`Add ${plan.plots.length} plots`} busy={busy} onOk={confirmExpand} onCancel={() => setModal(null)}>
-        <p>Add region <b>{plan.region.id}</b> ({plan.region.direction}) with <b>{plan.plots.length}</b> plots of {ep.plotW}×{ep.plotD} m and <b>{plan.roads.length}</b> roads. It is saved to the database and becomes part of the walkable 3D world for every visitor.</p></Confirm>}
+        <p>Delete road <b>{rd.id}</b>?</p>
+        {!roadDelReport.connected && <p className="err">Deleting this road disconnects parts of the city road network.</p>}
+        {roadDelReport.unreachable.length > 0 && <p className="err">{roadDelReport.unreachable.length} plots would lose road access.</p>}
+      </Confirm>}
     </div>
   );
 }
