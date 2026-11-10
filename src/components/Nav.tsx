@@ -15,6 +15,9 @@ const LINKS: [string, string][] = [
 
 export default function Nav({ overlay = false, floating = false }: { overlay?: boolean; floating?: boolean }) {
   const { user, init, signOut } = useAuth(), path = usePathname();
+
+  // Only show on the home page
+  if (path !== '/') return null;
   const [admin, setAdmin] = useState(false), [open, setOpen] = useState(false);
   useEffect(() => { init(); }, [init]);
   useEffect(() => { let on = true; isAdmin(user).then(v => on && setAdmin(v)).catch(() => {}); return () => { on = false; }; }, [user]);
@@ -110,16 +113,16 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
               <Link
                 href="/profile"
                 style={{
-                  color: path === '/profile' ? '#1b4d2e' : '#4b5563',
+                  color: (path as string) === '/profile' ? '#1b4d2e' : '#4b5563',
                   fontSize: '0.88rem',
-                  fontWeight: path === '/profile' ? 700 : 500,
+                  fontWeight: (path as string) === '/profile' ? 700 : 500,
                   textDecoration: 'none',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.35rem',
                   padding: '0.35rem 0.65rem',
                   borderRadius: '999px',
-                  background: path === '/profile' ? '#e8f5e9' : 'transparent',
+                  background: (path as string) === '/profile' ? '#e8f5e9' : 'transparent',
                 }}
               >
                 <span>👤</span>
