@@ -1053,7 +1053,14 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
           <div className="actions">
             <button className="btn" disabled={!near.config.website} onClick={() => enter(near)}>{near.config.website ? 'Visit Website' : 'No website yet'}</button>
             {!near.ownerId && nearP.status === 'available' && <Link className="btn" href={`/buy?plot=${nearP.id}`}>Claim building</Link>}
-            {nearP.status === 'reserved' && <button className="btn" disabled style={{ opacity: 0.65, cursor: 'not-allowed' }}>🔒 Permanently Locked</button>}
+            {nearP.status === 'reserved' && (nearP.district.includes('Central') || nearP.id.startsWith('C0')) && !near.ownerId && (
+              <Link className="btn" href={`/buy?plot=${nearP.id}&code=Jdhvpromo`} style={{ background: '#4f46e5', color: '#fff' }}>
+                🎟️ Unlock with Promo
+              </Link>
+            )}
+            {nearP.status === 'reserved' && (!nearP.district.includes('Central') && !nearP.id.startsWith('C0')) && (
+              <button className="btn" disabled style={{ opacity: 0.65, cursor: 'not-allowed' }}>🔒 Permanently Locked</button>
+            )}
             <button className="btn outline" onClick={() => { setDismissedPlot(nearPlot); setPanel(false); }}>Close</button>
           </div>
         </aside>
@@ -1062,7 +1069,16 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
         <aside className="store-panel glass" aria-label="Plot information">
           <div className="head"><span className="logo-dot" style={{ background: nearP.status === 'available' ? '#22c55e' : '#64748b', color: '#fff' }}>{nearP.status === 'available' ? 'F' : '🔒'}</span><div><h3>Plot {nearP.id}</h3><p>{nearP.district} · {nearP.status === 'reserved' ? 'Permanently Locked' : 'Free to Claim'}</p></div></div>
           <div className="meta"><div><b>{nearP.w}×{nearP.d} m</b>Size</div><div><b>{nearP.status === 'reserved' ? 'Locked' : 'Free'}</b>Price</div><div><b>{nearP.status === 'reserved' ? 'Locked' : 'Free (1/email)'}</b>Tier</div></div>
-          <div className="actions">{nearP.status === 'available' ? <Link className="btn" href={`/buy?plot=${nearP.id}`}>Claim Free Building</Link> : <button className="btn" disabled>🔒 Permanently Locked</button>}<button className="btn outline" onClick={() => { setDismissedPlot(nearPlot); setPanel(false); }}>Close</button></div>
+          <div className="actions">
+            {nearP.status === 'available' ? (
+              <Link className="btn" href={`/buy?plot=${nearP.id}`}>Claim Free Building</Link>
+            ) : (nearP.district.includes('Central') || nearP.id.startsWith('C0')) ? (
+              <Link className="btn" href={`/buy?plot=${nearP.id}&code=Jdhvpromo`} style={{ background: '#4f46e5', color: '#fff' }}>🎟️ Unlock with Promo</Link>
+            ) : (
+              <button className="btn" disabled>🔒 Permanently Locked</button>
+            )}
+            <button className="btn outline" onClick={() => { setDismissedPlot(nearPlot); setPanel(false); }}>Close</button>
+          </div>
         </aside>
       )}
       {mapOpen && (
@@ -1123,6 +1139,11 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
                     {pickP.status === 'available' && !pickS?.ownerId && (
                       <Link className="btn" href={`/buy?plot=${pickP.id}`} style={{ background: '#22c55e', color: '#fff', textDecoration: 'none', textAlign: 'center', fontWeight: 700 }}>
                         Claim Free Building
+                      </Link>
+                    )}
+                    {pickP.status === 'reserved' && (pickP.district.includes('Central') || pickP.id.startsWith('C0')) && !pickS?.ownerId && (
+                      <Link className="btn" href={`/buy?plot=${pickP.id}&code=Jdhvpromo`} style={{ background: '#4f46e5', color: '#fff', textDecoration: 'none', textAlign: 'center', fontWeight: 700 }}>
+                        🎟️ Unlock with Promo (Jdhvpromo)
                       </Link>
                     )}
                   </div>

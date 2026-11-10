@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useStores } from '@/components/useStores';
-import { purchasePlot, useAuth } from '@/lib/data';
+import { purchasePlot, claimWithPromoCode, useAuth } from '@/lib/data';
 import { FACADES, TEMPLATES, THEMES, defaultConfig } from '@/lib/templates';
 import { computeStats } from '@/lib/stats';
 import type { Plot, StoreConfig } from '@/lib/types';
@@ -52,6 +52,8 @@ function Marketplace() {
   const [saved, setSaved] = useState<string[]>([]);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [promoCode, setPromoCode] = useState(params.get('code') || '');
+  const [promoMsg, setPromoMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     try { setSaved(JSON.parse(localStorage.getItem('thecity.saved') || '[]')); } catch {}
@@ -125,6 +127,34 @@ function Marketplace() {
       router.push('/editor?plot=' + plot.id);
     } catch (e: any) {
       setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handlePromoClaim = async () => {
+    if (!plot) return;
+    if (!user) return router.push('/login');
+    if (!promoCode.trim()) {
+      setPromoMsg({ ok: false, text: 'Please enter a promo code.' });
+      return;
+    }
+    setBusy(true);
+    setPromoMsg(null);
+    setErr('');
+    try {
+      await claimWithPromoCode(plot.id, promoCode.trim(), user, tpl, {
+        name: name.trim() || `${plot.id} Enterprise`,
+        theme,
+        facade,
+      });
+      setPromoMsg({ ok: true, text: `🎉 Success! Building ${plot.id} unlocked and claimed for free!` });
+      await reload();
+      setTimeout(() => {
+        router.push('/editor?plot=' + plot.id);
+      }, 1200);
+    } catch (e: any) {
+      setPromoMsg({ ok: false, text: e.message });
     } finally {
       setBusy(false);
     }
@@ -546,6 +576,40 @@ function Marketplace() {
                     <span>{saved.includes(plot.id) ? 'Saved' : 'Save Plot'}</span>
                   </button>
                 </div>
+
+                {/* Central District VIP Promo Code Unlock & Free Claim Card */}
+                {(plot.district.includes('Central') || plot.id.startsWith('C0')) && st === 'reserved' && (
+                  <div style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)', border: '1px solid #818cf8', borderRadius: '12px', padding: '12px 14px', marginTop: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '1.05rem' }}>🎟️</span>
+                      <span style={{ fontWeight: 800, fontSize: '0.84rem', color: '#312e81' }}>Central District VIP Promo Code</span>
+                    </div>
+                    <p style={{ margin: '0 0 8px', fontSize: '0.76rem', color: '#4338ca', lineHeight: 1.35 }}>
+                      Unlock this exclusive Central District building and claim it for free using promo code <b>Jdhvpromo</b>.
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        placeholder="Enter promo code (Jdhvpromo)"
+                        value={promoCode}
+                        onChange={e => setPromoCode(e.target.value)}
+                        disabled={busy}
+                        style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid #818cf8', fontSize: '0.82rem', fontWeight: 600, background: '#ffffff', color: '#0f172a' }}
+                      />
+                      <button
+                        onClick={handlePromoClaim}
+                        disabled={busy || !promoCode.trim()}
+                        style={{ padding: '7px 14px', borderRadius: '8px', border: 'none', background: '#4f46e5', color: '#ffffff', fontSize: '0.8rem', fontWeight: 700, cursor: busy || !promoCode.trim() ? 'not-allowed' : 'pointer', boxShadow: '0 2px 6px rgba(79, 70, 229, 0.3)', whiteSpace: 'nowrap' }}
+                      >
+                        {busy ? 'Unlocking…' : 'Unlock & Claim Free 🎁'}
+                      </button>
+                    </div>
+                    {promoMsg && (
+                      <p style={{ margin: '6px 0 0', fontSize: '0.76rem', color: promoMsg.ok ? '#15803d' : '#dc2626', fontWeight: 600 }}>
+                        {promoMsg.text}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {err && <p style={{ margin: 0, color: '#dc2626', fontSize: '0.78rem' }}>{err}</p>}
 

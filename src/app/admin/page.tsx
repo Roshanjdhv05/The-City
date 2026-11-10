@@ -158,6 +158,31 @@ export default function Admin() {
               <dt>Region</dt><dd>{plot.region || 'Original city'}</dd><dt>Status</dt><dd><b className={store ? 'st-occ' : plot.status === 'reserved' ? 'st-res' : 'st-av'}>{store ? 'Occupied' : plot.status}</b></dd>
               <dt>Store</dt><dd>{store?.config.name || '—'}</dd><dt>Owner</dt><dd>{store ? ownerLabel(store.ownerId) : '—'}</dd>{store && <><dt>Visits / clicks</dt><dd>{store.visits} / {store.clicks}</dd></>}</dl>
 
+            {/* Quick Admin Building Access Controls */}
+            <div style={{ display: 'flex', gap: '8px', margin: '10px 0 14px' }}>
+              {plot.status === 'reserved' ? (
+                <button
+                  className="btn sm"
+                  style={{ background: '#22c55e', color: '#fff', border: 'none', fontWeight: 700, flex: 1, padding: '7px 12px' }}
+                  onClick={() => run(async () => {
+                    await adminUpdatePlot(plot.id, { status: 'available' });
+                  }, `Building ${plot.id} unlocked! Status is now available to claim.`)}
+                >
+                  🔓 Unlock Building (Make Available)
+                </button>
+              ) : (
+                <button
+                  className="btn sm outline danger"
+                  style={{ fontWeight: 700, flex: 1, padding: '7px 12px' }}
+                  onClick={() => run(async () => {
+                    await adminUpdatePlot(plot.id, { status: 'reserved' });
+                  }, `Building ${plot.id} locked! Marked as reserved.`)}
+                >
+                  🔒 Lock Building (Mark Reserved)
+                </button>
+              )}
+            </div>
+
             <details><summary>Edit plot</summary>
               <label>Status<select value={pd.status} onChange={e => setPd({ ...pd, status: e.target.value })}><option value="available">available</option><option value="reserved">reserved</option></select></label>
               <label>Tier<select value={pd.tier} onChange={e => setPd({ ...pd, tier: e.target.value as Tier })}>{['free', 'premium', 'featured', 'corner'].map(t => <option key={t}>{t}</option>)}</select></label>

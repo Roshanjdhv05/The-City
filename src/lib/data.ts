@@ -74,7 +74,9 @@ export async function purchasePlot(plotId: string, user: User, template = 'tech'
   if (!user || !user.id) {
     throw new Error('You must be signed in with an email account to claim a building.');
   }
-  const targetPlot = BASE_PLOTS.find(p => p.id === plotId);
+  const ll = localLayout();
+  const override = ll.overrides[plotId];
+  const targetPlot = override ? { ...(BASE_PLOTS.find(p => p.id === plotId) || {}), ...override } : BASE_PLOTS.find(p => p.id === plotId);
   if (targetPlot && targetPlot.status === 'reserved') {
     throw new Error('This building is permanently locked and cannot be claimed.');
   }
@@ -100,6 +102,93 @@ export async function purchasePlot(plotId: string, user: User, template = 'tech'
     }
     writeLocal([...l.filter(s => s.plotId !== plotId), store]);
   }
+  return store;
+}
+
+/** Claim a Central District building for free using promo code Jdhvpromo (unlocks and claims building) */
+export async function claimWithPromoCode(
+  plotId: string,
+  code: string,
+  user: User,
+  template = 'tech',
+  over: Partial<StoreConfig> = {}
+): Promise<Store> {
+  if (!user || !user.id) {
+    throw new Error('You must be signed in with an email account to claim a building.');
+  }
+
+  const cleanCode = (code || '').trim();
+  if (cleanCode.toUpperCase() !== 'JDHVPROMO') {
+    throw new Error('Invalid promo code. Enter code Jdhvpromo to unlock Central District buildings.');
+  }
+
+  const ll = localLayout();
+  const override = ll.overrides[plotId];
+  const targetPlot = override ? { ...(BASE_PLOTS.find(p => p.id === plotId) || {}), ...override } : BASE_PLOTS.find(p => p.id === plotId);
+
+  if (!targetPlot) {
+    throw new Error(`Building ${plotId} not found.`);
+  }
+
+  // Strictly only valid for Central District buildings
+  const isCentral = targetPlot.district.toLowerCase().includes('central') || plotId.startsWith('C0');
+  if (!isCentral) {
+    throw new Error('Promo code Jdhvpromo is only valid for Central District buildings.');
+  }
+
+  const store: Store = {
+    plotId,
+    ownerId: user.id,
+    visits: 0,
+    clicks: 0,
+    createdAt: new Date().toISOString(),
+    config: defaultConfig(template, { name: 'Central Enterprise', ...over }),
+  };
+
+  if (supabase) {
+    const { error: rpcErr } = await supabase.rpc('claim_with_promo_code', {
+      p_plot_id: plotId,
+      p_code: cleanCode,
+      p_config: store.config,
+    });
+    if (rpcErr) {
+      // Direct fallback if RPC is not yet executed
+      const { error: plotErr } = await supabase.from('city_plots').update({ status: 'available' }).eq('id', plotId);
+      const { error: storeErr } = await supabase.from('stores').upsert({
+        plot_id: plotId,
+        owner_id: user.id,
+        config: store.config,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'plot_id' });
+      if (storeErr) throw new Error(storeErr.message);
+    }
+  } else {
+    ensureSeeded();
+    const l = local();
+    if (l.some(s => s.plotId === plotId && s.ownerId && s.ownerId !== user.id)) {
+      throw new Error('This Central District building has already been claimed by another resident.');
+    }
+
+    // 1. Unlock the plot in local layout
+    writeLayout({
+      ...ll,
+      overrides: {
+        ...ll.overrides,
+        [plotId]: { ...(ll.overrides[plotId] || {}), status: 'available' },
+      },
+    });
+
+    // 2. Set ownership of the store
+    writeLocal([...l.filter(s => s.plotId !== plotId), store]);
+
+    // 3. Record promo redemption locally
+    try {
+      const redemptions = JSON.parse(localStorage.getItem('thecity.promo_redemptions') || '[]');
+      redemptions.push({ code: cleanCode, userId: user.id, userEmail: user.email, plotId, at: new Date().toISOString() });
+      localStorage.setItem('thecity.promo_redemptions', JSON.stringify(redemptions));
+    } catch {}
+  }
+
   return store;
 }
 export async function saveStore(plotId: string, config: StoreConfig) {
