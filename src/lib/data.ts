@@ -3,7 +3,7 @@ import { defaultConfig } from './templates';
 import { SEED_STORES, createMarketBuilding } from './seeds';
 import { BASE_PLOTS, BASE_ROADS } from './plots';
 import { Layout, makeLayout, baseLayout } from './layout';
-import type { Store, StoreConfig, User, Plot, Road, Region } from './types';
+import type { Store, StoreConfig, User, Plot, Road, Region, Tier } from './types';
 import type { ExpansionPlan } from './expansion';
 import { create } from 'zustand';
 
@@ -15,10 +15,10 @@ export const DEMO_ADMIN = process.env.NEXT_PUBLIC_DEMO_ADMIN_EMAIL || 'admin@the
 function local(): Store[] { try { return JSON.parse(localStorage.getItem(LS) || '[]'); } catch { return []; } }
 function writeLocal(s: Store[]) { localStorage.setItem(LS, JSON.stringify(s)); }
 function ensureSeeded() {
-  if (localStorage.getItem('thecity.layoutv') !== '7') {
+  if (localStorage.getItem('thecity.layoutv') !== '8') {
     localStorage.removeItem(LSL);
     localStorage.removeItem(LSV);
-    localStorage.setItem('thecity.layoutv', '7');
+    localStorage.setItem('thecity.layoutv', '8');
   } // circular master plan with exactly 25 locked + 25 available buildings per market, central & hub locked
   if (localStorage.getItem(LSV)) return;
   // platform-owned seeds are refreshed to the current design; visit counters and user-owned stores are kept
@@ -31,7 +31,35 @@ function localLayout(): LocalLayout { try { return { plots: [], roads: [], regio
 const writeLayout = (l: LocalLayout) => localStorage.setItem(LSL, JSON.stringify(l));
 
 const num = (v: any) => Number(v);
-const rowPlot = (r: any): Plot => ({ id: r.id, district: r.district, category: r.category, tier: r.tier, price: num(r.price), x: num(r.x), z: num(r.z), rot: num(r.rot), w: num(r.w), d: num(r.d), status: r.status, region: r.region || undefined, landmark: !!r.landmark });
+const basePlotMap = new Map<string, Plot>(BASE_PLOTS.map(p => [p.id, p]));
+
+const rowPlot = (r: any): Plot => {
+  const base = basePlotMap.get(r.id);
+  // Guarantee that canonical 25-locked / 25-available rule applies even if DB has unmigrated status
+  let status: 'available' | 'reserved' = (r.status as 'available' | 'reserved') || 'available';
+  if (base) {
+    if (base.status === 'reserved' && status === 'available') {
+      // J01, C01-C09, and plots 1-25 are permanently locked by design
+      status = 'reserved';
+    }
+  }
+  return {
+    id: r.id,
+    district: r.district || base?.district || '',
+    category: r.category || base?.category || '',
+    tier: (status === 'reserved' ? 'featured' : (r.tier || base?.tier || 'free')) as Tier,
+    price: status === 'reserved' ? 0 : num(r.price ?? base?.price ?? 0),
+    x: num(r.x ?? base?.x ?? 0),
+    z: num(r.z ?? base?.z ?? 0),
+    rot: num(r.rot ?? base?.rot ?? 0),
+    w: num(r.w ?? base?.w ?? 12),
+    d: num(r.d ?? base?.d ?? 13.6),
+    status,
+    region: r.region || undefined,
+    landmark: !!r.landmark || !!base?.landmark,
+  };
+};
+
 const rowRoad = (r: any): Road => ({ id: r.id, kind: r.kind === 'ring' ? 'ring' : 'seg', x0: num(r.x0), z0: num(r.z0), x1: num(r.x1), z1: num(r.z1), w: num(r.w), region: r.region || undefined });
 const rowStore = (r: any): Store => ({ plotId: r.plot_id, ownerId: r.owner_id, config: { ...defaultConfig(r.config?.template === 'jenterprise' ? 'tech' : r.config?.template), ...r.config }, visits: r.visits, clicks: r.clicks, createdAt: r.created_at });
 
@@ -40,7 +68,8 @@ export async function loadWorld(): Promise<{ layout: Layout; stores: Store[] }> 
   if (supabase) {
     const [p, r, g, s] = await Promise.all([supabase.from('city_plots').select('*'), supabase.from('city_roads').select('*'), supabase.from('city_regions').select('*'), supabase.from('stores').select('*')]);
     const owned = (s.data || []).map(rowStore);
-    if (!p.error && p.data && p.data.length) {
+    const hasCurrentLayout = p.data && p.data.some((x: any) => x.id && x.id.startsWith('SAS-'));
+    if (!p.error && p.data && p.data.length && hasCurrentLayout) {
       const plots = p.data.map(rowPlot);
       const ids = new Set(owned.map(x => x.plotId));
       const seeded = SEED_STORES.filter(x => !ids.has(x.plotId));
@@ -49,7 +78,9 @@ export async function loadWorld(): Promise<{ layout: Layout; stores: Store[] }> 
       const missing = plots.filter(x => !mergedIds.has(x.id)).map((plot, i) => createMarketBuilding(plot, i));
       return { layout: makeLayout(plots, (r.data || []).map(rowRoad), (g.data || []) as Region[], 'db'), stores: [...merged, ...missing] };
     }
-    const ids = new Set(owned.map(x => x.plotId)); // migration not applied yet: fall back to built-in layout
+    // Database either has no plots or holds legacy/unmigrated layout:
+    // Seamlessly fall back to canonical BASE_PLOTS (460 plots: exactly 25 locked + 25 available per district)
+    const ids = new Set(owned.map(x => x.plotId));
     return { layout: baseLayout(), stores: [...SEED_STORES.filter(x => !ids.has(x.plotId)), ...owned] };
   }
   ensureSeeded();
