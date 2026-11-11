@@ -6,6 +6,8 @@ import Nav from '@/components/Nav';
 import HUD from '@/components/HUD';
 import { useStores } from '@/components/useStores';
 import { WorldLoadingScreen } from '@/components/WorldLoadingScreen';
+import { MobileRotateInstruction } from '@/components/MobileRotateInstruction';
+import { MobileJoystick } from '@/components/MobileJoystick';
 
 const CityCanvas = dynamic(() => import('@/components/CityCanvas'), {
   ssr: false,
@@ -24,6 +26,7 @@ function Explore() {
 
   return (
     <div className="fullscreen">
+      <MobileRotateInstruction />
       <WorldLoadingScreen isReady={worldReady && !loading} />
       <CityCanvas
         stores={stores}
@@ -32,6 +35,7 @@ function Explore() {
         onReady={handleWorldReady}
       />
       {worldReady && <HUD stores={stores} layout={layout} initialStore={store} />}
+      {worldReady && <MobileJoystick />}
     </div>
   );
 }

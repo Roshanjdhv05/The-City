@@ -15,10 +15,20 @@ import { useTimeStore, formatClock, getTimePhase, TIME_PRESETS } from '@/lib/tim
 import { useMultiplayer } from '@/lib/multiplayer';
 
 type Guide = { id: string; name: string; x: number; z: number };
-function Minimap({ occupied, layout, guide }: { occupied: Set<string>; layout: Layout; guide: Guide | null }) {
+function Minimap({
+  occupied,
+  layout,
+  guide,
+  size = 120,
+}: {
+  occupied: Set<string>;
+  layout: Layout;
+  guide: Guide | null;
+  size?: number;
+}) {
   const ref = useRef<HTMLCanvasElement>(null), g2 = useRef(guide); g2.current = guide;
   useEffect(() => {
-    const c = ref.current!, g = c.getContext('2d')!, S = c.width, sc = 0.55; let raf = 0;
+    const c = ref.current!, g = c.getContext('2d')!, S = c.width, sc = 0.55 * (S / 120); let raf = 0;
     const draw = () => {
       g.clearRect(0, 0, S, S); g.save(); g.beginPath(); g.arc(S / 2, S / 2, S / 2 - 3, 0, Math.PI * 2); g.clip(); g.fillStyle = '#10301f'; g.fillRect(0, 0, S, S);
       g.translate(S / 2, S / 2); g.rotate(player.yaw - Math.PI); g.scale(sc, sc); g.translate(-player.x, -player.z);
@@ -28,14 +38,14 @@ function Minimap({ occupied, layout, guide }: { occupied: Set<string>; layout: L
       g.globalAlpha = 1; const t = g2.current; if (t) { g.fillStyle = '#ff4d6d'; g.beginPath(); g.arc(t.x, t.z, 9, 0, Math.PI * 2); g.fill(); }
       g.restore();
       // Player Arrow
-      g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(S / 2, S / 2 - 8); g.lineTo(S / 2 + 6, S / 2 + 7); g.lineTo(S / 2 - 6, S / 2 + 7); g.closePath(); g.fill();
+      g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(S / 2, S / 2 - S * 0.065); g.lineTo(S / 2 + S * 0.05, S / 2 + S * 0.06); g.lineTo(S / 2 - S * 0.05, S / 2 + S * 0.06); g.closePath(); g.fill();
       // Lime Accent Ring
-      g.strokeStyle = 'rgba(163, 230, 53, 0.9)'; g.lineWidth = 2.5; g.beginPath(); g.arc(S / 2, S / 2, S / 2 - 2, 0, Math.PI * 2); g.stroke();
+      g.strokeStyle = 'rgba(163, 230, 53, 0.9)'; g.lineWidth = S > 80 ? 2.5 : 1.8; g.beginPath(); g.arc(S / 2, S / 2, S / 2 - 2, 0, Math.PI * 2); g.stroke();
       raf = requestAnimationFrame(draw);
     };
     draw(); return () => cancelAnimationFrame(raf);
-  }, [occupied, layout]);
-  return <canvas ref={ref} width={120} height={120} className="minimap" aria-label="Minimap" />;
+  }, [occupied, layout, size]);
+  return <canvas ref={ref} width={size} height={size} style={{ width: size, height: size, display: 'block' }} className="minimap" aria-label="Minimap" />;
 }
 
 const KEYS_HINT = 'Space/E up · Q down · Shift fast · drag look · scroll zoom · V camera · T time · F gather · M map';
@@ -105,10 +115,12 @@ function TimeOnlinePill({
   onlineCount,
   onToggle,
   open,
+  compact = false,
 }: {
   onlineCount: number;
   onToggle: () => void;
   open: boolean;
+  compact?: boolean;
 }) {
   const { hour } = useTimeStore();
   const [mounted, setMounted] = useState(false);
@@ -121,9 +133,9 @@ function TimeOnlinePill({
       className="world-pill"
       onClick={onToggle}
       style={{
-        padding: '6px 16px',
-        gap: 10,
-        fontSize: 13,
+        padding: compact ? '5px 10px' : '6px 16px',
+        gap: compact ? 6 : 10,
+        fontSize: compact ? 11 : 13,
         fontWeight: 600,
         cursor: 'pointer',
         border: '1.5px solid rgba(163, 230, 53, 0.55)',
@@ -133,25 +145,25 @@ function TimeOnlinePill({
       }}
       title="Click to view online explorers & world time"
     >
-      <span style={{ fontSize: 14 }}>{info.icon}</span>
+      <span style={{ fontSize: compact ? 12 : 14 }}>{info.icon}</span>
       <span style={{ fontWeight: 700, letterSpacing: '-0.01em' }}>{formatClock(hour)}</span>
       <span style={{ color: 'rgba(255,255,255,0.25)' }}>|</span>
-      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px #4ade80' }} />
-      <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Online</span>
+      <span style={{ width: compact ? 6 : 8, height: compact ? 6 : 8, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px #4ade80' }} />
+      {!compact && <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Online</span>}
       <span
         style={{
           background: '#4ade80',
           color: '#0f172a',
-          padding: '2px 7px',
+          padding: compact ? '1px 5px' : '2px 7px',
           borderRadius: 999,
-          fontSize: 11,
+          fontSize: compact ? 10 : 11,
           fontWeight: 800,
           lineHeight: 1.2,
         }}
       >
         {onlineCount}
       </span>
-      <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 2 }}>{open ? '▲' : '▾'}</span>
+      <span style={{ fontSize: compact ? 9 : 10, color: '#94a3b8', marginLeft: 1 }}>{open ? '▲' : '▾'}</span>
     </button>
   );
 }
@@ -269,7 +281,7 @@ function QualitySelector() {
 }
 
 // ─── Settings Panel ─────────────────────────────────────────────────────────
-function SettingsPanel() {
+function SettingsPanel({ compact = false }: { compact?: boolean } = {}) {
   const { quality, setQuality, walkSpeed, sensitivity, setWalkSpeed, setSensitivity, debugMonitorOpen, toggleDebugMonitor } = useUI();
   const { hour, setHour, isLiveDevice, setLiveDevice } = useTimeStore();
   const [open, setOpen] = useState(false);
@@ -284,7 +296,7 @@ function SettingsPanel() {
 
   const panel: React.CSSProperties = {
     position: 'absolute', top: 'calc(100% + 10px)', right: 0, zIndex: 200,
-    minWidth: 280, padding: '16px 18px 14px',
+    minWidth: compact ? 260 : 280, maxWidth: '90vw', maxHeight: '82vh', overflowY: 'auto', padding: '16px 18px 14px',
     background: 'rgba(18, 25, 42, 0.94)', backdropFilter: 'blur(24px)',
     WebkitBackdropFilter: 'blur(24px)',
     border: '1px solid rgba(255,255,255,0.16)', borderRadius: 18,
@@ -319,6 +331,9 @@ function SettingsPanel() {
         onClick={() => setOpen(o => !o)}
         title="Game Settings"
         style={{
+          width: compact ? 34 : undefined,
+          height: compact ? 34 : undefined,
+          fontSize: compact ? 15 : undefined,
           border: '2px solid #a3e635',
           boxShadow: '0 0 14px rgba(163, 230, 53, 0.45)',
         }}
@@ -681,6 +696,19 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
   const prevDistrict = () => { distIdx.current = (distIdx.current - 2 + districts.length) % districts.length; exploreDistrict(); };
   const pickP = pick ? layout.byId.get(pick) : undefined, pickS = stores.find(s => s.plotId === pick);
   const [onlinePanelOpen, setOnlinePanelOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(typeof window !== 'undefined' && window.innerWidth <= 840);
+    check();
+    window.addEventListener('resize', check);
+    window.addEventListener('orientationchange', check);
+    return () => {
+      window.removeEventListener('resize', check);
+      window.removeEventListener('orientationchange', check);
+    };
+  }, []);
 
   return (
     <div className="hud">
@@ -692,11 +720,11 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
         className="hud-tl"
         style={{
           position: 'absolute',
-          top: 'calc(var(--nav-h) + 12px)',
-          left: '16px',
+          top: isMobile ? '8px' : 'calc(var(--nav-h) + 12px)',
+          left: isMobile ? '8px' : '16px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px',
+          gap: isMobile ? '4px' : '8px',
           zIndex: 60,
           alignItems: 'flex-start',
         }}
@@ -709,31 +737,31 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
               position: 'relative',
               cursor: 'pointer',
               borderRadius: '50%',
-              padding: '3px',
+              padding: isMobile ? '2px' : '3px',
               background: 'rgba(15, 23, 42, 0.82)',
               backdropFilter: 'blur(16px)',
               WebkitBackdropFilter: 'blur(16px)',
-              border: '3.5px solid #a3e635',
+              border: isMobile ? '2.5px solid #a3e635' : '3.5px solid #a3e635',
               boxShadow: '0 0 24px rgba(163, 230, 53, 0.4), 0 10px 32px rgba(0, 0, 0, 0.55)',
               transition: 'transform 0.2s ease, border-color 0.2s ease',
             }}
           >
-            <Minimap occupied={occupied} layout={layout} guide={guide} />
+            <Minimap occupied={occupied} layout={layout} guide={guide} size={isMobile ? 64 : 120} />
 
             {/* North Badge 'N' at top */}
             <div
               style={{
                 position: 'absolute',
-                top: -8,
+                top: isMobile ? -5 : -8,
                 left: '50%',
                 transform: 'translateX(-50%)',
-                width: 20,
-                height: 20,
+                width: isMobile ? 14 : 20,
+                height: isMobile ? 14 : 20,
                 borderRadius: '50%',
                 background: '#0f172a',
                 border: '1.5px solid #a3e635',
                 color: '#ffffff',
-                fontSize: '10px',
+                fontSize: isMobile ? '8px' : '10px',
                 fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
@@ -749,10 +777,10 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
             <div
               style={{
                 position: 'absolute',
-                bottom: 2,
-                right: 2,
-                width: 26,
-                height: 26,
+                bottom: 1,
+                right: 1,
+                width: isMobile ? 18 : 26,
+                height: isMobile ? 18 : 26,
                 borderRadius: '50%',
                 background: 'rgba(15, 23, 42, 0.92)',
                 border: '1.5px solid rgba(255, 255, 255, 0.25)',
@@ -760,7 +788,7 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '11px',
+                fontSize: isMobile ? '8px' : '11px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                 pointerEvents: 'none',
               }}
@@ -775,9 +803,9 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
           className="world-pill"
           onClick={exploreDistrict}
           style={{
-            padding: '7px 16px',
-            gap: 8,
-            fontSize: 13,
+            padding: isMobile ? '4px 10px' : '7px 16px',
+            gap: isMobile ? 5 : 8,
+            fontSize: isMobile ? 11 : 13,
             fontWeight: 700,
             color: '#ffffff',
             cursor: 'pointer',
@@ -785,7 +813,7 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
           }}
           title="Current District — click to explore"
         >
-          <span style={{ color: '#38bdf8', fontSize: 14 }}>📍</span>
+          <span style={{ color: '#38bdf8', fontSize: isMobile ? 12 : 14 }}>📍</span>
           <span>{area?.name || district || 'Central District'}</span>
         </button>
 
@@ -793,27 +821,27 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
         <div
           className="world-pill"
           style={{
-            padding: '7px 16px',
-            gap: 8,
-            fontSize: 13,
+            padding: isMobile ? '4px 10px' : '7px 16px',
+            gap: isMobile ? 5 : 8,
+            fontSize: isMobile ? 11 : 13,
             fontWeight: 700,
             color: '#ffffff',
             boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
           }}
         >
-          <span style={{ color: '#facc15', fontSize: 14 }}>🏛️</span>
+          <span style={{ color: '#facc15', fontSize: isMobile ? 12 : 14 }}>🏛️</span>
           <span>{Math.min(found.length, totalAreas)} Discoveries</span>
         </div>
 
         {/* Prev / Next Circular Arrows with Lime Glow Borders */}
-        <div style={{ display: 'flex', gap: 10, marginTop: 2 }}>
+        <div style={{ display: 'flex', gap: isMobile ? 6 : 10, marginTop: 2 }}>
           <button
             className="world-circle-btn"
             onClick={prevDistrict}
             style={{
-              width: 38,
-              height: 38,
-              fontSize: 18,
+              width: isMobile ? 28 : 38,
+              height: isMobile ? 28 : 38,
+              fontSize: isMobile ? 14 : 18,
               border: '2px solid #a3e635',
               boxShadow: '0 0 12px rgba(163, 230, 53, 0.45)',
               color: '#ffffff',
@@ -826,9 +854,9 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
             className="world-circle-btn"
             onClick={exploreDistrict}
             style={{
-              width: 38,
-              height: 38,
-              fontSize: 18,
+              width: isMobile ? 28 : 38,
+              height: isMobile ? 28 : 38,
+              fontSize: isMobile ? 14 : 18,
               border: '2px solid #a3e635',
               boxShadow: '0 0 12px rgba(163, 230, 53, 0.45)',
               color: '#ffffff',
@@ -844,19 +872,20 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
       <div
         style={{
           position: 'absolute',
-          top: 'calc(var(--nav-h) + 12px)',
-          left: '172px',
-          right: '76px',
+          top: isMobile ? '8px' : 'calc(var(--nav-h) + 12px)',
+          left: isMobile ? '84px' : '172px',
+          right: isMobile ? '48px' : '76px',
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
+          gap: isMobile ? '6px' : '12px',
           zIndex: 50,
           pointerEvents: 'auto',
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',
+          maxWidth: 'calc(100vw - 140px)',
         }}
       >
         {/* Camera Mode Segment */}
-        <div className="world-pill" role="group" aria-label="Camera mode" style={{ padding: 4, gap: 4, flexShrink: 0 }}>
+        <div className="world-pill" role="group" aria-label="Camera mode" style={{ padding: isMobile ? 2 : 4, gap: isMobile ? 2 : 4, flexShrink: 0 }}>
           <button
             className={view === '1p' ? 'world-active-lime' : ''}
             onClick={() => setView('1p')}
@@ -864,14 +893,14 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
               background: 'none',
               border: 'none',
               color: view === '1p' ? '#0f172a' : '#cbd5e1',
-              padding: '7px 15px',
+              padding: isMobile ? '4px 8px' : '7px 15px',
               borderRadius: 9999,
-              fontSize: 13,
+              fontSize: isMobile ? 11 : 13,
               fontWeight: view === '1p' ? 700 : 600,
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 6,
+              gap: isMobile ? 3 : 6,
               transition: 'all 0.2s',
             }}
           >
@@ -885,14 +914,14 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
               background: 'none',
               border: 'none',
               color: view === '3p' ? '#0f172a' : '#cbd5e1',
-              padding: '7px 15px',
+              padding: isMobile ? '4px 8px' : '7px 15px',
               borderRadius: 9999,
-              fontSize: 13,
+              fontSize: isMobile ? 11 : 13,
               fontWeight: view === '3p' ? 700 : 600,
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 6,
+              gap: isMobile ? 3 : 6,
               transition: 'all 0.2s',
             }}
           >
@@ -907,14 +936,14 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
               background: 'none',
               border: 'none',
               color: view === 'free' ? '#0f172a' : '#cbd5e1',
-              padding: '7px 15px',
+              padding: isMobile ? '4px 8px' : '7px 15px',
               borderRadius: 9999,
-              fontSize: 13,
+              fontSize: isMobile ? 11 : 13,
               fontWeight: view === 'free' ? 700 : 600,
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 6,
+              gap: isMobile ? 3 : 6,
               transition: 'all 0.2s',
             }}
           >
@@ -923,45 +952,71 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
           </button>
         </div>
 
-        {/* Search Input Pill */}
-        <div className="search" style={{ position: 'relative', flex: '1 1 200px', maxWidth: '360px' }}>
-          <div
-            className="world-pill"
+        {/* Search: Expandable icon on mobile, inline bar on desktop */}
+        {isMobile && !mobileSearchOpen ? (
+          <button
+            className="world-circle-btn"
+            onClick={() => setMobileSearchOpen(true)}
             style={{
-              width: '100%',
-              padding: '7px 16px',
-              gap: 10,
-              boxSizing: 'border-box',
+              width: 32,
+              height: 32,
+              fontSize: 14,
+              flexShrink: 0,
+              border: '1px solid rgba(255,255,255,0.2)',
             }}
+            title="Search City"
           >
-            <span style={{ color: '#94a3b8', fontSize: 14 }}>🔍</span>
-            <input
-              placeholder="Search city..."
-              value={q}
-              onChange={e => setQ(e.target.value)}
-              aria-label="Search city"
+            🔍
+          </button>
+        ) : (
+          <div className="search" style={{ position: 'relative', flex: isMobile ? '1 1 130px' : '1 1 200px', maxWidth: '360px', minWidth: isMobile ? '120px' : '180px' }}>
+            <div
+              className="world-pill"
               style={{
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                color: '#ffffff',
-                fontSize: 13,
-                fontWeight: 500,
                 width: '100%',
+                padding: isMobile ? '4px 10px' : '7px 16px',
+                gap: isMobile ? 6 : 10,
+                boxSizing: 'border-box',
               }}
-            />
+            >
+              <span style={{ color: '#94a3b8', fontSize: isMobile ? 12 : 14 }}>🔍</span>
+              <input
+                placeholder="Search city..."
+                value={q}
+                onChange={e => setQ(e.target.value)}
+                autoFocus={isMobile && mobileSearchOpen}
+                aria-label="Search city"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: '#ffffff',
+                  fontSize: isMobile ? 11 : 13,
+                  fontWeight: 500,
+                  width: '100%',
+                }}
+              />
+              {isMobile && mobileSearchOpen && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setMobileSearchOpen(false); setQ(''); }}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0, fontSize: 12 }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            {results.length > 0 && (
+              <ul className="glass" style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'rgba(18, 25, 42, 0.96)', borderRadius: 16, zIndex: 100, maxHeight: '50vh', overflowY: 'auto' }}>
+                {results.map(r => (
+                  <li key={r.id} onClick={() => { go(r.id); setMobileSearchOpen(false); }}>
+                    <b>{r.name}</b>
+                    <span>{r.sub}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          {results.length > 0 && (
-            <ul className="glass" style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'rgba(18, 25, 42, 0.96)', borderRadius: 16, zIndex: 100 }}>
-              {results.map(r => (
-                <li key={r.id} onClick={() => go(r.id)}>
-                  <b>{r.name}</b>
-                  <span>{r.sub}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        )}
 
         {/* Respawn / Reset Position Circle Button 🔄 */}
         <button
@@ -972,9 +1027,9 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
             setTimeout(() => setToast(''), 2000);
           }}
           style={{
-            width: 42,
-            height: 42,
-            fontSize: 16,
+            width: isMobile ? 32 : 42,
+            height: isMobile ? 32 : 42,
+            fontSize: isMobile ? 13 : 16,
             flexShrink: 0,
             border: '1px solid rgba(255,255,255,0.18)',
           }}
@@ -986,6 +1041,7 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
         {/* Time & Online Status Capsule [ ☀️ 12:28 PM | 🟢 Online 12 ▾ ] */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <TimeOnlinePill
+            compact={isMobile}
             onlineCount={remotePlayers.length + 1}
             onToggle={() => setOnlinePanelOpen(o => !o)}
             open={onlinePanelOpen}
@@ -1006,11 +1062,11 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
       <div
         style={{
           position: 'absolute',
-          top: 'calc(var(--nav-h) + 12px)',
-          right: '16px',
+          top: isMobile ? '8px' : 'calc(var(--nav-h) + 12px)',
+          right: isMobile ? '8px' : '16px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px',
+          gap: isMobile ? '6px' : '10px',
           alignItems: 'center',
           zIndex: 60,
           pointerEvents: 'auto',
@@ -1023,18 +1079,20 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
           title="My Profile & Properties"
           style={{
             textDecoration: 'none',
+            width: isMobile ? 34 : undefined,
+            height: isMobile ? 34 : undefined,
             border: '2px solid rgba(163, 230, 53, 0.4)',
             boxShadow: '0 0 12px rgba(163, 230, 53, 0.25)',
           }}
         >
-          <span style={{ fontSize: 18 }}>👤</span>
+          <span style={{ fontSize: isMobile ? 15 : 18 }}>👤</span>
           <span
             style={{
               position: 'absolute',
-              bottom: 3,
-              right: 3,
-              width: 9,
-              height: 9,
+              bottom: 2,
+              right: 2,
+              width: isMobile ? 7 : 9,
+              height: isMobile ? 7 : 9,
               borderRadius: '50%',
               background: '#4ade80',
               border: '2px solid #0f172a',
@@ -1044,7 +1102,7 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
         </Link>
 
         {/* Settings Circle Button with Lime Glow */}
-        <SettingsPanel />
+        <SettingsPanel compact={isMobile} />
       </div>
       {marketBanner && (
         <div
@@ -1099,7 +1157,7 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
       {intro && !initialStore && <div className="loc-banner glass" onClick={() => go('J01')}><small>You are here</small><b>J Enterprise</b></div>}
 
       {/* ── Free-fly mode active badge ── */}
-      {view === 'free' && (
+      {view === 'free' && !isMobile && (
         <div
           style={{
             position: 'absolute',

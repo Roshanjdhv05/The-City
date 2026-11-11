@@ -58,17 +58,62 @@ export function Player({ colliders, doors, bounds, terrain, resources }: { colli
     };
     const wheel = (e: WheelEvent) => { if (useUI.getState().view === '3p') { e.preventDefault(); player.camDist = THREE.MathUtils.clamp(player.camDist + e.deltaY * 0.012, 3.5, 22); } };
     window.addEventListener('keydown', kd); window.addEventListener('keyup', ku); el.addEventListener('mousedown', md); window.addEventListener('mouseup', mu); window.addEventListener('mousemove', mm); el.addEventListener('wheel', wheel, { passive: false });
-    let touch: { x: number; y: number } | null = null;
-    const ts = (e: TouchEvent) => { touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
-    const tm = (e: TouchEvent) => {
-      if (!touch) return;
-      const sens = useUI.getState().sensitivity || 1.0;
-      player.yaw -= (e.touches[0].clientX - touch.x) * 0.005 * sens;
-      player.pitch = THREE.MathUtils.clamp(player.pitch + (e.touches[0].clientY - touch.y) * 0.004 * sens, -0.12, 1.25);
-      touch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    
+    // Multi-touch Camera Rotation (Touch Drag on Right Side)
+    let lookTouchId: number | null = null;
+    let lastTouchPos: { x: number; y: number } | null = null;
+    const ts = (e: TouchEvent) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (lookTouchId === null && (t.clientX > window.innerWidth * 0.32 || t.clientY < window.innerHeight - 160)) {
+          lookTouchId = t.identifier;
+          lastTouchPos = { x: t.clientX, y: t.clientY };
+          break;
+        }
+      }
     };
-    el.addEventListener('touchstart', ts); el.addEventListener('touchmove', tm);
-    return () => { window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); el.removeEventListener('mousedown', md); window.removeEventListener('mouseup', mu); window.removeEventListener('mousemove', mm); el.removeEventListener('wheel', wheel); el.removeEventListener('touchstart', ts); el.removeEventListener('touchmove', tm); if (document.pointerLockElement === el) document.exitPointerLock(); };
+    const tm = (e: TouchEvent) => {
+      if (lookTouchId === null || !lastTouchPos) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (t.identifier === lookTouchId) {
+          const sens = useUI.getState().sensitivity || 1.0;
+          const dx = t.clientX - lastTouchPos.x;
+          const dy = t.clientY - lastTouchPos.y;
+          player.yaw -= dx * 0.0055 * sens;
+          const fp = useUI.getState().view !== '3p';
+          player.pitch = THREE.MathUtils.clamp(
+            player.pitch + (fp ? -1 : 1) * dy * 0.0045 * sens,
+            fp ? -1.45 : -0.12,
+            fp ? 1.45 : 1.25
+          );
+          lastTouchPos = { x: t.clientX, y: t.clientY };
+          break;
+        }
+      }
+    };
+    const te = (e: TouchEvent) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === lookTouchId) {
+          lookTouchId = null;
+          lastTouchPos = null;
+          break;
+        }
+      }
+    };
+    el.addEventListener('touchstart', ts, { passive: true });
+    el.addEventListener('touchmove', tm, { passive: true });
+    el.addEventListener('touchend', te, { passive: true });
+    el.addEventListener('touchcancel', te, { passive: true });
+
+    return () => {
+      window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku);
+      el.removeEventListener('mousedown', md); window.removeEventListener('mouseup', mu);
+      window.removeEventListener('mousemove', mm); el.removeEventListener('wheel', wheel);
+      el.removeEventListener('touchstart', ts); el.removeEventListener('touchmove', tm);
+      el.removeEventListener('touchend', te); el.removeEventListener('touchcancel', te);
+      if (document.pointerLockElement === el) document.exitPointerLock();
+    };
   }, [gl]);
 
   useFrame((_, dtRaw) => {
@@ -80,7 +125,8 @@ export function Player({ colliders, doors, bounds, terrain, resources }: { colli
 
     if (isFree) {
       // ── Free-fly physics ──────────────────────────────────────────
-      const fast = !!(k.ShiftLeft || k.ShiftRight);
+      const mIn = player.moveInput || { f: 0, s: 0, run: false, jump: false, up: false, down: false };
+      const fast = !!(k.ShiftLeft || k.ShiftRight || mIn.run);
       const targetSpeed = fast ? FLY_FAST : FLY_SPEED;
 
       // Arrow keys → look (yaw / pitch) in free-fly mode
@@ -90,10 +136,10 @@ export function Player({ colliders, doors, bounds, terrain, resources }: { colli
       if (k.ArrowUp)    player.pitch  = THREE.MathUtils.clamp(player.pitch + LOOK_SPEED * dt, -1.45, 1.45);
       if (k.ArrowDown)  player.pitch  = THREE.MathUtils.clamp(player.pitch - LOOK_SPEED * dt, -1.45, 1.45);
 
-      // WASD → movement along the look direction (pitch included)
-      const fwd = (k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0);
-      const str = (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0);
-      const up  = (k.Space || k.KeyE ? 1 : 0) - (k.KeyQ || k.ControlLeft ? 1 : 0);
+      // WASD / Touch Joystick → movement along the look direction
+      const fwd = THREE.MathUtils.clamp((k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0) + mIn.f, -1, 1);
+      const str = THREE.MathUtils.clamp((k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0) + mIn.s, -1, 1);
+      const up  = THREE.MathUtils.clamp((k.Space || k.KeyE ? 1 : 0) - (k.KeyQ || k.ControlLeft ? 1 : 0) + (mIn.up ? 1 : 0) - (mIn.down ? 1 : 0), -1, 1);
 
       const sy = Math.sin(player.yaw), cy = Math.cos(player.yaw);
       const sp = Math.sin(player.pitch), cp = Math.cos(player.pitch);
@@ -123,23 +169,28 @@ export function Player({ colliders, doors, bounds, terrain, resources }: { colli
         player.z + cdir * Math.cos(player.pitch),
       );
     } else {
-      // ── Normal grounded physics ───────────────────────────────────
-      // Arrow keys → look (orbit) in 3P / 1P; WASD/arrows for movement only when not in 3p
+      // ── Normal grounded physics (WASD + Joystick support) ───────────
+      const mIn = player.moveInput || { f: 0, s: 0, run: false, jump: false, up: false, down: false };
+      const fwd = THREE.MathUtils.clamp((k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0) + mIn.f, -1, 1);
+      const str = THREE.MathUtils.clamp((k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0) + mIn.s, -1, 1);
+      const run = !!(k.ShiftLeft || k.ShiftRight || mIn.run);
+      const jump = !!(k.Space || mIn.jump);
+
       const LOOK_SPD = 1.6; // rad/s
       if (!fp) {
-        // 3P: arrows rotate camera orbit; WASD moves character
+        // 3P: arrows rotate camera orbit; WASD/Joystick moves character
         if (k.ArrowLeft)  player.yaw   += LOOK_SPD * dt;
         if (k.ArrowRight) player.yaw   -= LOOK_SPD * dt;
         if (k.ArrowUp)    player.pitch  = THREE.MathUtils.clamp(player.pitch + LOOK_SPD * dt * 0.6, -0.12, 1.25);
         if (k.ArrowDown)  player.pitch  = THREE.MathUtils.clamp(player.pitch - LOOK_SPD * dt * 0.6, -0.12, 1.25);
-        stepBody(player as unknown as Body, { f: (k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0), s: (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0), run: !!(k.ShiftLeft || k.ShiftRight), sprint: !!k['Sprint'], jump: !!k.Space, speedMult: ui.walkSpeed }, dt, { colliders, height: th.height, bounds });
+        stepBody(player as unknown as Body, { f: fwd, s: str, run, sprint: !!k['Sprint'], jump, speedMult: ui.walkSpeed }, dt, { colliders, height: th.height, bounds });
       } else {
-        // 1P: arrows look, WASD moves
+        // 1P: arrows look, WASD/Joystick moves
         if (k.ArrowLeft)  player.yaw   += LOOK_SPD * dt;
         if (k.ArrowRight) player.yaw   -= LOOK_SPD * dt;
         if (k.ArrowUp)    player.pitch  = THREE.MathUtils.clamp(player.pitch + LOOK_SPD * dt, -1.3, 1.3);
         if (k.ArrowDown)  player.pitch  = THREE.MathUtils.clamp(player.pitch - LOOK_SPD * dt, -1.3, 1.3);
-        stepBody(player as unknown as Body, { f: (k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0), s: (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0), run: !!(k.ShiftLeft || k.ShiftRight), sprint: !!k['Sprint'], jump: !!k.Space, speedMult: ui.walkSpeed }, dt, { colliders, height: th.height, bounds });
+        stepBody(player as unknown as Body, { f: fwd, s: str, run, sprint: !!k['Sprint'], jump, speedMult: ui.walkSpeed }, dt, { colliders, height: th.height, bounds });
       }
       if (player.moving && player.onGround) t.current += dt * (Math.hypot(player.vx, player.vz) > 6.5 ? 12 : 8);
     }
