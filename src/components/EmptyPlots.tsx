@@ -9,7 +9,7 @@ import { Inst, Item, UBOX } from './Inst';
 const PLANE = new THREE.PlaneGeometry(2.6, 1.3);
 /** Available / reserved land: one instanced For Sale pad + board + entrance mat per plot (hundreds of plots, a handful of draw calls). */
 export function EmptyPlots({ plots }: { plots: Plot[] }) {
-  const pad = useMemo(() => new THREE.MeshStandardMaterial({ color: '#cfc4a8', flatShading: true, roughness: 1 }), []), post = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2f3752', flatShading: true }), []), mat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#9fe8ff', emissive: '#4fc3e8', emissiveIntensity: 0.5, flatShading: true }), []);
+  const pad = useMemo(() => new THREE.MeshStandardMaterial({ color: '#d4d8e4', roughness: 0.72 }), []), post = useMemo(() => new THREE.MeshStandardMaterial({ color: '#94a3b8', roughness: 0.28, metalness: 0.72 }), []), mat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#38bdf8', emissive: '#0ea5e9', emissiveIntensity: 0.65, roughness: 0.1, metalness: 0.15 }), []);
   const { pads, posts, mats, boards } = useMemo(() => {
     const pads: Item[] = [], posts: Item[] = [], mats: Item[] = [], boards: Record<string, Item[]> = {};
     for (const p of plots) {

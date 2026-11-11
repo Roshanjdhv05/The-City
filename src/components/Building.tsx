@@ -18,7 +18,7 @@ const Plane = ({ s, p, m, r }: { s: [number, number]; p: V3; m: THREE.Material; 
 
 export function useMats(cfg: StoreConfig) {
   return useMemo(() => ({
-    wall: mat(cfg.facade, cfg.tint), floor: mat('pave', '#c9b8a0'), roof: mat('roof'), glass: glassMat(cfg.glass), alu: solid('alu'), dark: solid('dark'),
+    wall: mat(cfg.facade, cfg.tint), floor: mat('pave', '#dde0ea'), roof: mat('roof'), glass: glassMat(cfg.glass), alu: solid('alu'), dark: solid('dark'),
     steel: solid('steel'), trim: solid('trim'), glow: solid('glow'), wood: mat('wood', '#ffffff'), unit: sbox,
   }), [cfg.facade, cfg.tint, cfg.glass]);
 }
@@ -34,66 +34,79 @@ export function getBoardTexture(name: string, tagline?: string, theme = '#3b82f6
   c.height = 256;
   const g = c.getContext('2d')!;
 
-  // Dark slate gradient
-  const gr = g.createLinearGradient(0, 0, 0, 256);
-  gr.addColorStop(0, '#151e33');
-  gr.addColorStop(1, '#0a0f1d');
+  // Premium dark gradient — deep navy to graphite
+  const gr = g.createLinearGradient(0, 0, 512, 256);
+  gr.addColorStop(0, '#0a0f1e');
+  gr.addColorStop(0.5, '#0d1628');
+  gr.addColorStop(1, '#0a0f1e');
   g.fillStyle = gr;
   g.fillRect(0, 0, 512, 256);
 
-  // Theme colored outer neon border
+  // Subtle diagonal brushed-steel texture
+  for (let i = 0; i < 10; i++) {
+    g.strokeStyle = `rgba(255,255,255,${0.015 + (i % 3) * 0.008})`;
+    g.lineWidth = 1;
+    g.beginPath(); g.moveTo(0, i * 28); g.lineTo(512, i * 28 + 60); g.stroke();
+  }
+
+  // Theme colored premium border with corner marks
   g.strokeStyle = theme;
-  g.lineWidth = 8;
-  g.strokeRect(10, 10, 492, 236);
+  g.lineWidth = 3;
+  g.strokeRect(8, 8, 496, 240);
+  // Corner accent marks
+  const cm = 18;
+  g.lineWidth = 2; g.strokeStyle = '#ffffff';
+  [[10, 10], [502, 10], [10, 246], [502, 246]].forEach(([cx, cy], i) => {
+    g.beginPath();
+    g.moveTo(cx + (i % 2 === 0 ? cm : -cm), cy);
+    g.lineTo(cx, cy);
+    g.lineTo(cx, cy + (i < 2 ? cm : -cm));
+    g.stroke();
+  });
 
-  // Inner accent line
-  g.strokeStyle = 'rgba(255, 255, 255, 0.16)';
-  g.lineWidth = 2;
-  g.strokeRect(18, 18, 476, 220);
-
-  // Circular brand monogram
-  g.fillStyle = theme;
+  // Circular brand icon with gradient
+  const ic = g.createRadialGradient(256, 54, 2, 256, 54, 28);
+  ic.addColorStop(0, theme); ic.addColorStop(1, '#0f172a');
+  g.fillStyle = ic;
   g.beginPath();
-  g.arc(256, 56, 26, 0, Math.PI * 2);
+  g.arc(256, 54, 28, 0, Math.PI * 2);
   g.fill();
+  g.strokeStyle = theme; g.lineWidth = 2; g.stroke();
   g.fillStyle = '#ffffff';
-  g.font = '800 24px Arial, sans-serif';
+  g.font = '800 22px Arial, sans-serif';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   const initial = (name ? name[0] : 'S').toUpperCase();
-  g.fillText(initial, 256, 57);
+  g.fillText(initial, 256, 54);
 
-  // Store title in bold glowing typography
+  // Store title — bold white with theme glow
   const title = (name || 'COMMERCIAL').toUpperCase();
-  let fs = 36;
+  let fs = 38;
   g.font = `800 ${fs}px Arial, sans-serif`;
-  while (g.measureText(title).width > 440 && fs > 18) {
-    fs -= 2;
-    g.font = `800 ${fs}px Arial, sans-serif`;
-  }
-  g.shadowColor = theme;
-  g.shadowBlur = 14;
+  while (g.measureText(title).width > 450 && fs > 18) { fs -= 2; g.font = `800 ${fs}px Arial, sans-serif`; }
+  g.shadowColor = theme; g.shadowBlur = 16;
   g.fillStyle = '#ffffff';
-  g.fillText(title, 256, 126);
+  g.fillText(title, 256, 128);
   g.shadowBlur = 0;
 
-  // Tagline or Subtitle
-  const sub = tagline || 'PREMIER COMMERCIAL LOCATION';
-  let subFs = 18;
-  g.font = `600 ${subFs}px Arial, sans-serif`;
-  while (g.measureText(sub).width > 450 && subFs > 12) {
-    subFs -= 1;
-    g.font = `600 ${subFs}px Arial, sans-serif`;
-  }
+  // Premium thin divider line
+  g.strokeStyle = `${theme}80`; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(60, 158); g.lineTo(452, 158); g.stroke();
+
+  // Tagline
+  const sub = tagline || 'PREMIER COMMERCIAL SPACE';
+  let subFs = 17;
+  g.font = `400 ${subFs}px Arial, sans-serif`;
+  while (g.measureText(sub).width > 460 && subFs > 11) { subFs -= 1; g.font = `400 ${subFs}px Arial, sans-serif`; }
   g.fillStyle = '#94a3b8';
   g.fillText(sub, 256, 180);
 
-  // Bottom verified directory badge
-  g.fillStyle = theme;
-  g.fillRect(176, 214, 160, 18);
-  g.fillStyle = '#ffffff';
-  g.font = '700 11px Arial, sans-serif';
-  g.fillText('OPEN · DIRECTORY', 256, 223);
+  // Bottom status bar
+  g.fillStyle = `${theme}28`; g.fillRect(8, 216, 496, 32);
+  g.fillStyle = theme; g.fillRect(8, 216, 6, 32);
+  g.fillStyle = '#ffffff'; g.font = '600 12px Arial, sans-serif'; g.textAlign = 'left';
+  g.fillText('▶  OPEN  ·  THE CITY COMMERCIAL DIRECTORY', 24, 232);
+  g.textAlign = 'center';
 
   tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -248,7 +261,7 @@ function Awning({ cfg }: { cfg: StoreConfig }) {
 function Sign({ cfg, tex }: { cfg: StoreConfig; tex: THREE.Texture }) {
   const on = cfg.lights, st = cfg.sign;
   const face = useMemo(() => new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: '#ffffff', emissiveIntensity: on ? 1.6 : 0.12, roughness: 0.5, transparent: st === 'neon' || st === 'blade', alphaTest: st === 'neon' || st === 'blade' ? 0.05 : 0 }), [tex, on, st]);
-  const board = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2f3b66', roughness: 0.8, flatShading: true }), [cfg.theme]);
+  const board = useMemo(() => new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.6, metalness: 0.3 }), [cfg.theme]);
   const y = 3.85, z = D / 2;
   return (
     <group>
@@ -267,6 +280,9 @@ function Sign({ cfg, tex }: { cfg: StoreConfig; tex: THREE.Texture }) {
 
 function Roof({ cfg, y, mats }: { cfg: StoreConfig; y: number; mats: any }) {
   const w = W, d = D;
+  // Solar panel material — dark PV cells with silver frame
+  const solarPV = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1a2540', roughness: 0.3, metalness: 0.55 }), []);
+  const solarFrame = useMemo(() => new THREE.MeshStandardMaterial({ color: '#94a3b8', roughness: 0.25, metalness: 0.75 }), []);
   const prism = useMemo(() => {
     const h = cfg.roof === 'gabled' ? 2.4 : 1.4; const sh = new THREE.Shape();
     if (cfg.roof === 'gabled') { sh.moveTo(-w / 2 - 0.3, 0); sh.lineTo(w / 2 + 0.3, 0); sh.lineTo(0, h); } else { sh.moveTo(-w / 2 - 0.3, 0); sh.lineTo(w / 2 + 0.3, 0); sh.lineTo(w / 2 + 0.3, h * 0.2); sh.lineTo(-w / 2 - 0.3, h); }
@@ -278,10 +294,35 @@ function Roof({ cfg, y, mats }: { cfg: StoreConfig; y: number; mats: any }) {
     return <group><B s={[w + 1, 0.35, d + 1]} p={[0, y + 0.18, 0]} m={mats.trim} /><B s={[w - 0.2, 0.35, d - 0.2]} p={[0, y + 0.5, 0]} m={mats.roof} /><B s={[w + 0.6, 0.1, d + 0.6]} p={[0, y - 0.05, 0]} m={mats.wall} /></group>;
   return (
     <group>
-      <B s={[w + 0.2, 0.2, d + 0.2]} p={[0, y + 0.1, 0]} m={mats.roof} />
-      <B s={[w + 0.2, 0.6, 0.25]} p={[0, y + 0.5, d / 2]} m={mats.wall} /><B s={[w + 0.2, 0.6, 0.25]} p={[0, y + 0.5, -d / 2]} m={mats.wall} />
-      <B s={[0.25, 0.6, d]} p={[w / 2, y + 0.5, 0]} m={mats.wall} /><B s={[0.25, 0.6, d]} p={[-w / 2, y + 0.5, 0]} m={mats.wall} />
-      <B s={[1.6, 0.8, 1.2]} p={[-2.5, y + 0.6, -1]} m={solid('steel')} />{[[-3.6, 1.8], [3.4, -1.2], [0.4, 2.4]].map(([x, z], i) => <mesh key={i} position={[x, y + 0.75, z]} castShadow><icosahedronGeometry args={[0.55, 1]} /><meshStandardMaterial color="#5fae48" flatShading /></mesh>)}<B s={[1.2, 0.6, 1]} p={[2.2, y + 0.5, 0.5]} m={solid('alu')} /><mesh position={[2.2, y + 0.95, 0.5]} material={solid('dark')}><cylinderGeometry args={[0.35, 0.35, 0.12, 14]} /></mesh>
+      {/* Premium graphite flat roof parapet */}
+      <B s={[w + 0.3, 0.42, d + 0.3]} p={[0, y + 0.21, 0]} m={mats.roof} />
+      {/* Aluminium parapet cap rail */}
+      <B s={[w + 0.5, 0.06, 0.08]} p={[0, y + 0.44, d / 2 + 0.1]} m={solid('steel')} cast={false} />
+      <B s={[w + 0.5, 0.06, 0.08]} p={[0, y + 0.44, -d / 2 - 0.1]} m={solid('steel')} cast={false} />
+      <B s={[0.08, 0.06, d + 0.3]} p={[w / 2 + 0.1, y + 0.44, 0]} m={solid('steel')} cast={false} />
+      <B s={[0.08, 0.06, d + 0.3]} p={[-w / 2 - 0.1, y + 0.44, 0]} m={solid('steel')} cast={false} />
+      {/* Rooftop solar panel array — angled at 15° facing south */}
+      <group position={[-1.5, y + 0.5, -0.5]} rotation={[0.26, 0, 0]}>
+        {[0, 1, 2].map(col => (
+          <group key={col} position={[col * 2.0 - 1.8, 0, 0]}>
+            <B s={[1.75, 0.04, 2.6]} p={[0, 0.02, 0]} m={solarPV} cast={false} />
+            <B s={[1.75, 0.03, 0.06]} p={[0, 0.03, -1.3]} m={solarFrame} cast={false} />
+            <B s={[1.75, 0.03, 0.06]} p={[0, 0.03, 1.3]} m={solarFrame} cast={false} />
+            <B s={[0.06, 0.03, 2.6]} p={[-0.87, 0.03, 0]} m={solarFrame} cast={false} />
+            <B s={[0.06, 0.03, 2.6]} p={[0.87, 0.03, 0]} m={solarFrame} cast={false} />
+          </group>
+        ))}
+      </group>
+      {/* HVAC unit — brushed steel */}
+      <B s={[1.6, 0.9, 1.2]} p={[2.4, y + 0.9, -1.0]} m={solid('steel')} />
+      <mesh position={[2.4, y + 1.4, -1.0]} material={solid('dark')}><cylinderGeometry args={[0.38, 0.38, 0.14, 12]} /></mesh>
+      {/* Rooftop green accents */}
+      {[[-1.0, 1.6], [0.5, 2.1]].map(([x, z], i) => (
+        <mesh key={i} position={[x, y + 0.6, z]} castShadow>
+          <icosahedronGeometry args={[0.42, 1]} />
+          <meshStandardMaterial color="#4f9b40" roughness={0.88} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -293,8 +334,8 @@ export function BuildingFull({ cfg, plotId, quality = true }: { cfg: StoreConfig
   const T = getSharedTextures();
   const archetype = getArchetype(plotId, cfg.name);
 
-  const ledTheme = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: cfg.theme, emissiveIntensity: 1.8, flatShading: true }), [cfg.theme]);
-  const ledWhite = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#e2e8f0', emissiveIntensity: 1.4, flatShading: true }), []);
+  const ledTheme = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: cfg.theme, emissiveIntensity: 2.2, roughness: 0.9 }), [cfg.theme]);
+  const ledWhite = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f8fafc', emissive: '#38bdf8', emissiveIntensity: 1.6, roughness: 0.9 }), []);
   const glowTex = archetype % 2 === 0 ? T.cyanGlow : T.warmGlow;
   const interiorTint = archetype % 2 === 0 ? '#e0f2fe' : '#ffe8c9';
 
@@ -304,6 +345,8 @@ export function BuildingFull({ cfg, plotId, quality = true }: { cfg: StoreConfig
       <mesh geometry={sbox(W + 1.2, 0.08, D + 2.2, 2)} position={[0, 0.04, 0.7]} material={mats.floor} receiveShadow />
       <Px s={[W + 1.2, 0.04, 0.04]} p={[0, 0.08, D / 2 + 1.78]} m={ledTheme} />
       <B s={[W, 0.2, D]} p={[0, 0.1, 0]} m={mats.floor} />
+      {/* Premium step-up granite entrance plinth */}
+      <B s={[W - 0.6, 0.12, 2.0]} p={[0, 0.16, D / 2 + 0.8]} m={solid('trim')} />
 
       {/* ── Foundation Shrubs Hugging Building Base (Sides & Rear) ── */}
       {[-2.6, 0, 2.6].map((z, idx) => (

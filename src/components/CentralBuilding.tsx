@@ -28,27 +28,47 @@ let texCache: Record<string, THREE.CanvasTexture> | null = null;
 export function getSharedTextures() {
   if (texCache) return texCache;
   texCache = {
-    warmGlow: mkCanvas(64, 256, g => {
-      const gr = g.createLinearGradient(0, 0, 0, 256);
-      gr.addColorStop(0, '#ffe4b5'); gr.addColorStop(1, '#d89c56');
-      g.fillStyle = gr; g.fillRect(0, 0, 64, 256);
-      g.fillStyle = 'rgba(255,255,255,0.6)'; g.fillRect(0, 6, 64, 6);
-      g.fillStyle = 'rgba(50,30,12,0.45)';
-      for (let i = 0; i < 5; i++) g.fillRect(6 + i * 11, 170 + (i % 2) * 8, 6, 48);
+    warmGlow: mkCanvas(128, 512, g => {
+      // Premium warm office interior - ivory with desk silhouettes
+      const gr = g.createLinearGradient(0, 0, 0, 512);
+      gr.addColorStop(0, '#fdf8f0'); gr.addColorStop(0.4, '#fef3e2'); gr.addColorStop(1, '#f8e8c8');
+      g.fillStyle = gr; g.fillRect(0, 0, 128, 512);
+      // Floor plate dividers
+      g.fillStyle = 'rgba(180,160,120,0.35)';
+      for (let y = 0; y < 4; y++) g.fillRect(0, y * 128, 128, 3);
+      // Desk/furniture silhouettes
+      g.fillStyle = 'rgba(100,70,30,0.3)';
+      for (let f = 0; f < 4; f++) {
+        for (let i = 0; i < 4; i++) g.fillRect(8 + i * 28, f * 128 + 85, 20, 32);
+      }
+      // Ceiling light bright strip at top of each floor
+      g.fillStyle = 'rgba(255,255,255,0.65)'; g.fillRect(0, 8, 128, 7);
     }),
-    cyanGlow: mkCanvas(64, 256, g => {
-      const gr = g.createLinearGradient(0, 0, 0, 256);
-      gr.addColorStop(0, '#c7f5ff'); gr.addColorStop(1, '#4ca8cc');
-      g.fillStyle = gr; g.fillRect(0, 0, 64, 256);
-      g.fillStyle = 'rgba(255,255,255,0.7)'; g.fillRect(0, 6, 64, 6);
-      g.fillStyle = 'rgba(10,35,50,0.5)';
-      for (let i = 0; i < 5; i++) g.fillRect(6 + i * 11, 160 + (i % 2) * 10, 6, 52);
+    cyanGlow: mkCanvas(128, 512, g => {
+      // Premium teal commercial office - bright reflective glass depth
+      const gr = g.createLinearGradient(0, 0, 0, 512);
+      gr.addColorStop(0, '#e8f8ff'); gr.addColorStop(0.4, '#d4f1fc'); gr.addColorStop(1, '#a8e4f8');
+      g.fillStyle = gr; g.fillRect(0, 0, 128, 512);
+      // Floor plate dividers - subtle teal
+      g.fillStyle = 'rgba(10,100,160,0.25)';
+      for (let y = 0; y < 4; y++) g.fillRect(0, y * 128, 128, 3);
+      // Desk/screen silhouettes
+      g.fillStyle = 'rgba(10,60,110,0.22)';
+      for (let f = 0; f < 4; f++) {
+        for (let i = 0; i < 4; i++) g.fillRect(8 + i * 28, f * 128 + 82, 20, 35);
+        // Monitor screens - glowing blue
+        g.fillStyle = 'rgba(56,189,248,0.4)';
+        for (let i = 0; i < 4; i++) g.fillRect(10 + i * 28, f * 128 + 68, 16, 12);
+        g.fillStyle = 'rgba(10,60,110,0.22)';
+      }
+      // Ceiling white LED strip
+      g.fillStyle = 'rgba(255,255,255,0.7)'; g.fillRect(0, 6, 128, 8);
     }),
-    amberGlow: mkCanvas(64, 256, g => {
-      const gr = g.createLinearGradient(0, 0, 0, 256);
-      gr.addColorStop(0, '#ffdfa0'); gr.addColorStop(1, '#bd6b2e');
-      g.fillStyle = gr; g.fillRect(0, 0, 64, 256);
-      g.fillStyle = 'rgba(255,255,255,0.6)'; g.fillRect(0, 6, 64, 6);
+    amberGlow: mkCanvas(128, 512, g => {
+      const gr = g.createLinearGradient(0, 0, 0, 512);
+      gr.addColorStop(0, '#fff8e8'); gr.addColorStop(1, '#f8d888');
+      g.fillStyle = gr; g.fillRect(0, 0, 128, 512);
+      g.fillStyle = 'rgba(255,255,255,0.65)'; g.fillRect(0, 6, 128, 7);
     }),
     arcadeScreen: mkCanvas(512, 256, g => {
       const gr = g.createLinearGradient(0, 0, 512, 256);

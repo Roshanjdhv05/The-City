@@ -37,7 +37,7 @@ export function Water({ terrain }: { terrain: Terrain }) {
 }
 
 export function Pines({ pines }: { pines: Tree[] }) {
-  const m = useMemo(() => flat(), []), trunk = useMemo(() => solid('trunk'), []);
+  const m = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2d6a2d', roughness: 0.88 }), []), trunk = useMemo(() => solid('trunk'), []);
   const mk = (oy: number, rs: number, hs: number): Item[] => pines.map(t => ({ p: [t.x, t.y + oy * t.k, t.z], s: [rs * t.k, hs * t.k, rs * t.k], c: t.c, r: t.x }));
   const tr = useMemo<Item[]>(() => pines.map(t => ({ p: [t.x, t.y + 0.9 * t.k, t.z], s: [0.2 * t.k, 1.8 * t.k, 0.2 * t.k] })), [pines]);
   const a = useMemo(() => mk(2.3, 1.7, 2.4), [pines]), b = useMemo(() => mk(3.6, 1.3, 2.1), [pines]), c = useMemo(() => mk(4.8, 0.9, 1.8), [pines]); // eslint-disable-line
@@ -45,13 +45,13 @@ export function Pines({ pines }: { pines: Tree[] }) {
 }
 
 export function Rocks({ rocks }: { rocks: Blob[] }) {
-  const m = useMemo(() => flat(), []);
+  const m = useMemo(() => new THREE.MeshStandardMaterial({ color: '#8094a8', roughness: 0.72, metalness: 0.08 }), []);
   const items = useMemo<Item[]>(() => rocks.map(r => ({ p: [r.x, r.y + r.s * 0.3, r.z], s: [r.s * 1.3, r.s * 0.8, r.s], c: r.c, r: r.x * 3 })), [rocks]);
   return <Inst geo={DODE} material={m} items={items} cast recv />;
 }
 
 export function Hedges({ bushes, flowers }: { bushes: Blob[]; flowers: Blob[] }) {
-  const m = useMemo(() => flat(), []);
+  const m = useMemo(() => new THREE.MeshStandardMaterial({ color: '#3a8c3a', roughness: 0.88 }), []);
   const b = useMemo<Item[]>(() => bushes.map(x => ({ p: [x.x, x.y + x.s * 0.55, x.z], s: [x.s * 1.5, x.s, x.s * 1.2], c: x.c, r: x.x })), [bushes]);
   const f = useMemo<Item[]>(() => flowers.map(x => ({ p: [x.x, x.y, x.z], s: [x.s, x.s, x.s], c: x.c })), [flowers]);
   return <><Inst geo={ICO1} material={m} items={b} cast recv /><Inst geo={ICO0} material={m} items={f} /></>;

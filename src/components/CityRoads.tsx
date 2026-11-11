@@ -38,7 +38,7 @@ export function CityRoads({ layout }: { layout: Layout }) {
     }
     return { road: merge(rg), walk: merge(wg), dash, cross };
   }, [layout]);
-  const asphalt = useMemo(() => mat('asphalt'), []), pave = useMemo(() => flat('#cbc4b8'), []), white = useMemo(() => flat('#ffffff'), []);
+  const asphalt = useMemo(() => mat('asphalt'), []), pave = useMemo(() => flat('#d4d8e4'), []), white = useMemo(() => flat('#f0f2f8'), []);
   return (
     <>
       {road && <mesh geometry={road} material={asphalt} receiveShadow />}
@@ -50,7 +50,9 @@ export function CityRoads({ layout }: { layout: Layout }) {
 
 /** Paved central plaza around J Enterprise with a lawn ring. */
 export function Plaza() {
-  const pave = useMemo(() => mat('pave', '#f2e6d0', 14, 14), []), lawn = useMemo(() => flat('#8fc872'), []), walk = useMemo(() => flat('#d9cfbc'), []);
+  const pave = useMemo(() => mat('pave', '#eef0f8', 18, 18), []);
+  const lawn = useMemo(() => flat('#5aaa44'), []);
+  const walk = useMemo(() => flat('#c8cede'), []);
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[PLAZA.x, 0.05, PLAZA.z]} receiveShadow material={pave}><circleGeometry args={[PLAZA.r, 72]} /></mesh>

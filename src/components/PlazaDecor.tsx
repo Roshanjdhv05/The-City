@@ -162,9 +162,9 @@ export function WaterFountain({ position = [0, 0, 16] }: { position?: [number, n
 
 // ── Plaza Decorative Surrounds: Benches, Lampposts & Flower Bush Planters ──
 export function PlazaDecorations() {
-  const benchWood = useMemo(() => new THREE.MeshStandardMaterial({ color: '#d97706', roughness: 0.8 }), []);
-  const iron = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.5 }), []);
-  const lampHead = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#fff7ed', emissiveIntensity: 2.0 }), []);
+  const benchWood = useMemo(() => new THREE.MeshStandardMaterial({ color: '#6b4c2a', roughness: 0.72 }), []);
+  const iron = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.35, metalness: 0.65 }), []);
+  const lampHead = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fff8e1', emissive: '#ffe566', emissiveIntensity: 0.3 }), []);
   const shrubGreen1 = useMemo(() => new THREE.MeshStandardMaterial({ color: '#22c55e', roughness: 0.8, flatShading: true }), []);
   const shrubGreen2 = useMemo(() => new THREE.MeshStandardMaterial({ color: '#16a34a', roughness: 0.8, flatShading: true }), []);
   const flowerPink = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f43f5e', roughness: 0.7, flatShading: true }), []);
