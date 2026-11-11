@@ -45,23 +45,32 @@ export function WorldLoadingScreen({ isReady = false, onFinish }: WorldLoadingSc
   }, []);
 
   // 2. Realistic loading progress tracking
+  const startTimeRef = useRef(Date.now());
+
   useEffect(() => {
     if (isReady) {
-      setProgress(100);
-      const timer = setTimeout(() => {
-        setFadeOut(true);
-        setTimeout(() => {
-          setHidden(true);
-          onFinish?.();
-        }, 650);
-      }, 350);
-      return () => clearTimeout(timer);
+      const elapsed = Date.now() - startTimeRef.current;
+      const minDisplay = 1400; // Ensure at least 1.4s so user gets smooth cinematic loading
+      const delay = Math.max(0, minDisplay - elapsed);
+
+      const readyTimer = setTimeout(() => {
+        setProgress(100);
+        const timer = setTimeout(() => {
+          setFadeOut(true);
+          setTimeout(() => {
+            setHidden(true);
+            onFinish?.();
+          }, 650);
+        }, 400);
+      }, delay);
+
+      return () => clearTimeout(readyTimer);
     }
 
     // Natural progressive advance while world initializes
     const stepInterval = setInterval(() => {
       setProgress(prev => {
-        if (prev >= 94) return prev; // Hold at 94% until isReady triggers
+        if (prev >= 94) return prev; // Hold at 94% until building assets and 3D frames are rendered
         // Slower as it nears completion
         const inc = prev < 50 ? Math.random() * 9 + 4 : Math.random() * 4 + 1.5;
         return Math.min(94, Math.round(prev + inc));

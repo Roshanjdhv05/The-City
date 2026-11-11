@@ -43,6 +43,24 @@ function LandingRig() {
   return null;
 }
 
+function CanvasReadyTracker({ onReady }: { onReady?: () => void }) {
+  const frames = useRef(0);
+  const notified = useRef(false);
+
+  useFrame(() => {
+    if (!notified.current) {
+      frames.current++;
+      // Wait for 8 full render frames so all building meshes, shaders, and terrain are visibly rendered
+      if (frames.current >= 8) {
+        notified.current = true;
+        onReady?.();
+      }
+    }
+  });
+
+  return null;
+}
+
 export default function CityCanvas({
   stores,
   layout,
@@ -99,9 +117,9 @@ export default function CityCanvas({
         gl={{ antialias: isLanding || !Q.post, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.NoToneMapping;
-          onReady?.();
         }}
       >
+        <CanvasReadyTracker onReady={onReady} />
         <PerfCollector />
         {isLanding ? (
           <>

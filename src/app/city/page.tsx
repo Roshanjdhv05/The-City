@@ -17,24 +17,21 @@ function Explore() {
   const store = useSearchParams().get('store');
   const [worldReady, setWorldReady] = useState(false);
 
-  useEffect(() => {
-    if (!loading) {
-      // Ensure WebGL assets, shaders and initial frame have prepared
-      const t = setTimeout(() => setWorldReady(true), 400);
-      return () => clearTimeout(t);
-    }
-  }, [loading]);
+  // ONLY mark ready when 3D building assets and GPU frame rendering are confirmed
+  const handleWorldReady = () => {
+    setWorldReady(true);
+  };
 
   return (
     <div className="fullscreen">
-      <WorldLoadingScreen isReady={worldReady} />
+      <WorldLoadingScreen isReady={worldReady && !loading} />
       <CityCanvas
         stores={stores}
         layout={layout}
         mode="city"
-        onReady={() => setWorldReady(true)}
+        onReady={handleWorldReady}
       />
-      <HUD stores={stores} layout={layout} initialStore={store} />
+      {worldReady && <HUD stores={stores} layout={layout} initialStore={store} />}
     </div>
   );
 }
