@@ -43,7 +43,19 @@ function LandingRig() {
   return null;
 }
 
-export default function CityCanvas({ stores, layout, mode, paused = false }: { stores: Store[]; layout: Layout; mode: 'city' | 'landing'; paused?: boolean }) {
+export default function CityCanvas({
+  stores,
+  layout,
+  mode,
+  paused = false,
+  onReady,
+}: {
+  stores: Store[];
+  layout: Layout;
+  mode: 'city' | 'landing';
+  paused?: boolean;
+  onReady?: () => void;
+}) {
   const quality = useUI(s => s.quality), Q = QUALITY[quality];
   const isLanding = mode === 'landing';
   const terrain = useMemo(() => terrainFor(layoutBounds(layout, 0)), [layout]);
@@ -87,6 +99,7 @@ export default function CityCanvas({ stores, layout, mode, paused = false }: { s
         gl={{ antialias: isLanding || !Q.post, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.NoToneMapping;
+          onReady?.();
         }}
       >
         <PerfCollector />
