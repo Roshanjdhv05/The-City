@@ -19,6 +19,7 @@ import { SceneLighting, SkyDome } from './Lighting';
 import { TerrainMesh, Water, Pines, Rocks, Hedges, ResourceMeshes } from './Scenery';
 import { CityRoads, Plaza } from './CityRoads';
 import { CityTraffic } from './CityTraffic';
+import { CityChunkRenderer } from './CityChunkRenderer';
 import { EmptyPlots } from './EmptyPlots';
 import { PlazaDecorations } from './PlazaDecor';
 import { MarketPropsManager } from './MarketProps';
@@ -113,33 +114,6 @@ export function World({ stores, layout, quality }: { stores: Store[]; layout: La
   const empty = useMemo(() => layout.plots.filter(p => !byPlot.has(p.id)), [layout, byPlot]), built = useMemo(() => layout.plots.filter(p => byPlot.has(p.id)), [layout, byPlot]);
   const span = Math.max(95, Math.max(b0.x1 - b0.x0, b0.z1 - b0.z0) / 2 + 10), cx = (b0.x0 + b0.x1) / 2, cz = (b0.z0 + b0.z1) / 2;
 
-  // ── Geographic Chunk Loading ──
-  const chunkMap = useMemo(() => buildCityChunks(layout), [layout]);
-  const [activeDistricts, setActiveDistricts] = useState<Set<string>>(
-    () => new Set(['SAS', 'AIM', 'DEV', 'WIN', 'MAC', 'MOB', 'GAM', 'DES', 'MKT'])
-  );
-  const [chunkLODs, setChunkLODs] = useState<Map<string, 'full' | 'medium' | 'low'>>(() => new Map());
-  const lastChunkUpdate = useRef(0);
-
-  useFrame(({ camera }) => {
-    const now = performance.now();
-    if (now - lastChunkUpdate.current > 300) {
-      lastChunkUpdate.current = now;
-      const { activeDistricts: nextActive, chunkLODs: nextLODs } = getVisibleChunks(
-        chunkMap,
-        camera.position.x,
-        camera.position.z,
-        Q.radius
-      );
-
-      // Diff check before re-rendering state
-      if (nextActive.size !== activeDistricts.size || [...nextActive].some(d => !activeDistricts.has(d))) {
-        setActiveDistricts(nextActive);
-        setChunkLODs(nextLODs);
-      }
-    }
-  });
-
   return (
     <>
       <SkyDome />
@@ -148,40 +122,14 @@ export function World({ stores, layout, quality }: { stores: Store[]; layout: La
       <CityRoads layout={layout} /><Plaza />
       <CityTraffic layout={layout} />
       <PlazaDecorations />
-      <MarketPropsManager layout={layout} activeDistricts={activeDistricts} />
+      <MarketPropsManager layout={layout} />
       <Furniture props={props} /><Trees trees={props.trees} /><Pines pines={props.pines} /><Rocks rocks={props.rocks} /><Hedges bushes={props.bushes} flowers={props.flowers} /><ResourceMeshes nodes={props.resources} />
       <EmptyPlots plots={empty} />
       {/* ── Sky: advert plane + bird flock ── */}
       <AdvertPlane />
       <BirdFlock />
-      {built.map(p => {
-        const s = byPlot.get(p.id)!, pl = getPlace(p, s.config), je = s.config.template === 'jenterprise' && s.config.mode !== 'modular';
-        const chunk = chunkMap.chunkByPlotId.get(p.id);
-        const lodTier = chunk ? chunkLODs.get(chunk.id) || 'medium' : 'medium';
-        const isDistant = lodTier === 'low' && !je && !p.id.startsWith('C0');
-
-        return (
-          <group key={p.id} position={[p.x, 0, p.z]} rotation={[0, p.rot, 0]}>
-            <group position={[pl.ox, 0, pl.oz]} rotation={[0, (pl.rot * Math.PI) / 2, 0]}>
-              {!je && <AO w={p.w + 3} d={p.d + 3} />}
-              {je ? (
-                <>
-                  <JEnterpriseLOD />
-                  {p.landmark && (
-                    <Html position={[-0.5, 23, 7]} center distanceFactor={34} zIndexRange={[5, 0]} style={{ pointerEvents: 'none' }}>
-                      <div className="loc-label">J Enterprise</div>
-                    </Html>
-                  )}
-                </>
-              ) : isDistant ? (
-                <BuildingLow cfg={s.config} plotId={p.id} />
-              ) : (
-                <StoreModel cfg={s.config} plotId={p.id} lodDistance={Q.lod} interiors={Q.interiors} />
-              )}
-            </group>
-          </group>
-        );
-      })}
+      {/* ── Spatial District Chunks: Progressive loading, Frustum Culling & Seamless LOD ── */}
+      <CityChunkRenderer layout={layout} stores={stores} interiors={Q.interiors} viewDistance={Q.radius} />
     </>
   );
 }

@@ -8,14 +8,15 @@ export const QUALITY: Record<Quality, { dpr: [number, number]; shadow: number; p
 };
 
 interface UI {
-  quality: Quality; view: '1p' | '3p' | 'free'; nearPlot: string | null; panelOpen: boolean; teleportMapOpen: boolean; nearRes: { id: string; type: string } | null; inv: { wood: number; stone: number; crystal: number }; setNearRes: (r: { id: string; type: string } | null) => void; setInv: (i: { wood: number; stone: number; crystal: number }) => void;
+  quality: Quality; view: '1p' | '3p' | 'free'; nearPlot: string | null; panelOpen: boolean; teleportMapOpen: boolean; debugMonitorOpen: boolean; nearRes: { id: string; type: string } | null; inv: { wood: number; stone: number; crystal: number }; setNearRes: (r: { id: string; type: string } | null) => void; setInv: (i: { wood: number; stone: number; crystal: number }) => void;
   walkSpeed: number; sensitivity: number;
   setWalkSpeed: (s: number) => void; setSensitivity: (s: number) => void;
-  setQuality: (q: Quality) => void; setView: (v: '1p' | '3p' | 'free') => void; setNear: (p: string | null) => void; setPanel: (b: boolean) => void; setTeleportMapOpen: (b: boolean) => void; init: () => void;
+  setQuality: (q: Quality) => void; setView: (v: '1p' | '3p' | 'free') => void; setNear: (p: string | null) => void; setPanel: (b: boolean) => void; setTeleportMapOpen: (b: boolean) => void; toggleDebugMonitor: () => void; init: () => void;
 }
 export const useUI = create<UI>((set) => ({
-  quality: 'low', view: '3p', nearPlot: null, panelOpen: false, teleportMapOpen: false, nearRes: null, inv: { wood: 0, stone: 0, crystal: 0 },
+  quality: 'low', view: '3p', nearPlot: null, panelOpen: false, teleportMapOpen: false, debugMonitorOpen: false, nearRes: null, inv: { wood: 0, stone: 0, crystal: 0 },
   walkSpeed: 1.0, sensitivity: 1.0,
+  toggleDebugMonitor: () => set(state => ({ debugMonitorOpen: !state.debugMonitorOpen })),
   setWalkSpeed: (walkSpeed) => {
     try { localStorage.setItem('thecity.walkSpeed', String(walkSpeed)); } catch {}
     set({ walkSpeed });

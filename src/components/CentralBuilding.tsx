@@ -1093,7 +1093,7 @@ export function getCentralIndex(plotId?: string, name?: string): number {
 // =========================================================================
 // FULL DETAIL COMPONENT
 // =========================================================================
-function CentralBuildingFull({ cfg, plotId }: { cfg: StoreConfig; plotId?: string }) {
+export function CentralBuildingFull({ cfg, plotId }: { cfg: StoreConfig; plotId?: string }) {
   const index = getCentralIndex(plotId, cfg.name);
   switch (index) {
     case 0: return <NexusTower cfg={cfg} />;

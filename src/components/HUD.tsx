@@ -10,6 +10,7 @@ import { player, useUI, QUALITY, Quality } from '@/lib/state';
 import { trackEvent } from '@/lib/data';
 import type { Plot, Store } from '@/lib/types';
 import AdminMap from '@/components/admin/AdminMap';
+import { PerformanceMonitor } from '@/components/PerformanceMonitor';
 import { useTimeStore, formatClock, getTimePhase, TIME_PRESETS } from '@/lib/time';
 import { useMultiplayer } from '@/lib/multiplayer';
 
@@ -269,7 +270,7 @@ function QualitySelector() {
 
 // ─── Settings Panel ─────────────────────────────────────────────────────────
 function SettingsPanel() {
-  const { quality, setQuality, walkSpeed, sensitivity, setWalkSpeed, setSensitivity } = useUI();
+  const { quality, setQuality, walkSpeed, sensitivity, setWalkSpeed, setSensitivity, debugMonitorOpen, toggleDebugMonitor } = useUI();
   const { hour, setHour, isLiveDevice, setLiveDevice } = useTimeStore();
   const [open, setOpen] = useState(false);
 
@@ -464,6 +465,36 @@ function SettingsPanel() {
             </div>
           </div>
 
+          {/* World Rendering Diagnostics Toggle */}
+          <button
+            onClick={() => {
+              toggleDebugMonitor();
+              setOpen(false);
+            }}
+            style={{
+              width: '100%',
+              padding: '8px 0',
+              marginTop: 6,
+              marginBottom: 4,
+              background: debugMonitorOpen ? 'rgba(56, 189, 248, 0.22)' : 'rgba(56, 189, 248, 0.08)',
+              border: debugMonitorOpen ? '1.5px solid #38bdf8' : '1px solid rgba(56, 189, 248, 0.35)',
+              borderRadius: 10,
+              color: '#38bdf8',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              boxShadow: debugMonitorOpen ? '0 0 10px rgba(56, 189, 248, 0.3)' : 'none',
+              transition: 'all 0.15s',
+            }}
+          >
+            <span>⚡</span>
+            <span>{debugMonitorOpen ? 'Hide Diagnostics (F3)' : 'Show Diagnostics (F3)'}</span>
+          </button>
+
           <button
             style={resetBtn}
             onClick={() => {
@@ -653,6 +684,9 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
 
   return (
     <div className="hud">
+      {/* ── Developer Performance Monitoring Overlay ── */}
+      <PerformanceMonitor />
+
       {/* ── Top-Left Column: Minimap + District + Discoveries + Arrows ── */}
       <div
         className="hud-tl"
