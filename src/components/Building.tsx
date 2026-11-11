@@ -1,6 +1,6 @@
 'use client';
 import * as THREE from 'three';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { Detailed } from '@react-three/drei';
 import type { StoreConfig, Mod } from '@/lib/types';
 import { BLD_W as W, BLD_D as D, GH, FH, LV, CELL, GRID } from '@/lib/plots';
@@ -24,95 +24,211 @@ export function useMats(cfg: StoreConfig) {
 }
 
 // ---------------- Outdoor Monument / Freestanding Sidewalk Board ----------------
-const boardCache = new Map<string, THREE.CanvasTexture>();
-export function getBoardTexture(name: string, tagline?: string, theme = '#3b82f6') {
-  const key = `${name}|${tagline || ''}|${theme}`;
-  let tex = boardCache.get(key);
-  if (tex) return tex;
-  const c = document.createElement('canvas');
-  c.width = 512;
-  c.height = 256;
-  const g = c.getContext('2d')!;
+const boardCache = new Map<string, { canvas: HTMLCanvasElement; tex: THREE.CanvasTexture }>();
 
-  // Premium dark gradient — deep navy to graphite
-  const gr = g.createLinearGradient(0, 0, 512, 256);
-  gr.addColorStop(0, '#0a0f1e');
-  gr.addColorStop(0.5, '#0d1628');
-  gr.addColorStop(1, '#0a0f1e');
+function drawOutdoorBoard(
+  c: HTMLCanvasElement,
+  o: { name: string; tagline?: string; theme: string; img?: HTMLImageElement | null }
+) {
+  const g = c.getContext('2d')!, w = c.width, h = c.height;
+  g.clearRect(0, 0, w, h);
+
+  // 1. Sleek corporate dark background with radial highlight
+  const gr = g.createRadialGradient(w / 2, h / 2, 40, w / 2, h / 2, w * 0.7);
+  gr.addColorStop(0, '#101a2e');
+  gr.addColorStop(0.5, '#0b1220');
+  gr.addColorStop(1, '#050810');
   g.fillStyle = gr;
-  g.fillRect(0, 0, 512, 256);
+  g.fillRect(0, 0, w, h);
 
-  // Subtle diagonal brushed-steel texture
-  for (let i = 0; i < 10; i++) {
-    g.strokeStyle = `rgba(255,255,255,${0.015 + (i % 3) * 0.008})`;
-    g.lineWidth = 1;
-    g.beginPath(); g.moveTo(0, i * 28); g.lineTo(512, i * 28 + 60); g.stroke();
+  // Subtle diagonal brushed-metal scanlines
+  for (let i = 0; i < 18; i++) {
+    g.strokeStyle = `rgba(255,255,255,${0.012 + (i % 3) * 0.006})`;
+    g.lineWidth = 1.5;
+    g.beginPath();
+    g.moveTo(0, i * 32);
+    g.lineTo(w, i * 32 + 90);
+    g.stroke();
   }
 
-  // Theme colored premium border with corner marks
-  g.strokeStyle = theme;
+  // 2. Theme-colored outer glowing frame
+  g.strokeStyle = o.theme;
+  g.lineWidth = 6;
+  g.strokeRect(16, 16, w - 32, h - 32);
+
+  // High-tech corner bracket accents
+  const cb = 32;
+  g.strokeStyle = '#ffffff';
   g.lineWidth = 3;
-  g.strokeRect(8, 8, 496, 240);
-  // Corner accent marks
-  const cm = 18;
-  g.lineWidth = 2; g.strokeStyle = '#ffffff';
-  [[10, 10], [502, 10], [10, 246], [502, 246]].forEach(([cx, cy], i) => {
+  [[16, 16], [w - 16, 16], [16, h - 16], [w - 16, h - 16]].forEach(([cx, cy], i) => {
     g.beginPath();
-    g.moveTo(cx + (i % 2 === 0 ? cm : -cm), cy);
+    g.moveTo(cx + (i % 2 === 0 ? cb : -cb), cy);
     g.lineTo(cx, cy);
-    g.lineTo(cx, cy + (i < 2 ? cm : -cm));
+    g.lineTo(cx, cy + (i < 2 ? cb : -cb));
     g.stroke();
   });
 
-  // Circular brand icon with gradient
-  const ic = g.createRadialGradient(256, 54, 2, 256, 54, 28);
-  ic.addColorStop(0, theme); ic.addColorStop(1, '#0f172a');
-  g.fillStyle = ic;
-  g.beginPath();
-  g.arc(256, 54, 28, 0, Math.PI * 2);
-  g.fill();
-  g.strokeStyle = theme; g.lineWidth = 2; g.stroke();
-  g.fillStyle = '#ffffff';
-  g.font = '800 22px Arial, sans-serif';
-  g.textAlign = 'center';
+  // Top header status bar
+  g.fillStyle = 'rgba(255,255,255,0.08)';
+  g.fillRect(20, 20, w - 40, 48);
+  g.fillStyle = o.theme;
+  g.font = '800 18px Arial, sans-serif';
+  g.textAlign = 'left';
   g.textBaseline = 'middle';
-  const initial = (name ? name[0] : 'S').toUpperCase();
-  g.fillText(initial, 256, 54);
+  g.fillText('✦ THE CITY COMMERCIAL NETWORK', 40, 44);
 
-  // Store title — bold white with theme glow
-  const title = (name || 'COMMERCIAL').toUpperCase();
-  let fs = 38;
+  // Verified Badge (top right)
+  g.fillStyle = 'rgba(34, 197, 94, 0.2)';
+  g.beginPath();
+  if (g.roundRect) g.roundRect(w - 240, 28, 200, 32, 16);
+  else g.rect(w - 240, 28, 200, 32);
+  g.fill();
+  g.strokeStyle = '#22c55e';
+  g.lineWidth = 1.5;
+  g.stroke();
+  g.fillStyle = '#4ade80';
+  g.font = '700 15px Arial, sans-serif';
+  g.textAlign = 'center';
+  g.fillText('● VERIFIED LOCATION', w - 140, 44);
+
+  // 3. Prominent LOGO Section (Left Side)
+  const logoBoxX = 56, logoBoxY = 105, logoBoxSize = 230;
+  g.fillStyle = 'rgba(15, 23, 42, 0.9)';
+  g.beginPath();
+  if (g.roundRect) g.roundRect(logoBoxX, logoBoxY, logoBoxSize, logoBoxSize, 28);
+  else g.rect(logoBoxX, logoBoxY, logoBoxSize, logoBoxSize);
+  g.fill();
+  g.strokeStyle = o.theme;
+  g.lineWidth = 4;
+  g.stroke();
+
+  if (o.img) {
+    g.save();
+    g.beginPath();
+    if (g.roundRect) g.roundRect(logoBoxX + 12, logoBoxY + 12, logoBoxSize - 24, logoBoxSize - 24, 20);
+    else g.rect(logoBoxX + 12, logoBoxY + 12, logoBoxSize - 24, logoBoxSize - 24);
+    g.clip();
+    g.drawImage(o.img, logoBoxX + 12, logoBoxY + 12, logoBoxSize - 24, logoBoxSize - 24);
+    g.restore();
+  } else {
+    // Beautiful branded gradient monogram
+    const igr = g.createLinearGradient(logoBoxX, logoBoxY, logoBoxX + logoBoxSize, logoBoxY + logoBoxSize);
+    igr.addColorStop(0, o.theme);
+    igr.addColorStop(1, '#0f172a');
+    g.fillStyle = igr;
+    g.beginPath();
+    g.arc(logoBoxX + logoBoxSize / 2, logoBoxY + logoBoxSize / 2, logoBoxSize * 0.38, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = '#ffffff';
+    g.lineWidth = 3;
+    g.stroke();
+
+    const initial = (o.name ? o.name[0] : 'S').toUpperCase();
+    g.fillStyle = '#ffffff';
+    g.font = `800 ${logoBoxSize * 0.45}px Arial, sans-serif`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.shadowColor = o.theme;
+    g.shadowBlur = 20;
+    g.fillText(initial, logoBoxX + logoBoxSize / 2, logoBoxY + logoBoxSize / 2 + 4);
+    g.shadowBlur = 0;
+  }
+
+  // 4. Store NAME & Info Section (Right Side)
+  const textLeft = logoBoxX + logoBoxSize + 48;
+  const maxTextW = w - textLeft - 50;
+  const title = (o.name || 'COMMERCIAL').toUpperCase();
+
+  let fs = 64;
   g.font = `800 ${fs}px Arial, sans-serif`;
-  while (g.measureText(title).width > 450 && fs > 18) { fs -= 2; g.font = `800 ${fs}px Arial, sans-serif`; }
-  g.shadowColor = theme; g.shadowBlur = 16;
+  while (g.measureText(title).width > maxTextW && fs > 30) {
+    fs -= 3;
+    g.font = `800 ${fs}px Arial, sans-serif`;
+  }
+  g.textAlign = 'left';
+  g.textBaseline = 'middle';
+  g.shadowColor = o.theme;
+  g.shadowBlur = 22;
   g.fillStyle = '#ffffff';
-  g.fillText(title, 256, 128);
+  g.fillText(title, textLeft, 175);
   g.shadowBlur = 0;
 
-  // Premium thin divider line
-  g.strokeStyle = `${theme}80`; g.lineWidth = 1;
-  g.beginPath(); g.moveTo(60, 158); g.lineTo(452, 158); g.stroke();
+  // Thin separator line with theme gradient
+  const sgr = g.createLinearGradient(textLeft, 0, textLeft + maxTextW, 0);
+  sgr.addColorStop(0, o.theme);
+  sgr.addColorStop(0.7, `${o.theme}60`);
+  sgr.addColorStop(1, 'transparent');
+  g.strokeStyle = sgr;
+  g.lineWidth = 3;
+  g.beginPath();
+  g.moveTo(textLeft, 230);
+  g.lineTo(textLeft + maxTextW * 0.95, 230);
+  g.stroke();
 
   // Tagline
-  const sub = tagline || 'PREMIER COMMERCIAL SPACE';
-  let subFs = 17;
-  g.font = `400 ${subFs}px Arial, sans-serif`;
-  while (g.measureText(sub).width > 460 && subFs > 11) { subFs -= 1; g.font = `400 ${subFs}px Arial, sans-serif`; }
+  const sub = o.tagline || 'PREMIER COMMERCIAL LOCATION';
+  let subFs = 26;
+  g.font = `600 ${subFs}px Arial, sans-serif`;
+  while (g.measureText(sub).width > maxTextW && subFs > 16) {
+    subFs -= 2;
+    g.font = `600 ${subFs}px Arial, sans-serif`;
+  }
+  g.fillStyle = '#e2e8f0';
+  g.fillText(sub, textLeft, 268);
+
+  // Subtitle / Location badge
+  g.font = '500 18px Arial, sans-serif';
   g.fillStyle = '#94a3b8';
-  g.fillText(sub, 256, 180);
+  g.fillText('OFFICIAL METROPOLIS PROPERTY  ✦  INSPECTION READY', textLeft, 308);
 
-  // Bottom status bar
-  g.fillStyle = `${theme}28`; g.fillRect(8, 216, 496, 32);
-  g.fillStyle = theme; g.fillRect(8, 216, 6, 32);
-  g.fillStyle = '#ffffff'; g.font = '600 12px Arial, sans-serif'; g.textAlign = 'left';
-  g.fillText('▶  OPEN  ·  THE CITY COMMERCIAL DIRECTORY', 24, 232);
-  g.textAlign = 'center';
+  // 5. Bottom Interactive Footer Banner
+  g.fillStyle = 'rgba(15, 23, 42, 0.9)';
+  g.fillRect(20, h - 84, w - 40, 64);
+  g.fillStyle = o.theme;
+  g.fillRect(20, h - 84, 8, 64);
+  g.fillStyle = '#ffffff';
+  g.font = '700 20px Arial, sans-serif';
+  g.textAlign = 'left';
+  g.fillText('▶  ENTER STOREFRONT  ·  CLICK OR WALK THROUGH ENTRANCE TO VISIT', 48, h - 52);
+  g.fillStyle = o.theme;
+  g.font = '800 18px Arial, sans-serif';
+  g.textAlign = 'right';
+  g.fillText('OPEN NOW ↗', w - 48, h - 52);
+}
 
-  tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  boardCache.set(key, tex);
-  return tex;
+export function useOutdoorBoardTexture(name: string, tagline?: string, theme = '#3b82f6', logoUrl?: string) {
+  const key = `${name || 'COMMERCIAL'}|${tagline || ''}|${theme}`;
+  const entry = useMemo(() => {
+    let item = boardCache.get(key);
+    if (!item) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 512;
+      drawOutdoorBoard(canvas, { name, tagline, theme });
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      item = { canvas, tex };
+      boardCache.set(key, item);
+    }
+    return item;
+  }, [key, name, tagline, theme]);
+
+  useEffect(() => {
+    if (!logoUrl) return;
+    let dead = false;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      if (dead) return;
+      drawOutdoorBoard(entry.canvas, { name, tagline, theme, img });
+      entry.tex.needsUpdate = true;
+    };
+    img.src = logoUrl;
+    return () => { dead = true; };
+  }, [name, tagline, theme, logoUrl, entry]);
+
+  return entry.tex;
 }
 
 export function OutdoorBoard({
@@ -120,6 +236,7 @@ export function OutdoorBoard({
   name,
   tagline,
   theme = '#3b82f6',
+  logoUrl,
   baseMat,
   rot = 0,
 }: {
@@ -127,43 +244,63 @@ export function OutdoorBoard({
   name: string;
   tagline?: string;
   theme?: string;
+  logoUrl?: string;
   baseMat: THREE.Material;
   rot?: number;
 }) {
-  const tex = useMemo(() => getBoardTexture(name, tagline, theme), [name, tagline, theme]);
-  const signM = useMemo(() => emiss(tex, 1.3), [tex]);
+  const tex = useOutdoorBoardTexture(name, tagline, theme, logoUrl);
+  const signM = useMemo(() => emiss(tex, 1.4), [tex]);
   const dark = solid('dark');
+  const steel = solid('steel');
   const led = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
         color: '#ffffff',
         emissive: theme,
-        emissiveIntensity: 1.8,
-        flatShading: true,
+        emissiveIntensity: 2.2,
       }),
     [theme]
   );
 
-  const w = 2.4, h = 1.6, d = 0.28;
+  // Upgraded billboard size: 3.6m wide, 2.2m tall, elevated 0.85m on twin steel columns
+  const w = 3.6, h = 2.2, d = 0.26;
+  const legH = 0.85;
+  const boardCenterY = legH + h / 2;
+
   return (
     <group position={pos} rotation={[0, rot, 0]}>
-      {/* Plinth */}
-      <B s={[w + 0.3, 0.2, d + 0.35]} p={[0, 0.1, 0]} m={baseMat} />
-      {/* Twin support posts */}
-      <B s={[0.1, 0.5, 0.16]} p={[-w / 2 + 0.35, 0.42, 0]} m={dark} />
-      <B s={[0.1, 0.5, 0.16]} p={[w / 2 - 0.35, 0.42, 0]} m={dark} />
-      {/* Sign casing */}
-      <B s={[w, h, d]} p={[0, 0.65 + h / 2, 0]} m={dark} />
-      {/* Glowing theme LED bottom/top accent strip */}
-      <Px s={[w, 0.05, d + 0.02]} p={[0, 0.65, 0]} m={led} />
-      <Px s={[w, 0.05, d + 0.02]} p={[0, 0.65 + h, 0]} m={led} />
-      {/* Front display face */}
-      <mesh position={[0, 0.65 + h / 2, d / 2 + 0.015]} material={signM}>
-        <planeGeometry args={[w - 0.12, h - 0.12]} />
+      {/* Heavy Granite Plinth Base */}
+      <B s={[w + 0.5, 0.16, 0.9]} p={[0, 0.08, 0]} m={baseMat} recv />
+      {/* Twin Brushed Steel Support Columns */}
+      <B s={[0.16, legH, 0.2]} p={[-w / 2 + 0.45, legH / 2, 0]} m={steel} cast />
+      <B s={[0.16, legH, 0.2]} p={[w / 2 - 0.45, legH / 2, 0]} m={steel} cast />
+      {/* Glowing theme LED strips on support columns */}
+      <Px s={[0.04, legH, 0.22]} p={[-w / 2 + 0.45, legH / 2, 0]} m={led} />
+      <Px s={[0.04, legH, 0.22]} p={[w / 2 - 0.45, legH / 2, 0]} m={led} />
+
+      {/* Main Signboard Box Enclosure */}
+      <B s={[w, h, d]} p={[0, boardCenterY, 0]} m={dark} cast />
+      {/* Brushed Aluminium Frame Trim around border */}
+      <B s={[w + 0.08, 0.08, d + 0.04]} p={[0, legH + 0.04, 0]} m={steel} />
+      <B s={[w + 0.08, 0.08, d + 0.04]} p={[0, legH + h - 0.04, 0]} m={steel} />
+      <B s={[0.08, h, d + 0.04]} p={[-w / 2 - 0.04, boardCenterY, 0]} m={steel} />
+      <B s={[0.08, h, d + 0.04]} p={[w / 2 + 0.04, boardCenterY, 0]} m={steel} />
+
+      {/* Glowing Theme LED Top and Bottom Edge Strips */}
+      <Px s={[w, 0.05, d + 0.03]} p={[0, legH, 0]} m={led} />
+      <Px s={[w, 0.05, d + 0.03]} p={[0, legH + h, 0]} m={led} />
+
+      {/* Overhead Downlight Canopy Hood */}
+      <B s={[w + 0.2, 0.1, 0.6]} p={[0, legH + h + 0.08, 0.12]} m={dark} />
+      <Px s={[w, 0.04, 0.04]} p={[0, legH + h + 0.05, 0.4]} m={led} />
+
+      {/* Front Display Face (High-Resolution Poster) */}
+      <mesh position={[0, boardCenterY, d / 2 + 0.015]} material={signM}>
+        <planeGeometry args={[w - 0.16, h - 0.16]} />
       </mesh>
-      {/* Rear display face (double-sided) */}
-      <mesh position={[0, 0.65 + h / 2, -d / 2 - 0.015]} rotation={[0, Math.PI, 0]} material={signM}>
-        <planeGeometry args={[w - 0.12, h - 0.12]} />
+      {/* Rear Display Face (Double-sided for foot traffic) */}
+      <mesh position={[0, boardCenterY, -d / 2 - 0.015]} rotation={[0, Math.PI, 0]} material={signM}>
+        <planeGeometry args={[w - 0.16, h - 0.16]} />
       </mesh>
     </group>
   );
@@ -338,6 +475,12 @@ export function BuildingFull({ cfg, plotId, quality = true }: { cfg: StoreConfig
   const ledWhite = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f8fafc', emissive: '#38bdf8', emissiveIntensity: 1.6, roughness: 0.9 }), []);
   const glowTex = archetype % 2 === 0 ? T.cyanGlow : T.warmGlow;
   const interiorTint = archetype % 2 === 0 ? '#e0f2fe' : '#ffe8c9';
+  const pylonTheme = useMemo(() => new THREE.MeshStandardMaterial({ color: cfg.theme || '#b91c1c', roughness: 0.5, metalness: 0.15 }), [cfg.theme]);
+  const goldAccent = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f59e0b', roughness: 0.35, metalness: 0.65, emissive: '#d97706', emissiveIntensity: 0.3 }), []);
+  const whiteFrame = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.4, metalness: 0.1 }), []);
+  const cubeLit = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fffdf5', emissive: '#ffe599', emissiveIntensity: 1.2 }), []);
+  const face = useMemo(() => new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: '#ffffff', emissiveIntensity: cfg.lights ? 1.6 : 0.2, roughness: 0.4, transparent: true }), [tex, cfg.lights]);
+
 
   return (
     <group>
@@ -375,7 +518,7 @@ export function BuildingFull({ cfg, plotId, quality = true }: { cfg: StoreConfig
       ))}
 
       {/* ── Freestanding Sidewalk Board Outside ── */}
-      <OutdoorBoard pos={[-3.3, 0, D / 2 + 1.1]} name={cfg.name} tagline={cfg.tagline} theme={cfg.theme} baseMat={mats.trim} rot={0.16} />
+      <OutdoorBoard pos={[-3.4, 0, D / 2 + 1.6]} name={cfg.name} tagline={cfg.tagline} theme={cfg.theme} logoUrl={cfg.logoUrl} baseMat={mats.trim} rot={0.12} />
 
       {/* ── Back & Side Structural Shell ── */}
       <B s={[W, H, 0.35]} p={[0, H / 2, -D / 2 + 0.175]} m={wall} />
@@ -482,18 +625,101 @@ export function BuildingFull({ cfg, plotId, quality = true }: { cfg: StoreConfig
       )}
 
       {archetype === 5 && (
-        // 5: Cyber High-Tech Hub
+        // 5: Modern Commercial Showroom (Bikaner House style architecture)
         <group>
-          <B s={[W, H, D]} p={[0, H / 2, 0]} m={dark} />
-          <CurtainWall w={W - 1.2} h={H - 0.8} levels={floors} cols={4} pos={[0, 0.4, D / 2 - 0.02]} glass={glassMat('blue')} tex={T.cyanGlow} seed={601} interiorTint="#c7f5ff" />
-          {/* Vertical Glowing Cyber Blades */}
-          {[-4.6, -2.4, 2.4, 4.6].map((x, i) => (
-            <group key={i} position={[x, H / 2, D / 2 + 0.08]}>
-              <B s={[0.2, H, 0.3]} p={[0, 0, 0]} m={steel} />
-              <Px s={[0.08, H - 0.6, 0.06]} p={[0, 0, 0.16]} m={ledTheme} />
-            </group>
-          ))}
-          <Px s={[W, 0.06, 0.06]} p={[0, 3.4, D / 2 + 0.1]} m={ledTheme} />
+          {/* 1. Left Vertical Pylon in Bold Crimson / Theme Color */}
+          <group position={[-(W / 2 - 1.0), 0, 0]}>
+            <B s={[2.0, H, D + 0.15]} p={[0, H / 2, 0]} m={pylonTheme} cast />
+            {/* 3 Projecting Decorative Geometric Accent Cubes (stacked vertically as in photo) */}
+            {[2.4, 4.8, 7.2].map((cubeY, ci) => (
+              <group key={ci} position={[0, cubeY, D / 2 + 0.25]}>
+                <B s={[0.65, 0.65, 0.4]} p={[0, 0, 0]} m={pylonTheme} />
+                <B s={[0.55, 0.55, 0.04]} p={[0, 0, 0.21]} m={mats.alu} />
+                <Px s={[0.42, 0.42, 0.02]} p={[0, 0, 0.23]} m={cubeLit} />
+              </group>
+            ))}
+            {/* Vertical glowing accent slit on inner edge */}
+            <Px s={[0.05, H - 1.2, 0.05]} p={[0.95, H / 2, D / 2 + 0.08]} m={ledTheme} />
+          </group>
+
+          {/* 2. Right Vertical Architectural Tower Column (Dark Graphite / Titanium with horizontal slits) */}
+          <group position={[W / 2 - 1.1, 0, 0]}>
+            <B s={[2.2, H + 0.8, D + 0.15]} p={[0, (H + 0.8) / 2, 0]} m={dark} cast />
+            {/* Horizontal architectural groove reveals */}
+            {[2.8, 4.4, 6.0, 7.6, 9.2].map((slitY, si) => (
+              <group key={si} position={[0, slitY, D / 2 + 0.08]}>
+                <B s={[1.8, 0.08, 0.08]} p={[0, 0, 0]} m={steel} />
+                <Px s={[1.8, 0.04, 0.02]} p={[0, 0, 0.04]} m={si % 2 === 0 ? pylonTheme : ledTheme} />
+              </group>
+            ))}
+          </group>
+
+          {/* 3. Center Glazed Facade with Reflective Teal Glass */}
+          <group position={[-0.1, 0, 0]}>
+            <CurtainWall
+              w={5.8}
+              h={H - 0.4}
+              levels={floors}
+              cols={4}
+              pos={[0, 0.2, D / 2 - 0.02]}
+              glass={mats.glass}
+              tex={T.cyanGlow}
+              seed={601}
+              interiorTint="#dbeafe"
+            />
+            {/* Horizontal Gold/Amber Accent Panels (running horizontally across the glass floors) */}
+            {Array.from({ length: floors - 1 }).map((_, fi) => (
+              <group key={fi} position={[0, GH + fi * FH - 0.2, D / 2 + 0.06]}>
+                <B s={[5.8, 0.42, 0.18]} p={[0, 0, 0]} m={goldAccent} />
+                <Px s={[5.8, 0.04, 0.04]} p={[0, 0.22, 0.08]} m={ledWhite} />
+              </group>
+            ))}
+          </group>
+
+          {/* 4. Upper Floor Cantilevered White Architectural Frame Box (Signature Feature from Image 2!) */}
+          <group position={[-0.1, H - 2.8, D / 2 + 0.2]}>
+            {/* Cantilevered White Frame Enclosure */}
+            <B s={[5.8, 0.35, 0.45]} p={[0, 1.25, 0]} m={whiteFrame} />
+            <B s={[5.8, 0.35, 0.45]} p={[0, -1.25, 0]} m={whiteFrame} />
+            <B s={[0.35, 2.5, 0.45]} p={[-2.72, 0, 0]} m={whiteFrame} />
+            <B s={[0.35, 2.5, 0.45]} p={[2.72, 0, 0]} m={whiteFrame} />
+            {/* Recessed panoramic window backing */}
+            <Plane s={[5.1, 2.15]} p={[0, 0, 0.02]} m={mats.glass} />
+            {/* Geometric square decorative motifs inside the frame (matching Image 2) */}
+            {[
+              { x: 0.6, y: 0.35, s: 0.52 },
+              { x: 1.5, y: 0.35, s: 0.52 },
+              { x: 1.05, y: -0.32, s: 0.52 },
+              { x: 1.95, y: -0.32, s: 0.52 },
+            ].map((sq, sqi) => (
+              <group key={sqi} position={[sq.x, sq.y, 0.1]}>
+                <B s={[sq.s, 0.06, 0.08]} p={[0, sq.s / 2, 0]} m={dark} />
+                <B s={[sq.s, 0.06, 0.08]} p={[0, -sq.s / 2, 0]} m={dark} />
+                <B s={[0.06, sq.s, 0.08]} p={[-sq.s / 2, 0, 0]} m={dark} />
+                <B s={[0.06, sq.s, 0.08]} p={[sq.s / 2, 0, 0]} m={dark} />
+              </group>
+            ))}
+          </group>
+
+          {/* 5. Top Rooftop Commercial Billboard ("BIKANER HOUSE" style in Image 2) */}
+          <group position={[0, H + 0.7, D / 2 + 0.08]}>
+            {/* Red / Theme colored fascia backing */}
+            <B s={[W + 0.2, 1.4, 0.3]} p={[0, 0, 0]} m={pylonTheme} />
+            {/* Bold Channel Letters Signboard Panel */}
+            <mesh position={[0, 0, 0.16]} material={face}>
+              <planeGeometry args={[W - 1.2, 1.15]} />
+            </mesh>
+            {/* Projecting White Overhead Canopy with Slats */}
+            <B s={[W + 0.6, 0.14, 1.4]} p={[0, 0.75, 0.55]} m={whiteFrame} />
+            {[-3.6, -1.8, 0, 1.8, 3.6].map((finX, fi) => (
+              <B key={finX} s={[0.08, 0.1, 1.3]} p={[finX, 0.65, 0.55]} m={dark} />
+            ))}
+            <Px s={[W + 0.6, 0.05, 0.05]} p={[0, 0.75, 1.25]} m={ledTheme} />
+          </group>
+
+          {/* Ground Floor Entrance Portal */}
+          <B s={[3.2, 0.18, 0.8]} p={[-0.1, 3.4, D / 2 + 0.4]} m={dark} />
+          <Px s={[3.2, 0.04, 0.04]} p={[-0.1, 3.4, D / 2 + 0.8]} m={ledTheme} />
         </group>
       )}
 
@@ -575,10 +801,28 @@ export function BuildingMedium({ cfg, plotId }: { cfg: StoreConfig; plotId?: str
         </group>
       )}
 
-      {archetype >= 3 && (
+      {archetype >= 3 && archetype < 5 && (
         <mesh position={[0, H / 2, D / 2 + 0.02]} material={cfg.lights ? mats.glow : mats.glass}>
           <planeGeometry args={[W - 1.2, H - 1.0]} />
         </mesh>
+      )}
+
+      {archetype === 5 && (
+        <group>
+          {/* Left Pylon */}
+          <B s={[2.0, H, D + 0.1]} p={[-(W / 2 - 1.0), H / 2, 0]} m={new THREE.MeshStandardMaterial({ color: cfg.theme || '#b91c1c' })} />
+          {/* Right Column */}
+          <B s={[2.2, H + 0.8, D + 0.1]} p={[W / 2 - 1.1, (H + 0.8) / 2, 0]} m={dark} />
+          {/* Center Curtain Wall */}
+          <mesh position={[-0.1, H / 2, D / 2 + 0.04]} material={cfg.lights ? mats.glow : mats.glass}>
+            <planeGeometry args={[5.8, H - 0.8]} />
+          </mesh>
+          {/* Upper Cantilever Box */}
+          <B s={[5.8, 2.5, 0.4]} p={[-0.1, H - 2.8, D / 2 + 0.2]} m={alu} />
+          {/* Top Rooftop Billboard */}
+          <B s={[W + 0.2, 1.4, 0.3]} p={[0, H + 0.7, D / 2 + 0.08]} m={new THREE.MeshStandardMaterial({ color: cfg.theme || '#b91c1c' })} />
+          <Plane s={[W - 1.2, 1.15]} p={[0, H + 0.7, D / 2 + 0.24]} m={face} />
+        </group>
       )}
 
       {/* Floor Dividing Trim Bands */}
@@ -595,7 +839,7 @@ export function BuildingMedium({ cfg, plotId }: { cfg: StoreConfig; plotId?: str
       <Px s={[W, 0.06, 0.06]} p={[0, H + 0.46, D / 2 + 0.2]} m={ledTheme} />
 
       {/* Outdoor Monument Board */}
-      <OutdoorBoard pos={[-3.3, 0, D / 2 + 1.1]} name={cfg.name} tagline={cfg.tagline} theme={cfg.theme} baseMat={mats.trim} rot={0.16} />
+      <OutdoorBoard pos={[-3.4, 0, D / 2 + 1.6]} name={cfg.name} tagline={cfg.tagline} theme={cfg.theme} logoUrl={cfg.logoUrl} baseMat={mats.trim} rot={0.12} />
     </group>
   );
 }
@@ -635,7 +879,7 @@ export function BuildingLow({ cfg, plotId }: { cfg: StoreConfig; plotId?: string
       <Px s={[W, 0.06, 0.06]} p={[0, H + 0.46, D / 2 + 0.2]} m={ledTheme} />
 
       {/* Outdoor Board */}
-      <OutdoorBoard pos={[-3.3, 0, D / 2 + 1.1]} name={cfg.name} tagline={cfg.tagline} theme={cfg.theme} baseMat={mats.trim} rot={0.16} />
+      <OutdoorBoard pos={[-3.4, 0, D / 2 + 1.6]} name={cfg.name} tagline={cfg.tagline} theme={cfg.theme} logoUrl={cfg.logoUrl} baseMat={mats.trim} rot={0.12} />
     </group>
   );
 }
