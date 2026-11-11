@@ -18,6 +18,7 @@ import { JEnterpriseLOD } from './JEnterprise';
 import { SceneLighting, SkyDome } from './Lighting';
 import { TerrainMesh, Water, Pines, Rocks, Hedges, ResourceMeshes } from './Scenery';
 import { CityRoads, Plaza } from './CityRoads';
+import { CityTraffic } from './CityTraffic';
 import { EmptyPlots } from './EmptyPlots';
 import { PlazaDecorations } from './PlazaDecor';
 import { MarketPropsManager } from './MarketProps';
@@ -145,6 +146,7 @@ export function World({ stores, layout, quality }: { stores: Store[]; layout: La
       <SceneLighting q={quality} span={span} center={[cx, cz]} />
       <TerrainMesh terrain={terrain} seg={Q.seg} /><Water terrain={terrain} />
       <CityRoads layout={layout} /><Plaza />
+      <CityTraffic layout={layout} />
       <PlazaDecorations />
       <MarketPropsManager layout={layout} activeDistricts={activeDistricts} />
       <Furniture props={props} /><Trees trees={props.trees} /><Pines pines={props.pines} /><Rocks rocks={props.rocks} /><Hedges bushes={props.bushes} flowers={props.flowers} /><ResourceMeshes nodes={props.resources} />

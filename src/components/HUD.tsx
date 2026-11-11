@@ -270,7 +270,16 @@ function QualitySelector() {
 // ─── Settings Panel ─────────────────────────────────────────────────────────
 function SettingsPanel() {
   const { quality, setQuality, walkSpeed, sensitivity, setWalkSpeed, setSensitivity } = useUI();
+  const { hour, setHour, isLiveDevice, setLiveDevice } = useTimeStore();
   const [open, setOpen] = useState(false);
+
+  const activeTimeMode = isLiveDevice
+    ? 'live'
+    : hour >= 6.0 && hour < 16.5
+    ? 'day'
+    : hour >= 16.5 && hour < 20.5
+    ? 'evening'
+    : 'night';
 
   const panel: React.CSSProperties = {
     position: 'absolute', top: 'calc(100% + 10px)', right: 0, zIndex: 200,
@@ -361,6 +370,68 @@ function SettingsPanel() {
             </div>
           </div>
 
+          {/* Time of Day: Day, Evening, Night, Live */}
+          <div style={row}>
+            <div style={label}>
+              <span>Time of Day</span>
+              <span style={{ color: '#38bdf8', fontWeight: 700 }}>
+                {isLiveDevice ? `⏱️ Live (${formatClock(hour)})` : `${formatClock(hour)}`}
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginTop: 4 }}>
+              {[
+                { id: 'day', label: 'Day', icon: '☀️', h: 12.0 },
+                { id: 'evening', label: 'Evening', icon: '🌇', h: 18.2 },
+                { id: 'night', label: 'Night', icon: '🌙', h: 22.0 },
+                { id: 'live', label: 'Live', icon: '⏱️', h: null },
+              ].map((opt) => {
+                const active = opt.id === 'live' ? isLiveDevice : !isLiveDevice && activeTimeMode === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => {
+                      if (opt.id === 'live') {
+                        setLiveDevice(true);
+                      } else {
+                        setLiveDevice(false);
+                        setHour(opt.h!);
+                      }
+                    }}
+                    style={{
+                      padding: '8px 0',
+                      borderRadius: 10,
+                      fontSize: 11,
+                      fontWeight: active ? 800 : 600,
+                      cursor: 'pointer',
+                      border: active ? '1.5px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.12)',
+                      background: active ? 'rgba(56, 189, 248, 0.22)' : 'rgba(255, 255, 255, 0.04)',
+                      color: active ? '#38bdf8' : '#94a3b8',
+                      boxShadow: active ? '0 0 10px rgba(56, 189, 248, 0.3)' : 'none',
+                      transition: 'all 0.18s ease',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 2,
+                    }}
+                    title={opt.id === 'live' ? 'Sync with your real-world clock' : `Set time to ${opt.label}`}
+                  >
+                    <span style={{ fontSize: 14 }}>{opt.icon}</span>
+                    <span>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
+              {isLiveDevice
+                ? '⏱️ Live mode: Synchronized with your device clock.'
+                : activeTimeMode === 'day'
+                ? '☀️ Day: Bright daylight, sharp shadows & vibrant city foliage.'
+                : activeTimeMode === 'evening'
+                ? '🌇 Evening: Warm golden hour sunset & soft amber sky.'
+                : '🌙 Night: Dark starry sky, lit street lamps & glowing facades.'}
+            </div>
+          </div>
+
           {/* Walk Speed */}
           <div style={row}>
             <div style={label}>
@@ -393,7 +464,15 @@ function SettingsPanel() {
             </div>
           </div>
 
-          <button style={resetBtn} onClick={() => { setWalkSpeed(1.0); setSensitivity(1.0); setQuality('low'); }}>
+          <button
+            style={resetBtn}
+            onClick={() => {
+              setWalkSpeed(1.0);
+              setSensitivity(1.0);
+              setQuality('low');
+              setLiveDevice(true);
+            }}
+          >
             ↺ Reset to defaults
           </button>
         </div>
