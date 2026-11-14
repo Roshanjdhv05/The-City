@@ -4,39 +4,42 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 
 export interface HumanoidAvatarProps {
-  color?: string;        // Primary hoodie / clothing color (default teal #1eb886)
-  skinColor?: string;    // Skin complexion (default warm tan #a86940)
-  hairColor?: string;    // Hair color (default espresso #1c1518)
-  pantsColor?: string;   // Shorts / pants color (default dark navy #1c243a)
-  shoeColor?: string;    // Sneaker primary color (default matches hoodie or #14b8a6)
+  color?: string;        // Primary hoodie / clothing color (default teal #2bb689)
+  skinColor?: string;    // Skin complexion (default warm bronze #8e522b)
+  hairColor?: string;    // Hair color (default espresso/black #161214)
+  pantsColor?: string;   // Shorts / pants color (default dark navy #161c2c)
+  shoeColor?: string;    // Sneaker primary color (default matches hoodie or #24a37b)
   isMoving?: boolean | (() => boolean); // Whether currently walking/running
   speed?: number;        // Animation speed multiplier
   showGroundRing?: boolean; // Yellow indicator ring on ground as shown in reference
-  ringColor?: string;    // Ground ring color (default #f59e0b)
+  ringColor?: string;    // Ground ring color (default #facc15)
 }
 
 /**
- * Highly polished stylized 3D Humanoid Character Avatar
- * Faithfully recreation of the user reference image:
- * - Proper humanoid anatomy & proportions
- * - Stylized sculpted anime-style spiky hair
- * - Defined facial features (angular nose, stylized expressive eyes & brows)
- * - Athletic hoodie with raised cowl neck ring and sleeve cuffs
- * - Natural hands with thumb and fingers
- * - Dark navy shorts revealing contoured bare legs & knees
- * - Athletic low-cut sneakers with white soles and white sock trim
- * - Iconic glowing yellow ground selection ring
+ * Exact Stylized 3D Humanoid Character Avatar
+ * Faithfully recreated to match the user's reference image:
+ * - Proper slender humanoid anatomy and proportions
+ * - Pointed stylized chin and angular jawline
+ * - Pyramidal nose bridge, angled dark eyes, and sharp brows
+ * - Sculpted anime-style spiky dark hair with swept-back crests and temple lock
+ * - Raised rolled neck cowl / collar ring on hoodie
+ * - Slender long-sleeve hoodie with wrist cuffs
+ * - Elongated natural humanoid hands with thumb and articulated fingers
+ * - Dark navy knee-length shorts with separate leg openings
+ * - Contoured bronze calves, ankles, and crisp white socks
+ * - Teal athletic sneakers with thick crisp white outsoles
+ * - Signature open yellow C-ring ground indicator around the feet
  */
 export function HumanoidAvatar({
-  color = '#1eb886',
-  skinColor = '#a86940',
-  hairColor = '#1c1518',
-  pantsColor = '#1c243a',
+  color = '#2bb689',
+  skinColor = '#8e522b',
+  hairColor = '#161214',
+  pantsColor = '#161c2c',
   shoeColor,
   isMoving = false,
   speed = 1.0,
   showGroundRing = true,
-  ringColor = '#f59e0b',
+  ringColor = '#facc15',
 }: HumanoidAvatarProps) {
   const bodyGroup = useRef<THREE.Group>(null);
   const headGroup = useRef<THREE.Group>(null);
@@ -54,7 +57,6 @@ export function HumanoidAvatar({
     if (moving) {
       animTime.current += dt * 10 * speed;
     } else {
-      // Gentle breathing / idle bobbing
       animTime.current += dt * 2.2;
     }
 
@@ -69,61 +71,48 @@ export function HumanoidAvatar({
         // Arms swing opposite to legs
         armL.current.rotation.x = -swing * 0.75;
         armR.current.rotation.x = swing * 0.75;
-        // Slight outward arm flare while walking
-        armL.current.rotation.z = 0.08 + Math.abs(Math.sin(t)) * 0.05;
-        armR.current.rotation.z = -0.08 - Math.abs(Math.sin(t)) * 0.05;
+        // Subtle natural arm flare
+        armL.current.rotation.z = 0.07 + Math.abs(Math.sin(t)) * 0.04;
+        armR.current.rotation.z = -0.07 - Math.abs(Math.sin(t)) * 0.04;
       } else {
-        // Natural relaxed idle pose
+        // Natural relaxed stance (arms hanging down at sides with slight outward tilt)
         legL.current.rotation.x = THREE.MathUtils.lerp(legL.current.rotation.x, 0, dt * 10);
         legR.current.rotation.x = THREE.MathUtils.lerp(legR.current.rotation.x, 0, dt * 10);
-        armL.current.rotation.x = THREE.MathUtils.lerp(armL.current.rotation.x, Math.sin(t) * 0.04, dt * 6);
-        armR.current.rotation.x = THREE.MathUtils.lerp(armR.current.rotation.x, -Math.sin(t) * 0.04, dt * 6);
-        armL.current.rotation.z = 0.09 + Math.sin(t * 0.8) * 0.02;
-        armR.current.rotation.z = -0.09 - Math.sin(t * 0.8) * 0.02;
+        armL.current.rotation.x = THREE.MathUtils.lerp(armL.current.rotation.x, Math.sin(t) * 0.03, dt * 6);
+        armR.current.rotation.x = THREE.MathUtils.lerp(armR.current.rotation.x, -Math.sin(t) * 0.03, dt * 6);
+        armL.current.rotation.z = 0.08 + Math.sin(t * 0.8) * 0.015;
+        armR.current.rotation.z = -0.08 - Math.sin(t * 0.8) * 0.015;
       }
     }
 
     if (bodyGroup.current) {
-      // Subtle vertical bounce when running / subtle breathing when idle
-      const bounce = moving ? Math.abs(Math.sin(t)) * 0.055 : Math.sin(t) * 0.012;
+      const bounce = moving ? Math.abs(Math.sin(t)) * 0.05 : Math.sin(t) * 0.01;
       bodyGroup.current.position.y = bounce;
     }
 
     if (headGroup.current) {
-      // Subtle head stabilization / idle tilt
-      headGroup.current.rotation.y = moving ? Math.sin(t * 0.5) * 0.04 : Math.sin(t * 0.6) * 0.03;
-      headGroup.current.rotation.x = moving ? 0.03 : Math.sin(t * 1.2) * 0.015;
+      headGroup.current.rotation.y = moving ? Math.sin(t * 0.5) * 0.03 : Math.sin(t * 0.6) * 0.02;
+      headGroup.current.rotation.x = moving ? 0.02 : Math.sin(t * 1.2) * 0.01;
     }
 
-    // Subtle ground ring pulse
     if (ringRef.current) {
-      const pulse = 1.0 + Math.sin(t * 2.5) * 0.03;
+      const pulse = 1.0 + Math.sin(t * 2.2) * 0.02;
       ringRef.current.scale.set(pulse, pulse, 1);
     }
   });
 
   return (
     <group>
-      {/* ── Iconic Yellow Ground Indicator Ring (from reference image) ── */}
+      {/* ── Signature Open Yellow C-Ring Ground Indicator (exact from reference) ── */}
       {showGroundRing && (
         <group position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <mesh ref={ringRef}>
-            <ringGeometry args={[0.38, 0.44, 48]} />
+            <ringGeometry args={[0.38, 0.44, 48, 1, 0.35, Math.PI * 1.65]} />
             <meshBasicMaterial
               color={ringColor}
               side={THREE.DoubleSide}
               transparent
-              opacity={0.88}
-            />
-          </mesh>
-          {/* Subtle inner accent ring */}
-          <mesh position={[0, 0, 0.001]}>
-            <ringGeometry args={[0.34, 0.355, 48]} />
-            <meshBasicMaterial
-              color={ringColor}
-              side={THREE.DoubleSide}
-              transparent
-              opacity={0.4}
+              opacity={0.92}
             />
           </mesh>
         </group>
@@ -131,411 +120,423 @@ export function HumanoidAvatar({
 
       {/* ── Main Articulated Humanoid Body ── */}
       <group ref={bodyGroup}>
-        {/* ── Pelvis & Shorts Base ── */}
+        {/* ── Pelvis & Dark Navy Shorts Base ── */}
         <group position={[0, 0.86, 0]}>
           <mesh castShadow>
-            <boxGeometry args={[0.32, 0.18, 0.22]} />
+            <boxGeometry args={[0.27, 0.14, 0.19]} />
             <meshStandardMaterial color={pantsColor} roughness={0.7} />
           </mesh>
         </group>
 
-        {/* ── Torso / Athletic Long-Sleeve Hoodie ── */}
-        <group position={[0, 1.16, 0]}>
-          {/* Main Hoodie Chest (tapered athletic silhouette) */}
-          <mesh position={[0, 0.04, 0]} castShadow>
-            <cylinderGeometry args={[0.22, 0.175, 0.38, 12]} />
+        {/* ── Torso (Slender Long-Sleeve Hoodie) ── */}
+        <group position={[0, 1.15, 0]}>
+          {/* Main Upper Chest (tapered athletic silhouette) */}
+          <mesh position={[0, 0.08, 0]} castShadow>
+            <cylinderGeometry args={[0.175, 0.145, 0.28, 14]} />
             <meshStandardMaterial color={color} roughness={0.65} />
           </mesh>
 
-          {/* Lower Hoodie Hem / Waistband */}
-          <mesh position={[0, -0.16, 0]} castShadow>
-            <cylinderGeometry args={[0.178, 0.182, 0.07, 12]} />
-            <meshStandardMaterial color={color} roughness={0.8} />
-          </mesh>
-
-          {/* Shoulder Yoke / Upper Chest Padding */}
-          <mesh position={[0, 0.18, 0]} castShadow>
-            <boxGeometry args={[0.42, 0.12, 0.24]} />
+          {/* Mid Torso & Waist */}
+          <mesh position={[0, -0.10, 0]} castShadow>
+            <cylinderGeometry args={[0.145, 0.140, 0.18, 14]} />
             <meshStandardMaterial color={color} roughness={0.65} />
           </mesh>
 
-          {/* Raised Cowl Neck / Hoodie Collar Ring (exact detail from reference!) */}
-          <mesh position={[0, 0.28, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-            <torusGeometry args={[0.095, 0.035, 8, 18]} />
+          {/* Lower Ribbed Waist Hem */}
+          <mesh position={[0, -0.19, 0]} castShadow>
+            <cylinderGeometry args={[0.140, 0.142, 0.045, 14]} />
+            <meshStandardMaterial color={color} roughness={0.75} />
+          </mesh>
+
+          {/* Distinct Raised Rolled Neck Collar / Cowl Ring (exact detail from reference!) */}
+          <mesh position={[0, 0.24, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <torusGeometry args={[0.076, 0.026, 8, 20]} />
             <meshStandardMaterial color={color} roughness={0.7} />
           </mesh>
-
-          {/* Subtle Hoodie Drawstring Accents */}
-          {[-0.035, 0.035].map((x) => (
-            <mesh key={x} position={[x, 0.16, 0.11]} rotation={[0, 0, x > 0 ? -0.06 : 0.06]}>
-              <cylinderGeometry args={[0.005, 0.005, 0.12, 6]} />
-              <meshStandardMaterial color="#ffffff" roughness={0.5} />
-            </mesh>
-          ))}
         </group>
 
-        {/* ── Neck & Head Group ── */}
-        <group ref={headGroup} position={[0, 1.48, 0]}>
+        {/* ── Slender Neck & Sculpted Head Group ── */}
+        <group ref={headGroup} position={[0, 1.44, 0]}>
           {/* Slender Human Neck */}
-          <mesh position={[0, 0.04, 0]} castShadow>
-            <cylinderGeometry args={[0.062, 0.072, 0.12, 10]} />
-            <meshStandardMaterial color={skinColor} roughness={0.8} />
+          <mesh position={[0, 0.035, 0]} castShadow>
+            <cylinderGeometry args={[0.048, 0.054, 0.11, 10]} />
+            <meshStandardMaterial color={skinColor} roughness={0.82} />
           </mesh>
 
-          {/* Head & Face Position */}
-          <group position={[0, 0.18, 0]}>
-            {/* Sculpted Jaw & Chin (angular stylized jaw from reference) */}
-            <mesh position={[0, -0.04, 0.02]} rotation={[0, Math.PI / 4, 0]} castShadow>
-              <cylinderGeometry args={[0.115, 0.055, 0.14, 4]} />
-              <meshStandardMaterial color={skinColor} roughness={0.8} />
-            </mesh>
-
-            {/* Cranium / Main Head Volume */}
-            <mesh position={[0, 0.05, 0]} scale={[0.92, 1.04, 0.96]} castShadow>
-              <sphereGeometry args={[0.13, 14, 12]} />
-              <meshStandardMaterial color={skinColor} roughness={0.8} />
-            </mesh>
-
-            {/* Ears (L & R) */}
-            {[-0.135, 0.135].map((x) => (
-              <mesh key={x} position={[x, 0.03, -0.01]} rotation={[0, 0, x > 0 ? -0.15 : 0.15]}>
-                <boxGeometry args={[0.02, 0.048, 0.032]} />
-                <meshStandardMaterial color={skinColor} roughness={0.8} />
-              </mesh>
-            ))}
-
-            {/* Angular Stylized Nose (prominent in reference image) */}
-            <mesh position={[0, 0.015, 0.135]} rotation={[0.42, 0, 0]} castShadow>
-              <coneGeometry args={[0.022, 0.065, 4]} />
+          {/* Sculpted Head & Face */}
+          <group position={[0, 0.17, 0]}>
+            {/* Cranium / Upper Head */}
+            <mesh position={[0, 0.04, 0]} scale={[0.86, 1.05, 0.92]} castShadow>
+              <sphereGeometry args={[0.115, 16, 14]} />
               <meshStandardMaterial color={skinColor} roughness={0.82} />
             </mesh>
 
-            {/* Stylized Expressive Almond Eyes & Sharp Brows */}
-            {[-0.052, 0.052].map((x) => (
-              <group key={x} position={[x, 0.045, 0.118]} rotation={[0, x > 0 ? 0.12 : -0.12, x > 0 ? -0.08 : 0.08]}>
-                {/* Eye Pupil / Iris */}
+            {/* Tapered Cheek & Upper Jaw */}
+            <mesh position={[0, -0.025, 0.01]} scale={[0.85, 1, 0.9]} castShadow>
+              <cylinderGeometry args={[0.096, 0.068, 0.11, 10]} />
+              <meshStandardMaterial color={skinColor} roughness={0.82} />
+            </mesh>
+
+            {/* Pointed Stylized Chin (from reference image) */}
+            <mesh position={[0, -0.082, 0.022]} scale={[0.9, 0.8, 1]} castShadow>
+              <sphereGeometry args={[0.042, 10, 8]} />
+              <meshStandardMaterial color={skinColor} roughness={0.82} />
+            </mesh>
+
+            {/* Stylized Straight Nose Bridge (visible straight triangular wedge) */}
+            <mesh position={[0, -0.015, 0.108]} rotation={[0.48, 0, 0]} castShadow>
+              <coneGeometry args={[0.018, 0.058, 4]} />
+              <meshStandardMaterial color={skinColor} roughness={0.82} />
+            </mesh>
+
+            {/* Stylized Slanted Dark Eyes & Sharp Brow Ridge */}
+            {[-0.044, 0.044].map((x) => (
+              <group key={x} position={[x, 0.018, 0.096]} rotation={[0, x > 0 ? 0.14 : -0.14, x > 0 ? -0.12 : 0.12]}>
+                {/* Dark Eye Slit */}
                 <mesh position={[0, 0, 0]}>
-                  <boxGeometry args={[0.032, 0.022, 0.015]} />
-                  <meshBasicMaterial color="#111827" />
-                </mesh>
-                {/* Subtle Eye White Sclera Accent */}
-                <mesh position={[x > 0 ? -0.014 : 0.014, 0, -0.002]}>
-                  <boxGeometry args={[0.01, 0.018, 0.012]} />
-                  <meshBasicMaterial color="#f8fafc" />
+                  <boxGeometry args={[0.028, 0.013, 0.01]} />
+                  <meshBasicMaterial color="#141113" />
                 </mesh>
                 {/* Sharp Stylized Eyebrow */}
-                <mesh position={[0, 0.026, 0.005]} rotation={[0, 0, x > 0 ? -0.14 : 0.14]}>
-                  <boxGeometry args={[0.042, 0.012, 0.018]} />
-                  <meshBasicMaterial color="#111827" />
+                <mesh position={[0, 0.020, 0.003]} rotation={[0, 0, x > 0 ? -0.12 : 0.12]}>
+                  <boxGeometry args={[0.036, 0.009, 0.012]} />
+                  <meshBasicMaterial color="#141113" />
                 </mesh>
               </group>
             ))}
 
             {/* Stylized Mouth Line */}
-            <mesh position={[0, -0.052, 0.105]} rotation={[0.1, 0, 0]}>
-              <boxGeometry args={[0.042, 0.007, 0.015]} />
-              <meshStandardMaterial color="#6e3c20" roughness={0.9} />
+            <mesh position={[0, -0.058, 0.088]} rotation={[0.08, 0, 0]}>
+              <boxGeometry args={[0.026, 0.005, 0.01]} />
+              <meshStandardMaterial color="#5e3218" roughness={0.9} />
             </mesh>
 
-            {/* ── Stylized Spiky Hair (Detailed recreation from reference) ── */}
-            <group position={[0, 0.04, 0]}>
-              {/* Hair Base Crown Cap */}
-              <mesh position={[0, 0.06, -0.02]} scale={[1.02, 0.95, 1.08]} castShadow>
-                <sphereGeometry args={[0.138, 12, 10]} />
-                <meshStandardMaterial color={hairColor} roughness={0.9} />
+            {/* Ears (L & R) */}
+            {[-0.102, 0.102].map((x) => (
+              <mesh key={x} position={[x, 0.0, -0.01]} rotation={[0, 0, x > 0 ? -0.12 : 0.12]}>
+                <boxGeometry args={[0.014, 0.038, 0.024]} />
+                <meshStandardMaterial color={skinColor} roughness={0.82} />
+              </mesh>
+            ))}
+
+            {/* ── Stylized Spiky Hair (Faithful Recreation of Reference) ── */}
+            <group position={[0, 0.035, 0]}>
+              {/* Crown Base Volume */}
+              <mesh position={[0, 0.04, -0.02]} scale={[0.92, 0.9, 1.0]} castShadow>
+                <sphereGeometry args={[0.122, 14, 12]} />
+                <meshStandardMaterial color={hairColor} roughness={0.92} />
               </mesh>
 
-              {/* Back & Side Hair Layers */}
-              <mesh position={[0, 0.02, -0.07]} rotation={[-0.2, 0, 0]} castShadow>
-                <boxGeometry args={[0.24, 0.15, 0.11]} />
-                <meshStandardMaterial color={hairColor} roughness={0.9} />
+              {/* Back Hair Nape Cover */}
+              <mesh position={[0, -0.02, -0.06]} rotation={[-0.25, 0, 0]} castShadow>
+                <boxGeometry args={[0.19, 0.14, 0.09]} />
+                <meshStandardMaterial color={hairColor} roughness={0.92} />
               </mesh>
 
-              {/* Sideburns / Temple Locks */}
-              {[-0.125, 0.125].map((x) => (
-                <mesh key={x} position={[x, -0.01, 0.04]} rotation={[0.2, 0, x > 0 ? -0.15 : 0.15]} castShadow>
-                  <coneGeometry args={[0.035, 0.09, 4]} />
-                  <meshStandardMaterial color={hairColor} roughness={0.9} />
-                </mesh>
-              ))}
+              {/* Distinct Temple Lock (the visible drooping side clump in reference!) */}
+              <mesh position={[0.095, -0.02, 0.04]} rotation={[0.3, 0, -0.18]} castShadow>
+                <coneGeometry args={[0.032, 0.095, 4]} />
+                <meshStandardMaterial color={hairColor} roughness={0.92} />
+              </mesh>
+              <mesh position={[-0.095, -0.02, 0.04]} rotation={[0.3, 0, 0.18]} castShadow>
+                <coneGeometry args={[0.032, 0.095, 4]} />
+                <meshStandardMaterial color={hairColor} roughness={0.92} />
+              </mesh>
 
-              {/* Front Fringe / Bang Tufts */}
-              {[-0.06, 0.0, 0.06].map((x, idx) => (
-                <mesh
-                  key={x}
-                  position={[x, 0.11, 0.10]}
-                  rotation={[0.55 + idx * 0.08, 0, (x / 0.06) * 0.2]}
-                  castShadow
-                >
-                  <coneGeometry args={[0.038, 0.11, 4]} />
-                  <meshStandardMaterial color={hairColor} roughness={0.9} />
-                </mesh>
-              ))}
-
-              {/* Top Swept-Back Crest Spikes */}
+              {/* Front Fringe Tufts */}
               {[-0.05, 0.0, 0.05].map((x, idx) => (
                 <mesh
                   key={x}
-                  position={[x, 0.17, -0.02 + idx * 0.02]}
-                  rotation={[-0.45, 0, (x / 0.05) * 0.15]}
+                  position={[x, 0.085, 0.085]}
+                  rotation={[0.55 + idx * 0.05, 0, (x / 0.05) * 0.2]}
                   castShadow
                 >
-                  <coneGeometry args={[0.042, 0.13, 4]} />
-                  <meshStandardMaterial color={hairColor} roughness={0.9} />
+                  <coneGeometry args={[0.032, 0.09, 4]} />
+                  <meshStandardMaterial color={hairColor} roughness={0.92} />
                 </mesh>
               ))}
 
-              {/* Crown Center High Spikes */}
-              <mesh position={[0, 0.19, 0.03]} rotation={[-0.2, 0, 0]} castShadow>
-                <coneGeometry args={[0.048, 0.14, 4]} />
-                <meshStandardMaterial color={hairColor} roughness={0.9} />
-              </mesh>
-              <mesh position={[-0.04, 0.18, 0.05]} rotation={[-0.15, 0, 0.2]} castShadow>
-                <coneGeometry args={[0.038, 0.12, 4]} />
-                <meshStandardMaterial color={hairColor} roughness={0.9} />
-              </mesh>
-              <mesh position={[0.04, 0.18, 0.05]} rotation={[-0.15, 0, -0.2]} castShadow>
-                <coneGeometry args={[0.038, 0.12, 4]} />
-                <meshStandardMaterial color={hairColor} roughness={0.9} />
+              {/* Top Swept-Back Spiky Crest Ridges (front to back) */}
+              {[-0.04, 0.0, 0.04].map((x) => (
+                <group key={x} position={[x, 0.14, 0]}>
+                  <mesh position={[0, 0.02, -0.03]} rotation={[-0.55, 0, (x / 0.04) * 0.12]} castShadow>
+                    <coneGeometry args={[0.035, 0.11, 4]} />
+                    <meshStandardMaterial color={hairColor} roughness={0.92} />
+                  </mesh>
+                  <mesh position={[0, 0.03, 0.02]} rotation={[-0.32, 0, (x / 0.04) * 0.15]} castShadow>
+                    <coneGeometry args={[0.036, 0.11, 4]} />
+                    <meshStandardMaterial color={hairColor} roughness={0.92} />
+                  </mesh>
+                </group>
+              ))}
+
+              {/* Center Crown Peak */}
+              <mesh position={[0, 0.17, 0.01]} rotation={[-0.25, 0, 0]} castShadow>
+                <coneGeometry args={[0.042, 0.12, 4]} />
+                <meshStandardMaterial color={hairColor} roughness={0.92} />
               </mesh>
             </group>
           </group>
         </group>
 
-        {/* ── Left Arm (Long Sleeve Hoodie + Hand) ── */}
-        <group ref={armL} position={[-0.27, 1.40, 0]}>
-          {/* Shoulder Sphere */}
+        {/* ── Left Arm (Long Sleeve Hoodie & Elongated Hand) ── */}
+        <group ref={armL} position={[-0.22, 1.35, 0]}>
+          {/* Shoulder Cap */}
           <mesh castShadow>
-            <sphereGeometry args={[0.068, 8, 8]} />
+            <sphereGeometry args={[0.058, 8, 8]} />
             <meshStandardMaterial color={color} roughness={0.65} />
           </mesh>
 
           {/* Upper Arm Sleeve */}
-          <mesh position={[-0.02, -0.15, 0]} rotation={[0, 0, 0.08]} castShadow>
-            <cylinderGeometry args={[0.064, 0.058, 0.22, 10]} />
+          <mesh position={[-0.015, -0.14, 0]} rotation={[0, 0, 0.07]} castShadow>
+            <cylinderGeometry args={[0.052, 0.046, 0.22, 10]} />
             <meshStandardMaterial color={color} roughness={0.65} />
           </mesh>
 
           {/* Forearm Sleeve */}
-          <mesh position={[-0.035, -0.34, 0.01]} rotation={[0, 0, 0.06]} castShadow>
-            <cylinderGeometry args={[0.058, 0.052, 0.20, 10]} />
+          <mesh position={[-0.026, -0.32, 0.01]} rotation={[0, 0, 0.05]} castShadow>
+            <cylinderGeometry args={[0.046, 0.042, 0.20, 10]} />
             <meshStandardMaterial color={color} roughness={0.65} />
           </mesh>
 
-          {/* Sleeve Ribbed Cuff */}
-          <mesh position={[-0.042, -0.445, 0.01]} rotation={[0, 0, 0.06]} castShadow>
-            <cylinderGeometry args={[0.054, 0.055, 0.042, 10]} />
+          {/* Sleeve Cuff */}
+          <mesh position={[-0.032, -0.425, 0.01]} rotation={[0, 0, 0.05]} castShadow>
+            <cylinderGeometry args={[0.044, 0.044, 0.035, 10]} />
             <meshStandardMaterial color={color} roughness={0.8} />
           </mesh>
 
-          {/* Left Hand with Fingers & Thumb (Natural Pose) */}
-          <group position={[-0.046, -0.52, 0.01]}>
-            {/* Palm */}
-            <mesh position={[0, -0.03, 0]} castShadow>
-              <boxGeometry args={[0.042, 0.065, 0.024]} />
-              <meshStandardMaterial color={skinColor} roughness={0.8} />
+          {/* Elongated Humanoid Left Hand (Prominent In Reference Image!) */}
+          <group position={[-0.035, -0.49, 0.01]}>
+            {/* Wrist */}
+            <mesh position={[0, 0.02, 0]} castShadow>
+              <cylinderGeometry args={[0.024, 0.026, 0.035, 8]} />
+              <meshStandardMaterial color={skinColor} roughness={0.82} />
             </mesh>
-            {/* Thumb */}
-            <mesh position={[0.018, -0.015, 0.012]} rotation={[-0.3, 0, -0.4]} castShadow>
-              <cylinderGeometry args={[0.009, 0.008, 0.038, 6]} />
-              <meshStandardMaterial color={skinColor} roughness={0.8} />
+
+            {/* Elongated Palm */}
+            <mesh position={[0, -0.032, 0]} castShadow>
+              <boxGeometry args={[0.038, 0.075, 0.022]} />
+              <meshStandardMaterial color={skinColor} roughness={0.82} />
             </mesh>
-            {/* Four Stylized Fingers */}
-            {[-0.014, -0.005, 0.005, 0.014].map((fx, fidx) => (
+
+            {/* Distinct Thumb (pointing forward/inward) */}
+            <mesh position={[0.016, -0.015, 0.012]} rotation={[-0.32, 0, -0.38]} castShadow>
+              <cylinderGeometry args={[0.008, 0.007, 0.042, 6]} />
+              <meshStandardMaterial color={skinColor} roughness={0.82} />
+            </mesh>
+
+            {/* Four Long Articulated Fingers (Pointing downward in relaxed pose) */}
+            {[-0.012, -0.004, 0.004, 0.012].map((fx, fidx) => (
               <mesh
                 key={fidx}
-                position={[fx, -0.072 - (fidx === 1 || fidx === 2 ? 0.005 : 0), 0]}
-                rotation={[0.05, 0, 0]}
+                position={[fx, -0.088 - (fidx === 1 || fidx === 2 ? 0.006 : 0), 0]}
+                rotation={[0.04, 0, 0]}
                 castShadow
               >
-                <cylinderGeometry args={[0.006, 0.0055, 0.038, 5]} />
-                <meshStandardMaterial color={skinColor} roughness={0.8} />
+                <cylinderGeometry args={[0.0055, 0.0046, 0.050, 5]} />
+                <meshStandardMaterial color={skinColor} roughness={0.82} />
               </mesh>
             ))}
           </group>
         </group>
 
-        {/* ── Right Arm (Long Sleeve Hoodie + Hand) ── */}
-        <group ref={armR} position={[0.27, 1.40, 0]}>
-          {/* Shoulder Sphere */}
+        {/* ── Right Arm (Long Sleeve Hoodie & Elongated Hand) ── */}
+        <group ref={armR} position={[0.22, 1.35, 0]}>
+          {/* Shoulder Cap */}
           <mesh castShadow>
-            <sphereGeometry args={[0.068, 8, 8]} />
+            <sphereGeometry args={[0.058, 8, 8]} />
             <meshStandardMaterial color={color} roughness={0.65} />
           </mesh>
 
           {/* Upper Arm Sleeve */}
-          <mesh position={[0.02, -0.15, 0]} rotation={[0, 0, -0.08]} castShadow>
-            <cylinderGeometry args={[0.064, 0.058, 0.22, 10]} />
+          <mesh position={[0.015, -0.14, 0]} rotation={[0, 0, -0.07]} castShadow>
+            <cylinderGeometry args={[0.052, 0.046, 0.22, 10]} />
             <meshStandardMaterial color={color} roughness={0.65} />
           </mesh>
 
           {/* Forearm Sleeve */}
-          <mesh position={[0.035, -0.34, 0.01]} rotation={[0, 0, -0.06]} castShadow>
-            <cylinderGeometry args={[0.058, 0.052, 0.20, 10]} />
+          <mesh position={[0.026, -0.32, 0.01]} rotation={[0, 0, -0.05]} castShadow>
+            <cylinderGeometry args={[0.046, 0.042, 0.20, 10]} />
             <meshStandardMaterial color={color} roughness={0.65} />
           </mesh>
 
-          {/* Sleeve Ribbed Cuff */}
-          <mesh position={[0.042, -0.445, 0.01]} rotation={[0, 0, -0.06]} castShadow>
-            <cylinderGeometry args={[0.054, 0.055, 0.042, 10]} />
+          {/* Sleeve Cuff */}
+          <mesh position={[0.032, -0.425, 0.01]} rotation={[0, 0, -0.05]} castShadow>
+            <cylinderGeometry args={[0.044, 0.044, 0.035, 10]} />
             <meshStandardMaterial color={color} roughness={0.8} />
           </mesh>
 
-          {/* Right Hand with Fingers & Thumb (Natural Pose) */}
-          <group position={[0.046, -0.52, 0.01]}>
-            {/* Palm */}
-            <mesh position={[0, -0.03, 0]} castShadow>
-              <boxGeometry args={[0.042, 0.065, 0.024]} />
-              <meshStandardMaterial color={skinColor} roughness={0.8} />
+          {/* Elongated Humanoid Right Hand (Prominent In Reference Image!) */}
+          <group position={[0.035, -0.49, 0.01]}>
+            {/* Wrist */}
+            <mesh position={[0, 0.02, 0]} castShadow>
+              <cylinderGeometry args={[0.024, 0.026, 0.035, 8]} />
+              <meshStandardMaterial color={skinColor} roughness={0.82} />
             </mesh>
-            {/* Thumb */}
-            <mesh position={[-0.018, -0.015, 0.012]} rotation={[-0.3, 0, 0.4]} castShadow>
-              <cylinderGeometry args={[0.009, 0.008, 0.038, 6]} />
-              <meshStandardMaterial color={skinColor} roughness={0.8} />
+
+            {/* Elongated Palm */}
+            <mesh position={[0, -0.032, 0]} castShadow>
+              <boxGeometry args={[0.038, 0.075, 0.022]} />
+              <meshStandardMaterial color={skinColor} roughness={0.82} />
             </mesh>
-            {/* Four Stylized Fingers */}
-            {[-0.014, -0.005, 0.005, 0.014].map((fx, fidx) => (
+
+            {/* Distinct Thumb (pointing forward/inward) */}
+            <mesh position={[-0.016, -0.015, 0.012]} rotation={[-0.32, 0, 0.38]} castShadow>
+              <cylinderGeometry args={[0.008, 0.007, 0.042, 6]} />
+              <meshStandardMaterial color={skinColor} roughness={0.82} />
+            </mesh>
+
+            {/* Four Long Articulated Fingers (Pointing downward in relaxed pose) */}
+            {[-0.012, -0.004, 0.004, 0.012].map((fx, fidx) => (
               <mesh
                 key={fidx}
-                position={[fx, -0.072 - (fidx === 1 || fidx === 2 ? 0.005 : 0), 0]}
-                rotation={[0.05, 0, 0]}
+                position={[fx, -0.088 - (fidx === 1 || fidx === 2 ? 0.006 : 0), 0]}
+                rotation={[0.04, 0, 0]}
                 castShadow
               >
-                <cylinderGeometry args={[0.006, 0.0055, 0.038, 5]} />
-                <meshStandardMaterial color={skinColor} roughness={0.8} />
+                <cylinderGeometry args={[0.0055, 0.0046, 0.050, 5]} />
+                <meshStandardMaterial color={skinColor} roughness={0.82} />
               </mesh>
             ))}
           </group>
         </group>
 
-        {/* ── Left Leg (Navy Shorts, Bare Leg, Ankle Sock, Sneaker) ── */}
-        <group ref={legL} position={[-0.12, 0.78, 0]}>
-          {/* Navy Shorts Upper Thigh */}
-          <mesh position={[0, -0.10, 0]} castShadow>
-            <cylinderGeometry args={[0.098, 0.092, 0.22, 12]} />
+        {/* ── Left Leg (Navy Shorts, Slender Bronze Leg, White Sock, Teal Sneaker) ── */}
+        <group ref={legL} position={[-0.09, 0.78, 0]}>
+          {/* Navy Shorts Leg */}
+          <mesh position={[0, -0.08, 0]} castShadow>
+            <cylinderGeometry args={[0.082, 0.076, 0.20, 12]} />
             <meshStandardMaterial color={pantsColor} roughness={0.7} />
           </mesh>
 
-          {/* Shorts Hem Cuff (above knee) */}
-          <mesh position={[0, -0.21, 0]} castShadow>
-            <cylinderGeometry args={[0.095, 0.096, 0.04, 12]} />
+          {/* Shorts Cuff Above Knee */}
+          <mesh position={[0, -0.18, 0]} castShadow>
+            <cylinderGeometry args={[0.078, 0.079, 0.03, 12]} />
             <meshStandardMaterial color={pantsColor} roughness={0.85} />
           </mesh>
 
-          {/* Bare Thigh & Knee (exposed skin from reference) */}
-          <mesh position={[0, -0.28, 0]} castShadow>
-            <cylinderGeometry args={[0.072, 0.064, 0.15, 10]} />
-            <meshStandardMaterial color={skinColor} roughness={0.8} />
+          {/* Bare Thigh & Knee (from reference) */}
+          <mesh position={[0, -0.24, 0]} castShadow>
+            <cylinderGeometry args={[0.055, 0.050, 0.11, 10]} />
+            <meshStandardMaterial color={skinColor} roughness={0.82} />
           </mesh>
-          <mesh position={[0, -0.36, 0.008]} castShadow>
-            <sphereGeometry args={[0.058, 8, 8]} />
-            <meshStandardMaterial color={skinColor} roughness={0.8} />
-          </mesh>
-
-          {/* Contoured Calf & Shin */}
-          <mesh position={[0, -0.52, -0.005]} castShadow>
-            <cylinderGeometry args={[0.058, 0.046, 0.24, 10]} />
-            <meshStandardMaterial color={skinColor} roughness={0.8} />
+          <mesh position={[0, -0.31, 0.006]} castShadow>
+            <sphereGeometry args={[0.046, 8, 8]} />
+            <meshStandardMaterial color={skinColor} roughness={0.82} />
           </mesh>
 
-          {/* White Ankle Sock */}
-          <mesh position={[0, -0.66, 0]} castShadow>
-            <cylinderGeometry args={[0.048, 0.048, 0.07, 10]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.5} />
+          {/* Slender Calf & Shin */}
+          <mesh position={[0, -0.46, -0.004]} castShadow>
+            <cylinderGeometry args={[0.046, 0.036, 0.26, 10]} />
+            <meshStandardMaterial color={skinColor} roughness={0.82} />
+          </mesh>
+
+          {/* Clean White Ankle Sock */}
+          <mesh position={[0, -0.60, 0]} castShadow>
+            <cylinderGeometry args={[0.038, 0.038, 0.06, 10]} />
+            <meshStandardMaterial color="#f8fafc" roughness={0.4} />
           </mesh>
 
           {/* Stylized Low-Cut Athletic Sneaker */}
-          <group position={[0, -0.73, 0.03]}>
-            {/* Sneaker Upper (Teal / Player Color) */}
-            <mesh position={[0, 0.03, 0.02]} castShadow>
-              <boxGeometry args={[0.11, 0.065, 0.22]} />
+          <group position={[0, -0.68, 0.02]} rotation={[0, 0.1, 0]}>
+            {/* Sneaker Upper (Teal) */}
+            <mesh position={[0, 0.032, 0.02]} castShadow>
+              <boxGeometry args={[0.088, 0.058, 0.18]} />
               <meshStandardMaterial color={finalShoeColor} roughness={0.55} />
             </mesh>
-            {/* Rounded Toe Cap */}
-            <mesh position={[0, 0.02, 0.12]} scale={[1, 0.85, 1]} castShadow>
-              <cylinderGeometry args={[0.052, 0.054, 0.06, 10]} />
+            {/* Rounded Front Toe */}
+            <mesh position={[0, 0.022, 0.10]} scale={[1, 0.82, 1]} castShadow>
+              <cylinderGeometry args={[0.044, 0.044, 0.05, 10]} />
               <meshStandardMaterial color={finalShoeColor} roughness={0.55} />
             </mesh>
             {/* White Ankle Collar Rim */}
-            <mesh position={[0, 0.062, -0.03]}>
-              <boxGeometry args={[0.098, 0.015, 0.10]} />
-              <meshStandardMaterial color="#ffffff" roughness={0.4} />
-            </mesh>
-            {/* White Laces Accent */}
-            <mesh position={[0, 0.064, 0.04]}>
-              <boxGeometry args={[0.045, 0.008, 0.06]} />
-              <meshStandardMaterial color="#ffffff" roughness={0.4} />
-            </mesh>
-            {/* Crisp Thick White Rubber Cupsole (Ground Contact) */}
-            <mesh position={[0, -0.016, 0.028]} castShadow>
-              <boxGeometry args={[0.118, 0.032, 0.24]} />
+            <mesh position={[0, 0.058, -0.025]}>
+              <boxGeometry args={[0.078, 0.014, 0.08]} />
               <meshStandardMaterial color="#ffffff" roughness={0.35} />
+            </mesh>
+            {/* White Laces / Tongue Accent */}
+            <mesh position={[0, 0.060, 0.035]}>
+              <boxGeometry args={[0.038, 0.008, 0.055]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.35} />
+            </mesh>
+            {/* Crisp Thick White Rubber Cupsole / Foxing */}
+            <mesh position={[0, -0.012, 0.02]} castShadow>
+              <boxGeometry args={[0.096, 0.028, 0.20]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.3} />
+            </mesh>
+            <mesh position={[0, -0.012, 0.105]} scale={[1, 0.85, 1]} castShadow>
+              <cylinderGeometry args={[0.047, 0.047, 0.028, 10]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.3} />
             </mesh>
           </group>
         </group>
 
-        {/* ── Right Leg (Navy Shorts, Bare Leg, Ankle Sock, Sneaker) ── */}
-        <group ref={legR} position={[0.12, 0.78, 0]}>
-          {/* Navy Shorts Upper Thigh */}
-          <mesh position={[0, -0.10, 0]} castShadow>
-            <cylinderGeometry args={[0.098, 0.092, 0.22, 12]} />
+        {/* ── Right Leg (Navy Shorts, Slender Bronze Leg, White Sock, Teal Sneaker) ── */}
+        <group ref={legR} position={[0.09, 0.78, 0]}>
+          {/* Navy Shorts Leg */}
+          <mesh position={[0, -0.08, 0]} castShadow>
+            <cylinderGeometry args={[0.082, 0.076, 0.20, 12]} />
             <meshStandardMaterial color={pantsColor} roughness={0.7} />
           </mesh>
 
-          {/* Shorts Hem Cuff (above knee) */}
-          <mesh position={[0, -0.21, 0]} castShadow>
-            <cylinderGeometry args={[0.095, 0.096, 0.04, 12]} />
+          {/* Shorts Cuff Above Knee */}
+          <mesh position={[0, -0.18, 0]} castShadow>
+            <cylinderGeometry args={[0.078, 0.079, 0.03, 12]} />
             <meshStandardMaterial color={pantsColor} roughness={0.85} />
           </mesh>
 
-          {/* Bare Thigh & Knee (exposed skin from reference) */}
-          <mesh position={[0, -0.28, 0]} castShadow>
-            <cylinderGeometry args={[0.072, 0.064, 0.15, 10]} />
-            <meshStandardMaterial color={skinColor} roughness={0.8} />
+          {/* Bare Thigh & Knee (from reference) */}
+          <mesh position={[0, -0.24, 0]} castShadow>
+            <cylinderGeometry args={[0.055, 0.050, 0.11, 10]} />
+            <meshStandardMaterial color={skinColor} roughness={0.82} />
           </mesh>
-          <mesh position={[0, -0.36, 0.008]} castShadow>
-            <sphereGeometry args={[0.058, 8, 8]} />
-            <meshStandardMaterial color={skinColor} roughness={0.8} />
-          </mesh>
-
-          {/* Contoured Calf & Shin */}
-          <mesh position={[0, -0.52, -0.005]} castShadow>
-            <cylinderGeometry args={[0.058, 0.046, 0.24, 10]} />
-            <meshStandardMaterial color={skinColor} roughness={0.8} />
+          <mesh position={[0, -0.31, 0.006]} castShadow>
+            <sphereGeometry args={[0.046, 8, 8]} />
+            <meshStandardMaterial color={skinColor} roughness={0.82} />
           </mesh>
 
-          {/* White Ankle Sock */}
-          <mesh position={[0, -0.66, 0]} castShadow>
-            <cylinderGeometry args={[0.048, 0.048, 0.07, 10]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.5} />
+          {/* Slender Calf & Shin */}
+          <mesh position={[0, -0.46, -0.004]} castShadow>
+            <cylinderGeometry args={[0.046, 0.036, 0.26, 10]} />
+            <meshStandardMaterial color={skinColor} roughness={0.82} />
+          </mesh>
+
+          {/* Clean White Ankle Sock */}
+          <mesh position={[0, -0.60, 0]} castShadow>
+            <cylinderGeometry args={[0.038, 0.038, 0.06, 10]} />
+            <meshStandardMaterial color="#f8fafc" roughness={0.4} />
           </mesh>
 
           {/* Stylized Low-Cut Athletic Sneaker */}
-          <group position={[0, -0.73, 0.03]}>
-            {/* Sneaker Upper (Teal / Player Color) */}
-            <mesh position={[0, 0.03, 0.02]} castShadow>
-              <boxGeometry args={[0.11, 0.065, 0.22]} />
+          <group position={[0, -0.68, 0.02]} rotation={[0, -0.1, 0]}>
+            {/* Sneaker Upper (Teal) */}
+            <mesh position={[0, 0.032, 0.02]} castShadow>
+              <boxGeometry args={[0.088, 0.058, 0.18]} />
               <meshStandardMaterial color={finalShoeColor} roughness={0.55} />
             </mesh>
-            {/* Rounded Toe Cap */}
-            <mesh position={[0, 0.02, 0.12]} scale={[1, 0.85, 1]} castShadow>
-              <cylinderGeometry args={[0.052, 0.054, 0.06, 10]} />
+            {/* Rounded Front Toe */}
+            <mesh position={[0, 0.022, 0.10]} scale={[1, 0.82, 1]} castShadow>
+              <cylinderGeometry args={[0.044, 0.044, 0.05, 10]} />
               <meshStandardMaterial color={finalShoeColor} roughness={0.55} />
             </mesh>
             {/* White Ankle Collar Rim */}
-            <mesh position={[0, 0.062, -0.03]}>
-              <boxGeometry args={[0.098, 0.015, 0.10]} />
-              <meshStandardMaterial color="#ffffff" roughness={0.4} />
-            </mesh>
-            {/* White Laces Accent */}
-            <mesh position={[0, 0.064, 0.04]}>
-              <boxGeometry args={[0.045, 0.008, 0.06]} />
-              <meshStandardMaterial color="#ffffff" roughness={0.4} />
-            </mesh>
-            {/* Crisp Thick White Rubber Cupsole (Ground Contact) */}
-            <mesh position={[0, -0.016, 0.028]} castShadow>
-              <boxGeometry args={[0.118, 0.032, 0.24]} />
+            <mesh position={[0, 0.058, -0.025]}>
+              <boxGeometry args={[0.078, 0.014, 0.08]} />
               <meshStandardMaterial color="#ffffff" roughness={0.35} />
+            </mesh>
+            {/* White Laces / Tongue Accent */}
+            <mesh position={[0, 0.060, 0.035]}>
+              <boxGeometry args={[0.038, 0.008, 0.055]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.35} />
+            </mesh>
+            {/* Crisp Thick White Rubber Cupsole / Foxing */}
+            <mesh position={[0, -0.012, 0.02]} castShadow>
+              <boxGeometry args={[0.096, 0.028, 0.20]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.3} />
+            </mesh>
+            <mesh position={[0, -0.012, 0.105]} scale={[1, 0.85, 1]} castShadow>
+              <cylinderGeometry args={[0.047, 0.047, 0.028, 10]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.3} />
             </mesh>
           </group>
         </group>

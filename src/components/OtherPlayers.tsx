@@ -36,19 +36,19 @@ function RemoteAvatar({ player }: { player: RemotePlayer }) {
   return (
     <group ref={root} position={[player.x, player.y, player.z]} rotation={[0, player.yaw, 0]}>
       {/* ── 3D Floating Name Tag Above Character ── */}
-      <Html position={[0, 2.05, 0]} center distanceFactor={42} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+      <Html position={[0, 1.95, 0]} center distanceFactor={60} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '3px',
+            gap: '2px',
             background: 'rgba(10, 16, 30, 0.65)',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
             border: `0.75px solid ${hoodieColor}99`,
-            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.35)',
+            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.35)',
             borderRadius: '999px',
-            padding: '1px 5px 1px 3.5px',
+            padding: '1px 3.5px 1px 2.5px',
             whiteSpace: 'nowrap',
             transform: 'translate3d(0, 0, 0)',
             userSelect: 'none',
@@ -56,18 +56,18 @@ function RemoteAvatar({ player }: { player: RemotePlayer }) {
         >
           <span
             style={{
-              width: '4px',
-              height: '4px',
+              width: '3px',
+              height: '3px',
               borderRadius: '50%',
               backgroundColor: hoodieColor,
-              boxShadow: `0 0 4px ${hoodieColor}`,
+              boxShadow: `0 0 3px ${hoodieColor}`,
               display: 'inline-block',
             }}
           />
           <span
             style={{
               color: '#ffffff',
-              fontSize: '7.5px',
+              fontSize: '5.5px',
               fontWeight: 600,
               letterSpacing: '0.01em',
               textShadow: '0 1px 2px rgba(0,0,0,0.9)',
