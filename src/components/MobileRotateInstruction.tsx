@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
  */
 export function MobileRotateInstruction() {
   const [isPortraitMobile, setIsPortraitMobile] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     const checkOrientation = () => {
@@ -25,7 +26,17 @@ export function MobileRotateInstruction() {
     };
   }, []);
 
-  if (!isPortraitMobile) return null;
+  // Show rotate message for only 3 seconds, then automatically dismiss and show world loading screen & city
+  useEffect(() => {
+    if (isPortraitMobile && !dismissed) {
+      const timer = setTimeout(() => {
+        setDismissed(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isPortraitMobile, dismissed]);
+
+  if (!isPortraitMobile || dismissed) return null;
 
   return (
     <div
