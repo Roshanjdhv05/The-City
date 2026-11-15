@@ -296,12 +296,12 @@ export function DoubleDoors({ p, glass, alu }: { p: V3; glass: THREE.Material; a
 /** 0: NEXUS TOWER (C01) - Cybernetic Twin Towers connected by Skybridge */
 function NexusTower({ cfg }: { cfg: StoreConfig }) {
   const T = getSharedTextures();
-  const navy = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1e284a', roughness: 0.75, flatShading: true }), []);
-  const titanium = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2b3658', roughness: 0.8, flatShading: true }), []);
+  const navy = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1c1f24', roughness: 0.75, flatShading: true }), []);
+  const titanium = useMemo(() => new THREE.MeshStandardMaterial({ color: '#22252a', roughness: 0.8, flatShading: true }), []);
   const cyanLed = useMemo(() => new THREE.MeshStandardMaterial({ color: '#e0f7ff', emissive: '#00e5ff', emissiveIntensity: 1.8, flatShading: true }), []);
-  const blueGlass = useMemo(() => { const m = glassMat('blue').clone() as THREE.MeshStandardMaterial; m.opacity = 0.52; return m; }, []);
-  const stoneBase = useMemo(() => new THREE.MeshStandardMaterial({ color: '#cf9078', roughness: 0.85, flatShading: true }), []);
-  const pave = useMemo(() => mat('pave', '#e0d8c8', 8, 3), []);
+  const blueGlass = useMemo(() => { const m = glassMat('blue').clone() as THREE.MeshStandardMaterial; m.color.set('#86B4C7'); m.opacity = 0.56; return m; }, []);
+  const stoneBase = useMemo(() => new THREE.MeshStandardMaterial({ color: '#E8CBA5', roughness: 0.80, flatShading: true }), []);
+  const pave = useMemo(() => mat('pave', '#ebdccb', 8, 3), []);
   const alu = solid('alu');
 
   return (
@@ -387,11 +387,11 @@ function NexusTower({ cfg }: { cfg: StoreConfig }) {
 /** 1: ORION PLACE (C02) - Grand Neoclassical-Modern Stepped Financial Tower */
 function OrionPlace({ cfg }: { cfg: StoreConfig }) {
   const T = getSharedTextures();
-  const travertine = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f3ede1', roughness: 0.8, flatShading: true }), []);
-  const bronzeTrim = useMemo(() => new THREE.MeshStandardMaterial({ color: '#c49a5b', roughness: 0.45, metalness: 0.65, flatShading: true }), []);
-  const goldLed = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fff5dc', emissive: '#fcd34d', emissiveIntensity: 1.6, flatShading: true }), []);
-  const bronzeGlass = useMemo(() => { const m = glassMat('tinted').clone() as THREE.MeshStandardMaterial; m.color.set('#d8b88d'); m.opacity = 0.58; return m; }, []);
-  const pave = useMemo(() => mat('pave', '#eae4d8', 8, 3), []);
+  const travertine = useMemo(() => new THREE.MeshStandardMaterial({ color: '#F2E5C9', roughness: 0.8, flatShading: true }), []);
+  const bronzeTrim = useMemo(() => new THREE.MeshStandardMaterial({ color: '#262930', roughness: 0.45, metalness: 0.55, flatShading: true }), []);
+  const goldLed = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fff5dc', emissive: '#EACB75', emissiveIntensity: 1.6, flatShading: true }), []);
+  const bronzeGlass = useMemo(() => { const m = glassMat('blue').clone() as THREE.MeshStandardMaterial; m.color.set('#86B4C7'); m.opacity = 0.58; return m; }, []);
+  const pave = useMemo(() => mat('pave', '#ebdccb', 8, 3), []);
   const alu = bronzeTrim;
 
   return (
@@ -473,12 +473,12 @@ function OrionPlace({ cfg }: { cfg: StoreConfig }) {
 /** 2: THE BREW HOUSE (C03) - Terraced Hospitality & Culinary Atrium */
 function BrewHouse({ cfg }: { cfg: StoreConfig }) {
   const T = getSharedTextures();
-  const terracotta = useMemo(() => new THREE.MeshStandardMaterial({ color: '#a8513b', roughness: 0.9, flatShading: true }), []);
+  const terracotta = useMemo(() => new THREE.MeshStandardMaterial({ color: '#BD705A', roughness: 0.85, flatShading: true }), []);
   const darkSteel = solid('dark');
-  const woodMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#8c5836', roughness: 0.85, flatShading: true }), []);
-  const amberGlass = useMemo(() => { const m = glassMat('tinted').clone() as THREE.MeshStandardMaterial; m.color.set('#dfa364'); m.opacity = 0.5; return m; }, []);
-  const amberLed = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fff3d6', emissive: '#f59e0b', emissiveIntensity: 1.5, flatShading: true }), []);
-  const pave = useMemo(() => mat('pave', '#d2c0aa', 8, 3), []);
+  const woodMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#a66838', roughness: 0.85, flatShading: true }), []);
+  const amberGlass = useMemo(() => { const m = glassMat('blue').clone() as THREE.MeshStandardMaterial; m.color.set('#86B4C7'); m.opacity = 0.55; return m; }, []);
+  const amberLed = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fff3d6', emissive: '#EACB75', emissiveIntensity: 1.5, flatShading: true }), []);
+  const pave = useMemo(() => mat('pave', '#ebdccb', 8, 3), []);
 
   return (
     <group>
@@ -647,11 +647,11 @@ function ArcadeOne({ cfg }: { cfg: StoreConfig }) {
 /** 4: LUMIÈRE (C05) - Ultra-Luxury Fashion Flagship & Cantilevered Glass Vitrine */
 function Lumiere({ cfg }: { cfg: StoreConfig }) {
   const T = getSharedTextures();
-  const marble = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fcfbf9', roughness: 0.6, flatShading: true }), []);
-  const roseGold = useMemo(() => new THREE.MeshStandardMaterial({ color: '#dfb8aa', metalness: 0.75, roughness: 0.35, flatShading: true }), []);
+  const marble = useMemo(() => new THREE.MeshStandardMaterial({ color: '#F2E5C9', roughness: 0.6, flatShading: true }), []);
+  const roseGold = useMemo(() => new THREE.MeshStandardMaterial({ color: '#D58B78', metalness: 0.45, roughness: 0.45, flatShading: true }), []);
   const warmLed = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fffbf0', emissive: '#fed7aa', emissiveIntensity: 1.6, flatShading: true }), []);
-  const crystalGlass = useMemo(() => { const m = glassMat('clear').clone() as THREE.MeshStandardMaterial; m.opacity = 0.45; return m; }, []);
-  const pave = useMemo(() => mat('pave', '#f8f4ee', 8, 3), []);
+  const crystalGlass = useMemo(() => { const m = glassMat('blue').clone() as THREE.MeshStandardMaterial; m.color.set('#86B4C7'); m.opacity = 0.52; return m; }, []);
+  const pave = useMemo(() => mat('pave', '#ebdccb', 8, 3), []);
 
   return (
     <group>
@@ -816,11 +816,11 @@ function MeridianPark({ cfg }: { cfg: StoreConfig }) {
 /** 6: NOVA COMPLEX (C07) - Aerodynamic Tech Pavilion with Chamfered Corners */
 function NovaComplex({ cfg }: { cfg: StoreConfig }) {
   const T = getSharedTextures();
-  const silverAlu = useMemo(() => new THREE.MeshStandardMaterial({ color: '#cfd8e3', metalness: 0.5, roughness: 0.45, flatShading: true }), []);
-  const cobaltGlass = useMemo(() => { const m = glassMat('blue').clone() as THREE.MeshStandardMaterial; m.color.set('#3b82f6'); m.opacity = 0.58; return m; }, []);
-  const whiteLed = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#e0f2fe', emissiveIntensity: 1.8, flatShading: true }), []);
-  const darkCore = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.75, flatShading: true }), []);
-  const pave = useMemo(() => mat('pave', '#e2e8f0', 8, 3), []);
+  const silverAlu = useMemo(() => new THREE.MeshStandardMaterial({ color: '#F2E5C9', metalness: 0.15, roughness: 0.55, flatShading: true }), []);
+  const cobaltGlass = useMemo(() => { const m = glassMat('blue').clone() as THREE.MeshStandardMaterial; m.color.set('#86B4C7'); m.opacity = 0.58; return m; }, []);
+  const whiteLed = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#EACB75', emissiveIntensity: 1.5, flatShading: true }), []);
+  const darkCore = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1c1f24', roughness: 0.75, flatShading: true }), []);
+  const pave = useMemo(() => mat('pave', '#ebdccb', 8, 3), []);
 
   return (
     <group>
@@ -892,12 +892,12 @@ function NovaComplex({ cfg }: { cfg: StoreConfig }) {
 /** 7: GARDEN MARKET (C08) - Contemporary Artisan Glasshouse Marketplace */
 function GardenMarket({ cfg }: { cfg: StoreConfig }) {
   const T = getSharedTextures();
-  const limestone = useMemo(() => new THREE.MeshStandardMaterial({ color: '#dfd7c5', roughness: 0.9, flatShading: true }), []);
+  const limestone = useMemo(() => new THREE.MeshStandardMaterial({ color: '#E8CBA5', roughness: 0.85, flatShading: true }), []);
   const ironSteel = solid('dark');
-  const marketGlass = useMemo(() => { const m = glassMat('clear').clone() as THREE.MeshStandardMaterial; m.opacity = 0.45; return m; }, []);
-  const warmLed = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fff6e5', emissive: '#f59e0b', emissiveIntensity: 1.4, flatShading: true }), []);
-  const woodMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#96633b', roughness: 0.9, flatShading: true }), []);
-  const pave = useMemo(() => mat('pave', '#e5dccb', 8, 3), []);
+  const marketGlass = useMemo(() => { const m = glassMat('blue').clone() as THREE.MeshStandardMaterial; m.color.set('#86B4C7'); m.opacity = 0.50; return m; }, []);
+  const warmLed = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fff6e5', emissive: '#EACB75', emissiveIntensity: 1.4, flatShading: true }), []);
+  const woodMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#a66838', roughness: 0.85, flatShading: true }), []);
+  const pave = useMemo(() => mat('pave', '#ebdccb', 8, 3), []);
 
   return (
     <group>
@@ -978,11 +978,11 @@ function GardenMarket({ cfg }: { cfg: StoreConfig }) {
 /** 8: STUDIO IX (C09) - Avant-Garde Deconstructivist Design Atelier */
 function StudioIX({ cfg }: { cfg: StoreConfig }) {
   const T = getSharedTextures();
-  const rawConcrete = useMemo(() => new THREE.MeshStandardMaterial({ color: '#a39e93', roughness: 0.95, flatShading: true }), []);
-  const cortenSteel = useMemo(() => new THREE.MeshStandardMaterial({ color: '#b85d38', roughness: 0.85, metalness: 0.3, flatShading: true }), []);
-  const darkGlass = useMemo(() => { const m = glassMat('blue').clone() as THREE.MeshStandardMaterial; m.color.set('#27364b'); m.opacity = 0.6; return m; }, []);
-  const orangeLed = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffe4d6', emissive: '#ea580c', emissiveIntensity: 2.0, flatShading: true }), []);
-  const pave = useMemo(() => mat('pave', '#d0c8b8', 8, 3), []);
+  const rawConcrete = useMemo(() => new THREE.MeshStandardMaterial({ color: '#F2E5C9', roughness: 0.85, flatShading: true }), []);
+  const cortenSteel = useMemo(() => new THREE.MeshStandardMaterial({ color: '#BD705A', roughness: 0.85, metalness: 0.25, flatShading: true }), []);
+  const darkGlass = useMemo(() => { const m = glassMat('blue').clone() as THREE.MeshStandardMaterial; m.color.set('#86B4C7'); m.opacity = 0.58; return m; }, []);
+  const orangeLed = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffe4d6', emissive: '#D58B78', emissiveIntensity: 1.8, flatShading: true }), []);
+  const pave = useMemo(() => mat('pave', '#ebdccb', 8, 3), []);
   const darkSteel = solid('dark');
 
   return (

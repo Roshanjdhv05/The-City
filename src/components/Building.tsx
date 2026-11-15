@@ -18,7 +18,7 @@ const Plane = ({ s, p, m, r }: { s: [number, number]; p: V3; m: THREE.Material; 
 
 export function useMats(cfg: StoreConfig) {
   return useMemo(() => ({
-    wall: mat(cfg.facade, cfg.tint), floor: mat('pave', '#dde0ea'), roof: mat('roof'), glass: glassMat(cfg.glass), alu: solid('alu'), dark: solid('dark'),
+    wall: mat(cfg.facade, cfg.tint), floor: mat('pave', '#ebdccb'), roof: mat('roof'), glass: glassMat(cfg.glass), alu: solid('alu'), dark: solid('dark'),
     steel: solid('steel'), trim: solid('trim'), glow: solid('glow'), wood: mat('wood', '#ffffff'), unit: sbox,
   }), [cfg.facade, cfg.tint, cfg.glass]);
 }

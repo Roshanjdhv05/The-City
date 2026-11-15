@@ -8,7 +8,7 @@ import type { ExpansionPlan } from './expansion';
 import { create } from 'zustand';
 
 export { SEED_STORES };
-const LS = 'thecity.stores', LU = 'thecity.user', LSV = 'thecity.seeded17', LSL = 'thecity.layout';
+const LS = 'thecity.stores', LU = 'thecity.user', LSV = 'thecity.seeded19', LSL = 'thecity.layout';
 export const DEMO_ADMIN = process.env.NEXT_PUBLIC_DEMO_ADMIN_EMAIL || 'admin@thecity.local';
 
 // ---------------- local (demo) backend ----------------

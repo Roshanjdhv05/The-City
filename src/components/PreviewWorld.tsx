@@ -13,6 +13,7 @@ import { BungalowLow } from './Bungalow';
 import { SkyDome } from './Lighting';
 import { TerrainMesh, Water, Pines, Rocks, Hedges } from './Scenery';
 import { CityRoads, Plaza } from './CityRoads';
+import { PlazaDecorations } from './PlazaDecor';
 import { CityTraffic } from './CityTraffic';
 import { EmptyPlots } from './EmptyPlots';
 import { Inst, Item, UCYL, UBOX } from './Inst';
@@ -80,6 +81,7 @@ export function PreviewWorld({ stores, layout }: { stores: Store[]; layout: Layo
       <Water terrain={terrain} />
       <CityRoads layout={layout} />
       <Plaza />
+      <PlazaDecorations />
       <CityTraffic layout={layout} />
       <PreviewTrees trees={props.trees} />
       <Pines pines={props.pines.slice(0, Math.floor(props.pines.length * 0.4))} />

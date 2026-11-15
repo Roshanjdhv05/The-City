@@ -42,11 +42,12 @@ export function terrainFor(city: Rect): Terrain { const key = [city.x0, city.x1,
 export function terrainColor(h: number, slope: number, rd: number): [number, number, number] {
   const hex = (s: string) => [parseInt(s.slice(1, 3), 16) / 255, parseInt(s.slice(3, 5), 16) / 255, parseInt(s.slice(5, 7), 16) / 255] as [number, number, number];
   const mix = (a: [number, number, number], b: [number, number, number], t: number): [number, number, number] => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-  let c = hex('#7fb866');
-  if (h > 6) c = mix(c, hex('#66a455'), smooth(6, 20, h));
-  if (h > 30) c = mix(c, hex('#9f98a8'), smooth(30, 48, h));
+  // Natural vibrant green base grass
+  let c = hex('#65a30d');
+  if (h > 6) c = mix(c, hex('#4d8c0a'), smooth(6, 20, h));
+  if (h > 30) c = mix(c, hex('#8fa0ae'), smooth(30, 48, h));
   if (h > 62) c = mix(c, hex('#e6edf3'), smooth(62, 76, h));
-  if (slope > 0.9 && h > 12) c = mix(c, hex('#948d9e'), Math.min(1, (slope - 0.9) * 1.5));
-  if (h < 0.35 && rd < 26) c = mix(c, hex('#d6c08e'), Math.min(1, 1 - smooth(-0.9, 0.35, h) * 0.2));
+  if (slope > 0.9 && h > 12) c = mix(c, hex('#9fa0a4'), Math.min(1, (slope - 0.9) * 1.5));
+  if (h < 0.35 && rd < 26) c = mix(c, hex('#e5dacb'), Math.min(1, 1 - smooth(-0.9, 0.35, h) * 0.2));
   return c;
 }

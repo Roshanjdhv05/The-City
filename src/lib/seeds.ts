@@ -79,8 +79,8 @@ const DISTRICT_CATALOG: Record<string, {
     ],
     templates: ['office', 'tech', 'boutique', 'office'],
     facades: ['concrete', 'stone', 'metal', 'concrete'],
-    tints: ['#c9d6e4', '#ffffff', '#f0d9bf', '#d8cfe6'],
-    themes: ['#0f8f6a', '#3d9bbf', '#2f5d8a', '#10b981', '#14909c'],
+    tints: ['#F2E5C9', '#E8CBA5', '#86B4C7', '#E99B78'],
+    themes: ['#86B4C7', '#BD705A', '#E99B78', '#EACB75', '#86A879'],
     roofs: ['cornice', 'flat', 'cornice', 'flat'],
     signs: ['panel', 'panel', 'blade', 'box'],
   },
@@ -145,8 +145,8 @@ const DISTRICT_CATALOG: Record<string, {
     ],
     templates: ['fashion', 'boutique', 'fashion', 'grocery'],
     facades: ['stone', 'brick', 'wood', 'concrete'],
-    tints: ['#e8c9c9', '#ffffff', '#f0d9bf', '#cfe0cf'],
-    themes: ['#c2607f', '#e8651a', '#d9803f', '#c14d9b', '#e4572e'],
+    tints: ['#E99B78', '#D58B78', '#F2E5C9', '#EACB75'],
+    themes: ['#BD705A', '#D58B78', '#E99B78', '#EACB75', '#86A879'],
     roofs: ['cornice', 'sloped', 'gabled', 'flat'],
     signs: ['blade', 'neon', 'box', 'panel'],
   },
@@ -211,8 +211,8 @@ const DISTRICT_CATALOG: Record<string, {
     ],
     templates: ['cafe', 'boutique', 'house', 'cafe'],
     facades: ['brick', 'wood', 'stone', 'brick'],
-    tints: ['#ffffff', '#f0d9bf', '#cfe0cf', '#ffffff'],
-    themes: ['#d9803f', '#c8584a', '#e03e3e', '#d6a93d', '#5f9f63'],
+    tints: ['#E8CBA5', '#BD705A', '#F2E5C9', '#EACB75'],
+    themes: ['#BD705A', '#D58B78', '#EACB75', '#E99B78', '#86A879'],
     roofs: ['gabled', 'sloped', 'gabled', 'flat'],
     signs: ['box', 'blade', 'panel', 'neon'],
   },
@@ -277,8 +277,8 @@ const DISTRICT_CATALOG: Record<string, {
     ],
     templates: ['boutique', 'office', 'fashion', 'gaming'],
     facades: ['wood', 'concrete', 'stone', 'metal'],
-    tints: ['#ffffff', '#d8cfe6', '#cfe0cf', '#f0d9bf'],
-    themes: ['#7565c2', '#6a3fb5', '#c2607f', '#22d3ee', '#4f6fcf'],
+    tints: ['#EACB75', '#E8CBA5', '#86A879', '#E99B78'],
+    themes: ['#86A879', '#BD705A', '#D58B78', '#EACB75', '#86B4C7'],
     roofs: ['sloped', 'flat', 'cornice', 'gabled'],
     signs: ['neon', 'box', 'blade', 'panel'],
   },
@@ -343,8 +343,8 @@ const DISTRICT_CATALOG: Record<string, {
     ],
     templates: ['office', 'tech', 'house', 'office'],
     facades: ['stone', 'brick', 'concrete', 'wood'],
-    tints: ['#f0d9bf', '#ffffff', '#c9d6e4', '#cfe0cf'],
-    themes: ['#2563eb', '#14909c', '#4f6fcf', '#3f51b5', '#0f8f6a'],
+    tints: ['#F2E5C9', '#E8CBA5', '#86B4C7', '#EACB75'],
+    themes: ['#86B4C7', '#E8CBA5', '#BD705A', '#E99B78', '#86A879'],
     roofs: ['cornice', 'gabled', 'flat', 'cornice'],
     signs: ['panel', 'box', 'panel', 'blade'],
   },
@@ -409,8 +409,8 @@ const DISTRICT_CATALOG: Record<string, {
     ],
     templates: ['grocery', 'boutique', 'cafe', 'house'],
     facades: ['wood', 'stone', 'concrete', 'wood'],
-    tints: ['#cfe0cf', '#ffffff', '#f0d9bf', '#e8c9c9'],
-    themes: ['#10b981', '#5f9f63', '#d63a7d', '#3f6b4a', '#14909c'],
+    tints: ['#86A879', '#F2E5C9', '#E8CBA5', '#D58B78'],
+    themes: ['#86A879', '#EACB75', '#D58B78', '#86B4C7', '#E99B78'],
     roofs: ['flat', 'sloped', 'gabled', 'flat'],
     signs: ['box', 'panel', 'neon', 'blade'],
   },
@@ -475,8 +475,8 @@ const DISTRICT_CATALOG: Record<string, {
     ],
     templates: ['gaming', 'tech', 'office', 'gaming'],
     facades: ['metal', 'concrete', 'metal', 'concrete'],
-    tints: ['#d8cfe6', '#c9d6e4', '#ffffff', '#d8cfe6'],
-    themes: ['#06b6d4', '#4558c9', '#7565c2', '#22d3ee', '#3b82f6'],
+    tints: ['#86B4C7', '#F2E5C9', '#E8CBA5', '#86A879'],
+    themes: ['#86B4C7', '#E99B78', '#BD705A', '#EACB75', '#D58B78'],
     roofs: ['flat', 'flat', 'cornice', 'flat'],
     signs: ['neon', 'panel', 'box', 'neon'],
   },
@@ -541,8 +541,8 @@ const DISTRICT_CATALOG: Record<string, {
     ],
     templates: ['house', 'office', 'boutique', 'house'],
     facades: ['stone', 'concrete', 'wood', 'brick'],
-    tints: ['#f2e2c8', '#ffffff', '#cfe0cf', '#f0d9bf'],
-    themes: ['#d9a113', '#d9803f', '#0f8f6a', '#3d9bbf', '#475569'],
+    tints: ['#F2E5C9', '#E8CBA5', '#EACB75', '#D58B78'],
+    themes: ['#EACB75', '#E99B78', '#BD705A', '#86B4C7', '#86A879'],
     roofs: ['gabled', 'cornice', 'sloped', 'gabled'],
     signs: ['panel', 'blade', 'box', 'panel'],
   },
@@ -607,8 +607,8 @@ const DISTRICT_CATALOG: Record<string, {
     ],
     templates: ['tech', 'gaming', 'office', 'tech'],
     facades: ['metal', 'concrete', 'metal', 'stone'],
-    tints: ['#c9d6e4', '#d8cfe6', '#ffffff', '#c9d6e4'],
-    themes: ['#3b82f6', '#3f51b5', '#06b6d4', '#4f6fcf', '#22d3ee'],
+    tints: ['#86B4C7', '#F2E5C9', '#E8CBA5', '#EACB75'],
+    themes: ['#86B4C7', '#E99B78', '#BD705A', '#D58B78', '#86A879'],
     roofs: ['flat', 'cornice', 'flat', 'cornice'],
     signs: ['panel', 'neon', 'panel', 'box'],
   },
@@ -639,10 +639,10 @@ export function createMarketBuilding(plot: Plot, indexInDistrict: number): Store
   const facades = catData?.facades || ['concrete', 'brick', 'stone', 'wood', 'metal'];
   const facade = facades[idx % facades.length];
 
-  const tints = catData?.tints || ['#ffffff', '#f0d9bf', '#e8c9c9', '#cfe0cf', '#c9d6e4', '#d8cfe6'];
+  const tints = catData?.tints || ['#E99B78', '#BD705A', '#E8CBA5', '#F2E5C9', '#EACB75', '#86B4C7', '#D58B78', '#86A879'];
   const tint = tints[idx % tints.length];
 
-  const themes = catData?.themes || ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
+  const themes = catData?.themes || ['#86B4C7', '#BD705A', '#E99B78', '#EACB75', '#86A879'];
   const theme = themes[idx % themes.length];
 
   const roofs = catData?.roofs || ['flat', 'cornice', 'gabled', 'sloped'];

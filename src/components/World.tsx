@@ -96,9 +96,9 @@ function Furniture({ props }: { props: Props }) {
   );
 
   return <>
-    <Inst geo={UCYL} material={solid('steel')} items={pole} cast /><Inst geo={UBOX} material={solid('steel')} items={arm} /><Inst geo={UBOX} material={solid('lampHead')} items={head} />
+    <Inst geo={UCYL} material={solid('dark')} items={pole} cast /><Inst geo={UBOX} material={solid('dark')} items={arm} /><Inst geo={UBOX} material={solid('lampHead')} items={head} />
     <Inst geo={poolGeo} material={poolMat} items={pools} recv />
-    <Inst geo={UBOX} material={mat('wood', '#8b6248')} items={seat} cast recv /><Inst geo={UBOX} material={mat('wood', '#8b6248')} items={back} cast /><Inst geo={UBOX} material={solid('steel')} items={legs} cast />
+    <Inst geo={UBOX} material={mat('wood', '#b46a3a')} items={seat} cast recv /><Inst geo={UBOX} material={mat('wood', '#b46a3a')} items={back} cast /><Inst geo={UBOX} material={solid('dark')} items={legs} cast />
   </>;
 }
 

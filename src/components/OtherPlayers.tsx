@@ -35,42 +35,29 @@ function RemoteAvatar({ player }: { player: RemotePlayer }) {
 
   return (
     <group ref={root} position={[player.x, player.y, player.z]} rotation={[0, player.yaw, 0]}>
-      {/* ── 3D Floating Name Tag Above Character ── */}
-      <Html position={[0, 1.95, 0]} center distanceFactor={60} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+      {/* ── Floating Nametag Above Character (Classic Clean Banner Style) ── */}
+      <Html position={[0, 2.18, 0]} center distanceFactor={50} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '2px',
-            background: 'rgba(10, 16, 30, 0.65)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-            border: `0.75px solid ${hoodieColor}99`,
-            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.35)',
-            borderRadius: '999px',
-            padding: '1px 3.5px 1px 2.5px',
+            background: 'rgba(0, 0, 0, 0.45)',
+            padding: '0.8px 3px',
+            borderRadius: '1px',
             whiteSpace: 'nowrap',
             transform: 'translate3d(0, 0, 0)',
             userSelect: 'none',
+            display: 'inline-block',
           }}
         >
           <span
             style={{
-              width: '3px',
-              height: '3px',
-              borderRadius: '50%',
-              backgroundColor: hoodieColor,
-              boxShadow: `0 0 3px ${hoodieColor}`,
-              display: 'inline-block',
-            }}
-          />
-          <span
-            style={{
               color: '#ffffff',
-              fontSize: '5.5px',
-              fontWeight: 600,
-              letterSpacing: '0.01em',
-              textShadow: '0 1px 2px rgba(0,0,0,0.9)',
+              fontSize: '5.8px',
+              fontWeight: 700,
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+              letterSpacing: '0.02em',
+              textShadow: '0.8px 0.8px 0px rgba(0, 0, 0, 0.9)',
+              lineHeight: 1.1,
+              display: 'block',
             }}
           >
             {player.name}
@@ -78,9 +65,10 @@ function RemoteAvatar({ player }: { player: RemotePlayer }) {
         </div>
       </Html>
 
-      {/* ── Stylized Humanoid Avatar ── */}
+      {/* ── Refined Low-Poly Faceted Stylized Humanoid Avatar (Exact Reference Match) ── */}
       <HumanoidAvatar
-        color={hoodieColor}
+        name={player.name}
+        color={hoodieColor || '#69cfe3'}
         isMoving={() => isMovingRef.current}
         showGroundRing={false}
       />

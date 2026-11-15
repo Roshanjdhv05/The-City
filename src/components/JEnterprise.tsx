@@ -79,11 +79,11 @@ function Shrubs({ x, z, w, n, seed }: { x: number; z: number; w: number; n: numb
 }
 
 export function JEnterprise() {
-  const T = textures(), glass = useMemo(() => { const m = glassMat('tinted').clone(); (m as THREE.MeshStandardMaterial).color.set('#38bdf8'); (m as THREE.MeshStandardMaterial).opacity = 0.58; (m as THREE.MeshStandardMaterial).roughness = 0.08; (m as THREE.MeshStandardMaterial).metalness = 0.22; return m; }, []);
-  const marble = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.45, metalness: 0.08 }), []), stoneL = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f1f5f9', roughness: 0.5 }), []), stoneD = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.65, metalness: 0.25 }), []);
-  const metal = useMemo(() => new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.35, metalness: 0.65 }), []), alu = solid('steel'), led = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#38bdf8', emissiveIntensity: 2.0 }), []);
+  const T = textures(), glass = useMemo(() => { const m = glassMat('blue').clone(); (m as THREE.MeshStandardMaterial).color.set('#4a7b99'); (m as THREE.MeshStandardMaterial).opacity = 0.60; (m as THREE.MeshStandardMaterial).roughness = 0.07; (m as THREE.MeshStandardMaterial).metalness = 0.20; return m; }, []);
+  const marble = useMemo(() => new THREE.MeshStandardMaterial({ color: '#F2E5C9', roughness: 0.45, metalness: 0.06 }), []), stoneL = useMemo(() => new THREE.MeshStandardMaterial({ color: '#faefe0', roughness: 0.5 }), []), stoneD = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1c1f24', roughness: 0.65, metalness: 0.25 }), []);
+  const metal = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1c2228', roughness: 0.35, metalness: 0.65 }), []), alu = solid('steel'), led = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#38bdf8', emissiveIntensity: 2.0 }), []);
   const mainM = useMemo(() => emiss(T.main, 1.5, true), [T]), mon1M = useMemo(() => emiss(T.mon1, 1.2), [T]), mon2M = useMemo(() => emiss(T.mon2, 1.2), [T]), banM = useMemo(() => emiss(T.banner, 0.5), [T]);
-  const paving = useMemo(() => mat('pave', '#eef0f8', 8, 3, 0.45), []);
+  const paving = useMemo(() => mat('pave', '#ebdccb', 8, 3, 0.45), []);
   const fasciaM = useMemo(() => emiss(T.fascia, 1.5, true), [T]), uplight = useMemo(() => new THREE.MeshStandardMaterial({ color: '#cfe4ff', emissive: '#38bdf8', emissiveIntensity: 1.6 }), []), accent = useMemo(() => new THREE.MeshStandardMaterial({ color: '#38bdf8', emissive: '#0284c7', emissiveIntensity: 2.0 }), []);
   const bollards: [number, number][] = [[-5.2, 12], [-5.2, 14.5], [4.4, 12], [4.4, 14.5], [-13.6, 11], [14, 11], [-0.5, 14.8]];
   const fins = [-5.1, -5.7, -6.3, -6.9, -7.5, -8.1];
@@ -148,7 +148,7 @@ export function JEnterprise() {
 
 /** Medium-distance version (LOD 2): Core tower architecture and signs, without micro shrubs / bollards */
 function JEnterpriseMedium() {
-  const T = textures(), marble = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.45 }), []), g = useMemo(() => new THREE.MeshStandardMaterial({ color: '#38bdf8', roughness: 0.1, metalness: 0.2 }), []), warm = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fdfbf7', roughness: 0.5 }), []);
+  const T = textures(), marble = useMemo(() => new THREE.MeshStandardMaterial({ color: '#F2E5C9', roughness: 0.45 }), []), g = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4a7b99', roughness: 0.1, metalness: 0.2 }), []), warm = useMemo(() => new THREE.MeshStandardMaterial({ color: '#faefe0', roughness: 0.5 }), []);
   const sign = useMemo(() => new THREE.MeshBasicMaterial({ map: T.main, transparent: true, toneMapped: false }), [T]);
   const dark = solid('dark'), metal = solid('steel');
   return (
@@ -168,7 +168,7 @@ function JEnterpriseMedium() {
 
 /** Distant version (LOD 1): massing + sign. */
 function JELow() {
-  const T = textures(), marble = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.45 }), []), g = useMemo(() => new THREE.MeshStandardMaterial({ color: '#38bdf8', roughness: 0.1 }), []), warm = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fdfbf7', roughness: 0.5 }), []);
+  const T = textures(), marble = useMemo(() => new THREE.MeshStandardMaterial({ color: '#F2E5C9', roughness: 0.45 }), []), g = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4a7b99', roughness: 0.1 }), []), warm = useMemo(() => new THREE.MeshStandardMaterial({ color: '#faefe0', roughness: 0.5 }), []);
   const sign = useMemo(() => new THREE.MeshBasicMaterial({ map: T.main, transparent: true, toneMapped: false }), [T]);
   return (
     <group>

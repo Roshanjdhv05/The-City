@@ -1,0 +1,64 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>LowPolyCharacter preview</title>
+<style>
+  html,body{margin:0;height:100%;background:#eef0f2;font:13px system-ui,sans-serif}
+  #ui{position:fixed;top:10px;left:10px;background:#fffc;padding:10px;border-radius:8px;display:grid;gap:6px;max-width:240px}
+  button,select{font:inherit}
+</style></head>
+<body>
+<div id="ui">
+  <div><button data-v="front">Front</button> <button data-v="side">Side</button> <button data-v="back">Back</button> <button data-v="tq">3/4</button> <button data-v="close">Face</button></div>
+  <label>Speed <input id="spd" type="range" min="0" max="6" step="0.1" value="0"> <span id="spdv">0</span> m/s</label>
+  <button id="jump">Jump</button>
+  <label>Hair <select id="hs"><option>short</option><option>buzz</option><option>long</option><option>bun</option><option>none</option></select></label>
+  <label>Facial hair <select id="fh"><option>full</option><option>goatee</option><option>moustache</option><option>none</option></select></label>
+  <label>Skin <input type="color" id="skin" value="#d9a577"></label>
+  <label>Hair colour <input type="color" id="hair" value="#3a2116"></label>
+  <label>Shirt <input type="color" id="shirt" value="#69cfe3"></label>
+  <label>Trousers <input type="color" id="pants" value="#1d4a7a"></label>
+</div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { LowPolyCharacter } from './LowPolyCharacter.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(devicePixelRatio); renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xeef0f2);
+const cam = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, .1, 100);
+const ctl = new OrbitControls(cam, renderer.domElement); ctl.target.set(0, .95, 0);
+scene.add(new THREE.HemisphereLight(0xffffff, 0xb8c0c8, 1.1));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(3, 5, 4); sun.castShadow = true; scene.add(sun);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(4, 48).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xdfe3e7 }));
+floor.receiveShadow = true; scene.add(floor);
+
+const ch = new LowPolyCharacter({}, { walkSpeed: 1.6, runSpeed: 5 });
+scene.add(ch.group);
+
+const views = { front: [0, 1.1, 4.2, 0.95], side: [4.2, 1.1, 0, 0.95], back: [0, 1.1, -4.2, 0.95], tq: [3, 1.5, 3.2, 0.95], close: [0.6, 1.75, 1.3, 1.72] };
+const go = (v) => { const p = views[v]; cam.position.set(p[0], p[1], p[2]); ctl.target.set(0, p[3], 0); ctl.update(); };
+document.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => go(b.dataset.v));
+go('tq');
+
+let speed = 0, vy = 0, y = 0;
+spd.oninput = () => { speed = +spd.value; spdv.textContent = spd.value; };
+jump.onclick = () => { if (y === 0) vy = 4.2; };
+hs.onchange = () => ch.setConfig({ hairStyle: hs.value });
+fh.onchange = () => ch.setConfig({ facialHair: fh.value });
+const col = (id, keys) => document.getElementById(id).oninput = (e) => { const v = new THREE.Color(e.target.value).getHex(); const o = {}; keys.forEach((k) => o[k] = v); ch.setConfig({ colors: o }); };
+col('skin', ['skin']); col('hair', ['hair', 'beard']); col('shirt', ['shirt']); col('pants', ['pants']);
+
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), .05);
+  vy -= 12 * dt; y = Math.max(0, y + vy * dt); if (y === 0) vy = 0;
+  ch.group.position.y = y;
+  ch.update(dt, { speed, grounded: y === 0 });
+  renderer.render(scene, cam);
+});
+addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+</script>
+</body></html>

@@ -14,9 +14,9 @@ export interface Blob { x: number; y: number; z: number; s: number; c: string }
 export interface PropQuality { trees: number; forest: number; radius: number }
 
 const GREENS = [
-  '#5fae48', '#6bb852', '#4f9b40', '#79c05a',
-  '#468f3c', '#86c864', '#7bc950', '#8cd35e',
-  '#52a23e', '#61a843', '#72b94f', '#448b37'
+  '#4d8e1f', '#5a9e22', '#3a7a14', '#6aad28',
+  '#52921a', '#72b01d', '#638b1e', '#4f8c18',
+  '#5a9622', '#65a30d', '#4d8c0a', '#58962a'
 ];
 const PINES = ['#3f8f5f', '#357f52', '#4a9a6b'];
 const FLOWERS = ['#ffffff', '#ffd6e7', '#fff0a8', '#e6dcff', '#ffb3a1'];
