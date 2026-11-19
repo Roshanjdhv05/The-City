@@ -15,7 +15,7 @@ import { buildCityChunks, getVisibleChunks } from '@/lib/chunks';
 import { StoreModel } from './StoreModel';
 import { BuildingLow } from './Building';
 import { JEnterpriseLOD } from './JEnterprise';
-import { SceneLighting, SkyDome } from './Lighting';
+import { SceneLighting, SkyDome, FogController } from './Lighting';
 import { TerrainMesh, Water, Pines, Rocks, Hedges, ResourceMeshes } from './Scenery';
 import { CityRoads, Plaza } from './CityRoads';
 import { CityTraffic } from './CityTraffic';
@@ -117,6 +117,7 @@ export function World({ stores, layout, quality }: { stores: Store[]; layout: La
   return (
     <>
       <SkyDome />
+      <FogController quality={quality} />
       <SceneLighting q={quality} span={span} center={[cx, cz]} />
       <TerrainMesh terrain={terrain} seg={Q.seg} /><Water terrain={terrain} />
       <CityRoads layout={layout} /><Plaza />

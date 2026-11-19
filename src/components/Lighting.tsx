@@ -450,6 +450,48 @@ function CelestialBodies() {
 }
 
 // -------------------------------------------------------------
+// Dynamic Atmospheric Fog Controller (Minecraft-style render distance)
+// Runs every frame: syncs fog near/far + color to quality & time-of-day
+// -------------------------------------------------------------
+
+/** Per-quality fog bands that match the reference image:
+ *  - near: start fading after this distance (buildings fully visible)
+ *  - far:  fully invisible at this distance (blends into sky)
+ */
+const FOG_BAND: Record<string, [number, number]> = {
+  low:    [110, 440],   // tight mobile render distance
+  medium: [160, 680],   // balanced
+  high:   [200, 950],   // panoramic desktop
+};
+
+export function FogController({ quality }: { quality: string }) {
+  const { scene } = useThree();
+
+  // Ensure scene has a linear fog object from the start
+  useEffect(() => {
+    if (!scene.fog) {
+      scene.fog = new THREE.Fog('#c8dff5', 160, 680);
+    }
+  }, [scene]);
+
+  useFrame(() => {
+    if (!scene.fog || !(scene.fog instanceof THREE.Fog)) return;
+
+    const sky = sampleSky(cityTime.hour);
+    const [near, far] = FOG_BAND[quality] ?? FOG_BAND.medium;
+
+    // Smoothly interpolate toward the target values (avoids pop on quality change)
+    scene.fog.near += (near - scene.fog.near) * 0.05;
+    scene.fog.far  += (far  - scene.fog.far)  * 0.05;
+
+    // Sync fog color to the horizon sky color so distant objects melt into the sky
+    scene.fog.color.lerp(sky.fogCol, 0.08);
+  });
+
+  return null;
+}
+
+// -------------------------------------------------------------
 // Dynamic Sky Dome & Fog
 // -------------------------------------------------------------
 export function SkyDome() {
@@ -488,10 +530,7 @@ export function SkyDome() {
     }
     colorAttr.needsUpdate = true;
 
-    // Atmospheric Fog matches horizon color
-    if (scene.fog) {
-      scene.fog.color.copy(sky.fogCol);
-    }
+    // FogController handles fog color via lerp — SkyDome no longer overwrites it here
   });
 
   return (
@@ -499,7 +538,8 @@ export function SkyDome() {
       <mesh ref={dome} geometry={geo} renderOrder={-10}>
         <meshBasicMaterial vertexColors side={THREE.BackSide} fog={false} depthWrite={false} />
       </mesh>
-      <fog ref={fogRef} attach="fog" args={['#cde0f0', 200, 1150]} />
+      {/* Static fog seed — FogController overrides near/far/color each frame */}
+      <fog attach="fog" args={['#c8dff5', 160, 680]} />
       <CelestialBodies />
       <Clouds />
     </>
