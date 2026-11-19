@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useStores } from '@/components/useStores';
 import { purchasePlot, claimWithPromoCode, useAuth } from '@/lib/data';
-import { FACADES, TEMPLATES, THEMES, defaultConfig } from '@/lib/templates';
+import { FACADES, TEMPLATES, THEMES, BUILDING_CATEGORIES, defaultConfig } from '@/lib/templates';
 import { computeStats } from '@/lib/stats';
 import type { Plot, StoreConfig } from '@/lib/types';
 
@@ -42,6 +42,7 @@ function Marketplace() {
   const [sort, setSort] = useState('id');
 
   const [tpl, setTpl] = useState('tech');
+  const [bldCat, setBldCat] = useState('all');
   const [theme, setTheme] = useState(TEMPLATES.tech.patch.theme as string);
   const [facade, setFacade] = useState('concrete');
   const [name, setName] = useState('');
@@ -394,8 +395,8 @@ function Marketplace() {
                             setFeature(f.id);
                             if (f.id === 'tech' || f.id === 'gaming') setTpl('tech');
                             else if (f.id === 'cafe') setTpl('cafe');
-                            else if (f.id === 'office' || f.id === 'research') setTpl('loft');
-                            else setTpl('store');
+                            else if (f.id === 'office' || f.id === 'research') setTpl('office');
+                            else setTpl('comm_creative');
                           }}
                           style={{
                             padding: '4px 10px',
@@ -413,6 +414,86 @@ function Marketplace() {
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+
+                {/* 3D Architectural Structure & Model Selection */}
+                <div>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                    Architectural Model
+                  </div>
+                  {/* Category Pills */}
+                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setBldCat('all')}
+                      style={{
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        border: bldCat === 'all' ? '1px solid #0284c7' : '1px solid #e2e8f0',
+                        background: bldCat === 'all' ? '#e0f2fe' : '#f8fafc',
+                        color: bldCat === 'all' ? '#0369a1' : '#64748b',
+                        fontSize: '0.68rem',
+                        fontWeight: bldCat === 'all' ? 700 : 500,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      All
+                    </button>
+                    {BUILDING_CATEGORIES.map(c => {
+                      const on = bldCat === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setBldCat(c.id)}
+                          style={{
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            border: on ? '1px solid #0284c7' : '1px solid #e2e8f0',
+                            background: on ? '#e0f2fe' : '#f8fafc',
+                            color: on ? '#0369a1' : '#64748b',
+                            fontSize: '0.68rem',
+                            fontWeight: on ? 700 : 500,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {c.label.replace(' Buildings', '').replace(' Towers', '')}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Model Buttons in Selected Category */}
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', maxHeight: '120px', overflowY: 'auto' }}>
+                    {Object.entries(TEMPLATES)
+                      .filter(([k, t]) => bldCat === 'all' || t.category === bldCat)
+                      .map(([k, t]) => {
+                        const active = tpl === k;
+                        return (
+                          <button
+                            key={k}
+                            type="button"
+                            onClick={() => {
+                              setTpl(k);
+                              if (t.patch.theme) setTheme(t.patch.theme as string);
+                              if (t.patch.facade) setFacade(t.patch.facade as string);
+                            }}
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              border: active ? '1.5px solid #0284c7' : '1px solid #cbd5e1',
+                              background: active ? '#0284c7' : '#ffffff',
+                              color: active ? '#ffffff' : '#334155',
+                              fontSize: '0.72rem',
+                              fontWeight: active ? 700 : 500,
+                              cursor: 'pointer',
+                              boxShadow: active ? '0 1px 3px rgba(2,132,199,0.3)' : 'none',
+                            }}
+                          >
+                            {t.label}
+                          </button>
+                        );
+                      })}
                   </div>
                 </div>
 

@@ -8,6 +8,7 @@ const display = Sora({ subsets: ['latin'], variable: '--font-display', weight: [
 export const metadata: Metadata = {
   title: 'THE CITY – Your business deserves a place in the city',
   description: 'A virtual business marketplace: claim a plot, build your storefront and get discovered by walking visitors.',
+  manifest: '/manifest.json',
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return <html lang="en" className={`${body.variable} ${display.variable}`}><body>{children}</body></html>;

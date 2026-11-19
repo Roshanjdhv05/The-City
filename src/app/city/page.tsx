@@ -2,11 +2,9 @@
 import { Suspense, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import Nav from '@/components/Nav';
 import HUD from '@/components/HUD';
 import { useStores } from '@/components/useStores';
 import { WorldLoadingScreen } from '@/components/WorldLoadingScreen';
-import { MobileRotateInstruction } from '@/components/MobileRotateInstruction';
 import { MobileJoystick } from '@/components/MobileJoystick';
 
 const CityCanvas = dynamic(() => import('@/components/CityCanvas'), {
@@ -19,20 +17,28 @@ function Explore() {
   const store = useSearchParams().get('store');
   const [worldReady, setWorldReady] = useState(false);
 
-  // ONLY mark ready when 3D building assets and GPU frame rendering are confirmed
-  const handleWorldReady = () => {
-    setWorldReady(true);
-  };
+  useEffect(() => {
+    // Try to lock orientation to landscape on mobile browsers that support it
+    const lock = async () => {
+      try {
+        if (screen.orientation && 'lock' in screen.orientation) {
+          await (screen.orientation as any).lock('landscape');
+        }
+      } catch {
+        // lock not supported (desktop/iOS) — ignore silently
+      }
+    };
+    lock();
+  }, []);
 
   return (
     <div className="fullscreen">
-      <MobileRotateInstruction />
       <WorldLoadingScreen isReady={worldReady && !loading} />
       <CityCanvas
         stores={stores}
         layout={layout}
         mode="city"
-        onReady={handleWorldReady}
+        onReady={() => setWorldReady(true)}
       />
       {worldReady && <HUD stores={stores} layout={layout} initialStore={store} />}
       {worldReady && <MobileJoystick />}

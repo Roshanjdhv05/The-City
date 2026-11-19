@@ -10,6 +10,8 @@ import { JEnterpriseLOD } from './JEnterprise';
 import { CentralBuildingLow } from './CentralBuilding';
 import { BuildingLow } from './Building';
 import { BungalowLow } from './Bungalow';
+import { isExpandedTemplate } from '@/lib/templates';
+import { ExpandedBuildingLow } from './ExpandedBuilding';
 import { SkyDome } from './Lighting';
 import { TerrainMesh, Water, Pines, Rocks, Hedges } from './Scenery';
 import { CityRoads, Plaza } from './CityRoads';
@@ -99,6 +101,7 @@ export function PreviewWorld({ stores, layout }: { stores: Store[]; layout: Layo
         const je = s.config.template === 'jenterprise' && s.config.mode !== 'modular';
         const isCentral = p.id.startsWith('C0');
         const isBungalow = s.config.template === 'bungalow';
+        const isExpanded = isExpandedTemplate(s.config.template);
 
         return (
           <group key={p.id} position={[p.x, 0, p.z]} rotation={[0, p.rot, 0]}>
@@ -108,6 +111,8 @@ export function PreviewWorld({ stores, layout }: { stores: Store[]; layout: Layo
               <CentralBuildingLow cfg={s.config} plotId={p.id} />
             ) : isBungalow ? (
               <BungalowLow cfg={s.config} />
+            ) : isExpanded ? (
+              <ExpandedBuildingLow cfg={s.config} plotId={p.id} />
             ) : (
               <BuildingLow cfg={s.config} plotId={p.id} />
             )}

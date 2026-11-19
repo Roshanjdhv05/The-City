@@ -5,6 +5,8 @@ import { BuildingFull, BuildingMedium, BuildingLow, ModularBuilding } from './Bu
 import { Bungalow, BungalowLow } from './Bungalow';
 import { CentralBuildingFull, CentralBuildingLow } from './CentralBuilding';
 import { JEnterpriseLOD } from './JEnterprise';
+import { isExpandedTemplate } from '@/lib/templates';
+import { ExpandedBuildingLOD } from './ExpandedBuilding';
 
 interface BuildingLODProps {
   cfg: StoreConfig;
@@ -55,7 +57,19 @@ export function BuildingLOD({
     return <Bungalow cfg={cfg} />;
   }
 
-  // 5. Standard commercial storefront architecture (Archetypes 0-5)
+  // 5. Additional 3D Building Expansions (Commercial, Retail, Office, Corporate, Landmark, Glass)
+  if (isExpandedTemplate(cfg.template)) {
+    return (
+      <ExpandedBuildingLOD
+        cfg={cfg}
+        plotId={plotId}
+        lodTier={activeTier}
+        interiors={interiors}
+      />
+    );
+  }
+
+  // 6. Standard commercial storefront architecture (Archetypes 0-5)
   if (activeTier === 'low') {
     return <BuildingLow cfg={cfg} plotId={plotId} />;
   }

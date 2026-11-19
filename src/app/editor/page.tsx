@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Nav from '@/components/Nav';
 import { useStores } from '@/components/useStores';
 import { saveStore, uploadLogo, useAuth } from '@/lib/data';
-import { AWNINGS, DOORS, FACADES, GLASS, ROOFS, SIGNS, TEMPLATES, THEMES, TINTS, WINDOWS, defaultConfig } from '@/lib/templates';
+import { AWNINGS, DOORS, FACADES, GLASS, ROOFS, SIGNS, TEMPLATES, THEMES, TINTS, WINDOWS, BUILDING_CATEGORIES, defaultConfig } from '@/lib/templates';
 import { useUI, QUALITY, Quality } from '@/lib/state';
 import { GRID } from '@/lib/plots';
 import type { StoreConfig } from '@/lib/types';
@@ -29,6 +29,7 @@ function Editor() {
   const mine = stores.filter(s => s.ownerId === user?.id), plotId = q.get('plot') || mine[0]?.plotId || '';
   const store = mine.find(s => s.plotId === plotId);
   const [cfg, setCfg] = useState<StoreConfig | null>(null), [tool, setTool] = useState<Tool>({ kind: 'wall', rot: 0 }), [grid, setGrid] = useState(true), [msg, setMsg] = useState(''), [status, setStatus] = useState('');
+  const [bldCat, setBldCat] = useState<string>('all');
   useEffect(() => { if (store && !cfg) setCfg(store.config); }, [store, cfg]);
   if (!ready) return <div className="loading">Loading…</div>;
   if (!user) return <div className="panel narrow"><h1>Sign in to customize your store</h1><Link className="btn" href="/login">Sign in</Link></div>;
@@ -62,7 +63,49 @@ function Editor() {
           <label>Website link<input value={cfg.website} onChange={e => set({ website: e.target.value })} placeholder="https://" /></label>
           <div className="field"><span>Color theme</span><Swatches value={cfg.theme} colors={THEMES} onChange={v => set({ theme: v })} /></div>
         </details>
-        {!modular && <details><summary>Building template</summary><div className="chips">{Object.entries(TEMPLATES).map(([k, t]) => <button key={k} className={'chip' + (cfg.template === k ? ' on' : '')} onClick={() => applyTemplate(k)}>{t.label}</button>)}</div></details>}
+        {!modular && (
+          <details open>
+            <summary>Building template &amp; structure</summary>
+            {/* Category Filter Tabs */}
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
+              <button
+                type="button"
+                className={'chip' + (bldCat === 'all' ? ' on' : '')}
+                style={{ fontSize: '0.72rem', padding: '0.22rem 0.55rem' }}
+                onClick={() => setBldCat('all')}
+              >
+                All
+              </button>
+              {BUILDING_CATEGORIES.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={'chip' + (bldCat === c.id ? ' on' : '')}
+                  style={{ fontSize: '0.72rem', padding: '0.22rem 0.55rem' }}
+                  onClick={() => setBldCat(c.id)}
+                  title={c.description}
+                >
+                  {c.label.replace(' Buildings', '').replace(' Towers', '')}
+                </button>
+              ))}
+            </div>
+            {/* Templates in selected category */}
+            <div className="chips">
+              {Object.entries(TEMPLATES)
+                .filter(([k, t]) => bldCat === 'all' || t.category === bldCat)
+                .map(([k, t]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    className={'chip' + (cfg.template === k ? ' on' : '')}
+                    onClick={() => applyTemplate(k)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+            </div>
+          </details>
+        )}
         <details><summary>Facade materials</summary><Choice label="Material" value={cfg.facade} options={FACADES} onChange={v => set({ facade: v })} /><div className="field"><span>Tint</span><Swatches value={cfg.tint} colors={TINTS} onChange={v => set({ tint: v })} /></div></details>
         <details><summary>Windows &amp; doors</summary><Choice label="Glass" value={cfg.glass} options={GLASS} onChange={v => set({ glass: v })} />
           {!modular && <Choice label="Windows" value={cfg.windows} options={WINDOWS} onChange={v => set({ windows: v })} />}<Choice label="Door" value={cfg.door} options={DOORS} onChange={v => set({ door: v })} /></details>

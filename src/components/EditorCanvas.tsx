@@ -12,6 +12,8 @@ import { SceneLighting, SkyDome, Effects } from './Lighting';
 import { JEnterprise } from './JEnterprise';
 import { Bungalow } from './Bungalow';
 import { CentralBuildingLOD } from './CentralBuilding';
+import { isExpandedTemplate } from '@/lib/templates';
+import { ExpandedBuildingFull } from './ExpandedBuilding';
 
 export type Tool = { kind: Mod['kind'] | 'erase' | 'rotate'; rot: number };
 
@@ -64,7 +66,19 @@ export default function EditorCanvas({ cfg, setCfg, tool, showGrid, onMsg }: { c
       <SkyDome /><SceneLighting q={quality} span={26} />
       <Ground />
       <group position={[0, 0, 0]}>
-        {modular ? <ModularBuilding cfg={cfg} onCell={hover} /> : cfg.template === 'jenterprise' ? <group position={[0, 0, -4]}><JEnterprise /></group> : cfg.template === 'bungalow' ? <Bungalow cfg={cfg} /> : cfg.template === 'central' ? <CentralBuildingLOD cfg={cfg} /> : <BuildingFull cfg={cfg} quality={Q.interiors} />}
+        {modular ? (
+          <ModularBuilding cfg={cfg} onCell={hover} />
+        ) : cfg.template === 'jenterprise' ? (
+          <group position={[0, 0, -4]}><JEnterprise /></group>
+        ) : cfg.template === 'bungalow' ? (
+          <Bungalow cfg={cfg} />
+        ) : cfg.template === 'central' ? (
+          <CentralBuildingLOD cfg={cfg} />
+        ) : isExpandedTemplate(cfg.template) ? (
+          <ExpandedBuildingFull cfg={cfg} quality={Q.interiors} />
+        ) : (
+          <BuildingFull cfg={cfg} quality={Q.interiors} />
+        )}
         {modular && showGrid && <Grid cfg={cfg} tool={tool} setCfg={setCfg} onMsg={onMsg} />}
       </group>
       <OrbitControls target={[0, 3, 0]} maxPolarAngle={Math.PI / 2 - 0.04} minDistance={8} maxDistance={45} enablePan={false} />
