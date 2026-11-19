@@ -81,7 +81,7 @@ export function getVisibleChunks(
   chunkMap: CityChunkMap,
   camX: number,
   camZ: number,
-  viewDist = 260
+  viewDist = 170
 ): { activeDistricts: Set<string>; chunkLODs: Map<string, 'full' | 'medium' | 'low'>; summary: string } {
   const activeDistricts = new Set<string>();
   const chunkLODs = new Map<string, 'full' | 'medium' | 'low'>();

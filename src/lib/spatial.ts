@@ -216,65 +216,77 @@ export class CitySpatialSystem {
   }
 
   /**
-   * Updates chunk visibility, camera frustum intersection, and LOD tiers.
-   * Performs progressive loading with safe hysteresis margins (+30m padding)
-   * to guarantee ZERO visible popping or missing buildings.
+   * Updates chunk visibility using PLAYER XZ position (not camera) for true circular world rendering.
+   * The render circle is always centered on the player's feet, regardless of camera angle.
+   * Frustum culling is then applied as a secondary optimization on top of the circular filter.
    */
   updateVisibility(
     camera: THREE.Camera,
     nearPlotId: string | null = null,
-    viewDistance = 320
+    viewDistance = 170,
+    playerX?: number,
+    playerZ?: number
   ): { activeCount: number; visibleAssets: number } {
     this._projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this._frustum.setFromProjectionMatrix(this._projScreenMatrix);
 
-    const camPos = camera.position;
+    // Use player XZ for circular distance — falls back to camera XZ if not provided
+    const pX = playerX ?? camera.position.x;
+    const pZ = playerZ ?? camera.position.z;
     const now = performance.now();
     let activeCount = 0;
     let visibleAssets = 0;
 
+    // Render radius matches fog far distance — chunks beyond this are hidden
+    const renderRadius = viewDistance;
+
     const lodCounts = { full: 0, medium: 0, low: 0, culled: 0 };
 
     for (const chunk of this.chunks) {
-      const distToCam = Math.hypot(camPos.x - chunk.cx, camPos.z - chunk.cz);
+      // ── Distance from PLAYER position (XZ plane only) ──────────────────────
+      const distToPlayer = Math.hypot(pX - chunk.cx, pZ - chunk.cz);
 
-      // Central chunk is always kept alive within city bounds
+      // Central chunk: always visible if player is anywhere near the city
       if (chunk.isCentral) {
-        chunk.visible = true;
-        chunk.lodTier = distToCam < 95 ? 'full' : 'medium';
+        chunk.visible = distToPlayer < renderRadius + chunk.radius;
+        chunk.lodTier = distToPlayer < 80 ? 'full' : distToPlayer < 160 ? 'medium' : 'low';
         chunk.lastSeenTime = now;
-        activeCount++;
-        visibleAssets += chunk.plots.length;
-        if (chunk.lodTier === 'full') lodCounts.full += chunk.plots.length;
-        else lodCounts.medium += chunk.plots.length;
+        if (chunk.visible) {
+          activeCount++;
+          visibleAssets += chunk.plots.length;
+          if (chunk.lodTier === 'full') lodCounts.full += chunk.plots.length;
+          else lodCounts.medium += chunk.plots.length;
+        }
         continue;
       }
 
-      // Proximity override: If player is near or inside this chunk, always visible
-      const isPlayerInside = distToCam < chunk.radius + 35;
+      // Proximity override: player physically inside or touching this chunk
+      const isPlayerInside = distToPlayer < chunk.radius + 30;
       const isNearActivePlot = chunk.plots.some(p => p.id === nearPlotId);
 
-      // Camera Frustum Culling with 28m expanded safety radius for smooth boundary entry
+      // ── Circular render distance filter (primary filter) ───────────────────
+      // A chunk is included if any part of it overlaps the player's circle
+      const chunkEdgeDist = distToPlayer - chunk.radius;
+      const withinCircle = chunkEdgeDist < renderRadius;
+
+      // ── Camera frustum culling (secondary optimization) ────────────────────
       this._sphereTarget.center.set(chunk.cx, 10, chunk.cz);
-      this._sphereTarget.radius = chunk.radius + 28;
+      this._sphereTarget.radius = chunk.radius + 24;
       const inFrustum = this._frustum.intersectsSphere(this._sphereTarget);
 
-      // Maximum horizon distance check
-      const withinHorizon = distToCam < viewDistance + 50;
-
-      // Determine visibility
-      if ((inFrustum && withinHorizon) || isPlayerInside || isNearActivePlot) {
+      // Determine final visibility
+      if ((withinCircle && inFrustum) || isPlayerInside || isNearActivePlot) {
         chunk.visible = true;
         chunk.lastSeenTime = now;
         this.cachedChunks.add(chunk.id);
         activeCount++;
         visibleAssets += chunk.plots.length;
 
-        // Progressive distance-based LOD tier assignment
-        if (distToCam < 90 || isPlayerInside || isNearActivePlot) {
+        // LOD tiers based on player distance (not camera)
+        if (distToPlayer < 85 || isPlayerInside || isNearActivePlot) {
           chunk.lodTier = 'full';
           lodCounts.full += chunk.plots.length;
-        } else if (distToCam < 185) {
+        } else if (distToPlayer < renderRadius * 0.55) {
           chunk.lodTier = 'medium';
           lodCounts.medium += chunk.plots.length;
         } else {
@@ -282,7 +294,6 @@ export class CitySpatialSystem {
           lodCounts.low += chunk.plots.length;
         }
       } else {
-        // Temporary culling: off-screen objects remain 100% preserved in GPU cache
         chunk.visible = false;
         lodCounts.culled += chunk.plots.length;
       }

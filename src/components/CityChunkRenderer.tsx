@@ -9,7 +9,7 @@ import { getPlace } from '@/lib/plots';
 import { CitySpatialSystem, CityRenderChunk, liveMetrics } from '@/lib/spatial';
 import { BuildingLOD } from './BuildingLOD';
 import { JEnterpriseLOD } from './JEnterprise';
-import { useUI } from '@/lib/state';
+import { useUI, player } from '@/lib/state';
 
 // ── Ambient Occlusion Ground Contact Shadow ───────────────────────────────────
 function ChunkBuildingAO({ w, d }: { w: number; d: number }) {
@@ -40,6 +40,94 @@ function ChunkBuildingAO({ w, d }: { w: number; d: number }) {
   );
 }
 
+// ── Individual Building Item with Circular Render Distance & LOD ──────────────
+interface ChunkBuildingItemProps {
+  p: Plot;
+  s: Store;
+  interiors: boolean;
+  nearPlot: string | null;
+  chunkLodTier: 'full' | 'medium' | 'low';
+  viewDistance: number;
+}
+
+function ChunkBuildingItem({
+  p,
+  s,
+  interiors,
+  nearPlot,
+  chunkLodTier,
+  viewDistance,
+}: ChunkBuildingItemProps) {
+  const itemRef = useRef<THREE.Group>(null);
+  const [effectiveLod, setEffectiveLod] = useState<'full' | 'medium' | 'low'>(chunkLodTier);
+  const lastCheck = useRef(0);
+
+  // Dynamic distance-based visibility and LOD inside the player's circular render zone
+  useFrame(() => {
+    if (!itemRef.current) return;
+    const now = performance.now();
+    if (now - lastCheck.current < 90) return;
+    lastCheck.current = now;
+
+    // Euclidean distance in XZ plane from player's feet
+    const distToPlayer = Math.hypot(player.x - p.x, player.z - p.z);
+
+    // Circular boundary: hide if outside render radius (+12m padding to match fog horizon)
+    const isVisible = distToPlayer <= viewDistance + 12;
+    if (itemRef.current.visible !== isVisible) {
+      itemRef.current.visible = isVisible;
+    }
+
+    if (isVisible) {
+      // Dynamic progressive detail (Minecraft style):
+      // - Near player (< 75m): Full detail with interiors and crisp models
+      // - Middle distance (< 135m): Medium LOD
+      // - Outer circle (>= 135m): Lightweight low-poly silhouette
+      const targetLod: 'full' | 'medium' | 'low' =
+        distToPlayer < 75 ? 'full' : distToPlayer < 135 ? 'medium' : 'low';
+      if (targetLod !== effectiveLod) {
+        setEffectiveLod(targetLod);
+      }
+    }
+  });
+
+  const pl = getPlace(p, s.config);
+  const je = s.config.template === 'jenterprise' && s.config.mode !== 'modular';
+  const isNear = nearPlot === p.id;
+
+  return (
+    <group ref={itemRef} position={[p.x, 0, p.z]} rotation={[0, p.rot, 0]}>
+      <group position={[pl.ox, 0, pl.oz]} rotation={[0, (pl.rot * Math.PI) / 2, 0]}>
+        {!je && <ChunkBuildingAO w={p.w + 3} d={p.d + 3} />}
+        {je ? (
+          <>
+            <JEnterpriseLOD />
+            {p.landmark && (
+              <Html
+                position={[-0.5, 23, 7]}
+                center
+                distanceFactor={34}
+                zIndexRange={[5, 0]}
+                style={{ pointerEvents: 'none' }}
+              >
+                <div className="loc-label">J Enterprise</div>
+              </Html>
+            )}
+          </>
+        ) : (
+          <BuildingLOD
+            cfg={s.config}
+            plotId={p.id}
+            lodTier={effectiveLod}
+            interiors={interiors}
+            isNear={isNear}
+          />
+        )}
+      </group>
+    </group>
+  );
+}
+
 // ── Individual Chunk View Component ───────────────────────────────────────────
 interface ChunkGroupViewProps {
   chunk: CityRenderChunk;
@@ -47,6 +135,7 @@ interface ChunkGroupViewProps {
   interiors: boolean;
   nearPlot: string | null;
   lodTier: 'full' | 'medium' | 'low';
+  viewDistance: number;
 }
 
 function ChunkGroupView({
@@ -55,6 +144,7 @@ function ChunkGroupView({
   interiors,
   nearPlot,
   lodTier,
+  viewDistance,
 }: ChunkGroupViewProps) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -73,40 +163,16 @@ function ChunkGroupView({
         const s = byPlot.get(p.id);
         if (!s) return null; // Empty plots handled by instanced EmptyPlots component
 
-        const pl = getPlace(p, s.config);
-        const je = s.config.template === 'jenterprise' && s.config.mode !== 'modular';
-        const isNear = nearPlot === p.id;
-
         return (
-          <group key={p.id} position={[p.x, 0, p.z]} rotation={[0, p.rot, 0]}>
-            <group position={[pl.ox, 0, pl.oz]} rotation={[0, (pl.rot * Math.PI) / 2, 0]}>
-              {!je && <ChunkBuildingAO w={p.w + 3} d={p.d + 3} />}
-              {je ? (
-                <>
-                  <JEnterpriseLOD />
-                  {p.landmark && (
-                    <Html
-                      position={[-0.5, 23, 7]}
-                      center
-                      distanceFactor={34}
-                      zIndexRange={[5, 0]}
-                      style={{ pointerEvents: 'none' }}
-                    >
-                      <div className="loc-label">J Enterprise</div>
-                    </Html>
-                  )}
-                </>
-              ) : (
-                <BuildingLOD
-                  cfg={s.config}
-                  plotId={p.id}
-                  lodTier={lodTier}
-                  interiors={interiors}
-                  isNear={isNear}
-                />
-              )}
-            </group>
-          </group>
+          <ChunkBuildingItem
+            key={p.id}
+            p={p}
+            s={s}
+            interiors={interiors}
+            nearPlot={nearPlot}
+            chunkLodTier={lodTier}
+            viewDistance={viewDistance}
+          />
         );
       })}
     </group>
@@ -177,7 +243,7 @@ export function CityChunkRenderer({
     // 2. Throttled Frustum Culling & Visibility Calculation (runs every 60ms)
     if (now - lastUpdateRef.current > 60) {
       lastUpdateRef.current = now;
-      spatialSystem.updateVisibility(camera, nearPlot, viewDistance);
+      spatialSystem.updateVisibility(camera, nearPlot, viewDistance, player.x, player.z);
 
       // Diff check for LOD tier state to minimize React state updates
       let lodChanged = false;
@@ -206,6 +272,7 @@ export function CityChunkRenderer({
           interiors={interiors}
           nearPlot={nearPlot}
           lodTier={chunkLODs.get(chunk.id) || 'medium'}
+          viewDistance={viewDistance}
         />
       ))}
     </group>

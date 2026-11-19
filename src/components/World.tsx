@@ -130,7 +130,7 @@ export function World({ stores, layout, quality }: { stores: Store[]; layout: La
       <AdvertPlane />
       <BirdFlock />
       {/* ── Spatial District Chunks: Progressive loading, Frustum Culling & Seamless LOD ── */}
-      <CityChunkRenderer layout={layout} stores={stores} interiors={Q.interiors} viewDistance={Q.radius} />
+      <CityChunkRenderer layout={layout} stores={stores} interiors={Q.interiors} viewDistance={Q.renderRadius} />
     </>
   );
 }

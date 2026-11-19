@@ -8,6 +8,20 @@ import { cityTime, getTimePhase, useTimeStore, getDeviceHour } from '@/lib/time'
 import { solid } from '@/lib/materials';
 
 // -------------------------------------------------------------
+// Spherical / Radial Fog Shader Patch (Minecraft Circular Render Distance)
+// Replaces planar linear depth (-mvPosition.z) with Euclidean distance length(mvPosition.xyz)
+// so the fog forms a true circular boundary around the player in 3D world space.
+// -------------------------------------------------------------
+if (typeof THREE !== 'undefined' && THREE.ShaderChunk && THREE.ShaderChunk.fog_vertex) {
+  if (THREE.ShaderChunk.fog_vertex.includes('- mvPosition.z')) {
+    THREE.ShaderChunk.fog_vertex = THREE.ShaderChunk.fog_vertex.replace(
+      '- mvPosition.z',
+      'length( mvPosition.xyz )'
+    );
+  }
+}
+
+// -------------------------------------------------------------
 // Dynamic Sky Gradients Palette for 24-Hour Cycle
 // -------------------------------------------------------------
 interface SkyColorStop {
@@ -450,18 +464,21 @@ function CelestialBodies() {
 }
 
 // -------------------------------------------------------------
-// Dynamic Atmospheric Fog Controller (Minecraft-style render distance)
-// Runs every frame: syncs fog near/far + color to quality & time-of-day
+// Dynamic Atmospheric Fog Controller (Circular Minecraft-style render distance)
+// Runs every frame: syncs fog near/far + color to quality & time-of-day.
+// Three.js linear fog = distance from camera → forms a natural sphere in 3D space.
+// Since the camera tracks the player, this creates a circular world boundary on the XZ plane.
 // -------------------------------------------------------------
 
-/** Per-quality fog bands that match the reference image:
- *  - near: start fading after this distance (buildings fully visible)
- *  - far:  fully invisible at this distance (blends into sky)
+/** Per-quality circular fog bands:
+ *  - near: objects fully visible inside this radius
+ *  - far:  objects fully invisible at this distance (absorbed into sky)
+ *  These are intentionally small to create the Minecraft "small world" feel.
  */
 const FOG_BAND: Record<string, [number, number]> = {
-  low:    [110, 440],   // tight mobile render distance
-  medium: [160, 680],   // balanced
-  high:   [200, 950],   // panoramic desktop
+  low:    [30, 120],  // 4 chunks: tight circle
+  medium: [45, 165],  // 6 chunks: matches attached image
+  high:   [60, 230],  // 8 chunks
 };
 
 export function FogController({ quality }: { quality: string }) {
@@ -470,7 +487,7 @@ export function FogController({ quality }: { quality: string }) {
   // Ensure scene has a linear fog object from the start
   useEffect(() => {
     if (!scene.fog) {
-      scene.fog = new THREE.Fog('#c8dff5', 160, 680);
+      scene.fog = new THREE.Fog('#c8dff5', 45, 165);
     }
   }, [scene]);
 
@@ -480,7 +497,7 @@ export function FogController({ quality }: { quality: string }) {
     const sky = sampleSky(cityTime.hour);
     const [near, far] = FOG_BAND[quality] ?? FOG_BAND.medium;
 
-    // Smoothly interpolate toward the target values (avoids pop on quality change)
+    // Smoothly interpolate toward target values (avoids pop on quality change)
     scene.fog.near += (near - scene.fog.near) * 0.05;
     scene.fog.far  += (far  - scene.fog.far)  * 0.05;
 
@@ -539,7 +556,7 @@ export function SkyDome() {
         <meshBasicMaterial vertexColors side={THREE.BackSide} fog={false} depthWrite={false} />
       </mesh>
       {/* Static fog seed — FogController overrides near/far/color each frame */}
-      <fog attach="fog" args={['#c8dff5', 160, 680]} />
+      <fog attach="fog" args={['#c8dff5', 45, 165]} />
       <CelestialBodies />
       <Clouds />
     </>

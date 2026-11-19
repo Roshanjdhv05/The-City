@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 
 export type Quality = 'low' | 'medium' | 'high';
-export const QUALITY: Record<Quality, { dpr: [number, number]; shadow: number; post: boolean; ssao: boolean; trees: number; forest: number; radius: number; seg: number; lod: number; interiors: boolean; label: string }> = {
-  low:    { dpr: [1, 1],   shadow: 0,    post: false, ssao: false, trees: 20,  forest: 150, radius: 180, seg: 100,  lod: 38, interiors: false, label: 'Low (mobile / weak GPU)' },
-  medium: { dpr: [1, 1.5], shadow: 2048, post: true,  ssao: false, trees: 50,  forest: 450, radius: 300, seg: 160, lod: 60, interiors: true,  label: 'Medium' },
-  high:   { dpr: [1, 2],   shadow: 4096, post: true,  ssao: true,  trees: 90, forest: 900, radius: 420, seg: 220, lod: 90, interiors: true,  label: 'High (desktop)' },
+export const QUALITY: Record<Quality, { dpr: [number, number]; shadow: number; post: boolean; ssao: boolean; trees: number; forest: number; radius: number; seg: number; lod: number; interiors: boolean; label: string; fogNear: number; fogFar: number; renderRadius: number }> = {
+  low:    { dpr: [1, 1],   shadow: 0,    post: false, ssao: false, trees: 20,  forest: 120, radius: 130, seg: 90,   lod: 35, interiors: false, label: 'Low (4 Chunks / 120m)',   fogNear: 30,  fogFar: 120,  renderRadius: 130 },
+  medium: { dpr: [1, 1.5], shadow: 2048, post: true,  ssao: false, trees: 50,  forest: 350, radius: 165, seg: 140,  lod: 55, interiors: true,  label: 'Medium (6 Chunks / 165m)', fogNear: 45,  fogFar: 165,  renderRadius: 170 },
+  high:   { dpr: [1, 2],   shadow: 4096, post: true,  ssao: true,  trees: 90, forest: 700, radius: 230, seg: 200,  lod: 85, interiors: true,  label: 'High (8 Chunks / 230m)',   fogNear: 60,  fogFar: 230,  renderRadius: 240 },
 };
 
 interface UI {
