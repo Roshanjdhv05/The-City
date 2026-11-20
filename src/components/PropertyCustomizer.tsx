@@ -459,6 +459,36 @@ export default function PropertyCustomizer() {
     window.addEventListener('mousemove', onPointerMove);
     window.addEventListener('mouseup', onPointerUp);
 
+    // Mobile touch drag to orbit & tilt
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        down = true;
+        lx = e.touches[0].clientX;
+        ly = e.touches[0].clientY;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (down && e.touches.length === 1) {
+        const dx = e.touches[0].clientX - lx;
+        const dy = e.touches[0].clientY - ly;
+        lx = e.touches[0].clientX;
+        ly = e.touches[0].clientY;
+
+        yaw += dx * 0.007;
+        pitch = Math.max(0.12, Math.min(1.2, pitch - dy * 0.006));
+        updateCamera();
+      }
+    };
+
+    const onTouchEnd = () => {
+      down = false;
+    };
+
+    container.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd);
+
     // Wheel zoom
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -523,6 +553,9 @@ export default function PropertyCustomizer() {
       container.removeEventListener('mousedown', onPointerDown);
       window.removeEventListener('mousemove', onPointerMove);
       window.removeEventListener('mouseup', onPointerUp);
+      container.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
       container.removeEventListener('wheel', onWheel);
       ro.disconnect();
       renderer.dispose();
@@ -610,6 +643,7 @@ export default function PropertyCustomizer() {
 
   return (
     <div
+      className="home-property-customizer"
       style={{
         display: 'grid',
         gridTemplateColumns: 'minmax(280px, 1fr) minmax(360px, 1.45fr) minmax(280px, 1fr)',
@@ -628,7 +662,7 @@ export default function PropertyCustomizer() {
         <div>
           <h3
             style={{
-              fontSize: 'clamp(2rem, 3.2vw, 2.8rem)',
+              fontSize: 'clamp(1.8rem, 3.2vw, 2.8rem)',
               fontWeight: 800,
               lineHeight: 1.1,
               letterSpacing: '-0.03em',
@@ -652,7 +686,7 @@ export default function PropertyCustomizer() {
         </div>
 
         {/* 3 Badges */}
-        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+        <div className="home-customizer-badges" style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
           <div
             style={{
               display: 'inline-flex',
@@ -712,6 +746,7 @@ export default function PropertyCustomizer() {
         <div>
           <Link
             href={`/buy?name=${encodeURIComponent(businessName)}&style=${selectedStyle.id}`}
+            className="home-claim-btn"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -735,6 +770,7 @@ export default function PropertyCustomizer() {
 
       {/* ── Center Column: Interactive 3D Building Display ────────────── */}
       <div
+        className="home-customizer-canvas-col"
         style={{
           position: 'relative',
           width: '100%',
@@ -747,7 +783,7 @@ export default function PropertyCustomizer() {
           background: 'radial-gradient(ellipse 65% 65% at 50% 50%, rgba(219, 234, 254, 0.45) 0%, transparent 80%)',
         }}
       >
-        <div ref={canvasRef} style={{ width: '100%', height: '100%', cursor: 'grab' }} />
+        <div ref={canvasRef} style={{ width: '100%', height: '100%', cursor: 'grab', touchAction: 'none' }} />
 
         {/* Loading Spinner */}
         {loadingModel && (

@@ -156,6 +156,7 @@ function DiscoverMarquee() {
     >
       {/* Left & right fade masks */}
       <div
+        className="home-marquee-fade"
         style={{
           position: 'absolute', top: 0, left: 0, bottom: 0, width: '80px', zIndex: 2,
           background: 'linear-gradient(to right, #ffffff 0%, transparent 100%)',
@@ -163,6 +164,7 @@ function DiscoverMarquee() {
         }}
       />
       <div
+        className="home-marquee-fade"
         style={{
           position: 'absolute', top: 0, right: 0, bottom: 0, width: '80px', zIndex: 2,
           background: 'linear-gradient(to left, #ffffff 0%, transparent 100%)',
@@ -312,6 +314,7 @@ export default function Home() {
           />
 
           <div
+            className="home-hero-grid"
             style={{
               maxWidth: '1340px', margin: '0 auto', padding: 'clamp(6rem, 10vh, 9rem) clamp(1.5rem, 5vw, 3.5rem) clamp(3rem, 6vh, 5rem)',
               display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.3fr)',
@@ -319,7 +322,7 @@ export default function Home() {
             }}
           >
             {/* ── LEFT: Text & CTAs ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.6rem' }}>
+            <div className="home-hero-content" style={{ display: 'flex', flexDirection: 'column', gap: '1.6rem' }}>
               {/* Tagline pill */}
               <div
                 style={{
@@ -342,11 +345,12 @@ export default function Home() {
 
               {/* Headline */}
               <h1
+                className="home-hero-title"
                 style={{
                   margin: 0,
-                  fontSize: 'clamp(2.8rem, 5.5vw, 4.8rem)',
+                  fontSize: 'clamp(2.4rem, 5.5vw, 4.8rem)',
                   fontWeight: 900,
-                  lineHeight: 1.0,
+                  lineHeight: 1.05,
                   letterSpacing: '-0.03em',
                   color: '#0f172a',
                 }}
@@ -370,7 +374,7 @@ export default function Home() {
               </p>
 
               {/* CTAs */}
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="home-hero-ctas" style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <Link
                   href="/city"
                   style={{
@@ -409,6 +413,7 @@ export default function Home() {
 
             {/* ── RIGHT: Procedural 3D City Scene ── */}
             <div
+              className="home-hero-scene-container"
               style={{
                 position: 'relative',
                 display: 'flex',
@@ -429,14 +434,14 @@ export default function Home() {
             ════════════════════════════════════════════ */}
         <section
           style={{
-            padding: 'clamp(4rem, 7vh, 6rem) 0',
+            padding: 'clamp(3.5rem, 6vh, 6rem) 0',
             background: '#ffffff',
             overflow: 'hidden',
           }}
         >
           {/* Section heading (padded) */}
-          <div style={{ maxWidth: '1340px', margin: '0 auto', padding: '0 clamp(1.5rem, 5vw, 3.5rem)', marginBottom: '3rem' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ maxWidth: '1340px', margin: '0 auto', padding: '0 clamp(1rem, 5vw, 3.5rem)', marginBottom: '2.5rem' }}>
+            <div className="home-discover-header" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
               <div>
                 {/* Step badge */}
                 <div
@@ -501,19 +506,20 @@ export default function Home() {
             </div>
 
             {/* Stats row */}
-            <div style={{ display: 'flex', gap: '2rem', marginTop: '1.6rem', flexWrap: 'wrap' }}>
+            <div className="home-stats-row" style={{ display: 'flex', gap: '2rem', marginTop: '1.6rem', flexWrap: 'wrap' }}>
               {[
                 { n: '10', label: 'Categories', icon: '⬡' },
                 { n: '460+', label: 'Plots Available', icon: '📍' },
                 { n: '9', label: 'Districts', icon: '🏙️' },
               ].map((s) => (
-                <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div key={s.label} className="home-stat-pill" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div
                     style={{
                       width: 36, height: 36, borderRadius: '10px',
                       background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '1rem',
+                      flexShrink: 0,
                     }}
                   >
                     {s.icon}
@@ -565,9 +571,10 @@ export default function Home() {
         {/* ════════════════════════════════════════════
             CTA BANNER — Step into Nextown today
             ════════════════════════════════════════════ */}
-        <section style={{ padding: 'clamp(1.5rem, 3vw, 2rem) clamp(1.5rem, 5vw, 3.5rem)' }}>
+        <section style={{ padding: 'clamp(1.5rem, 3vw, 2rem) clamp(1.2rem, 5vw, 3.5rem)' }}>
           <div style={{ maxWidth: '1340px', margin: '0 auto' }}>
             <div
+              className="home-cta-banner-box"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 flexWrap: 'wrap', gap: '1.5rem',
@@ -624,10 +631,11 @@ export default function Home() {
           style={{
             background: '#ffffff',
             borderTop: '1px solid rgba(226, 232, 240, 0.8)',
-            padding: 'clamp(2rem, 4vh, 3rem) clamp(1.5rem, 5vw, 3.5rem)',
+            padding: 'clamp(2rem, 4vh, 3rem) clamp(1.2rem, 5vw, 3.5rem)',
           }}
         >
           <div
+            className="home-footer-inner"
             style={{
               maxWidth: '1340px', margin: '0 auto',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -645,7 +653,7 @@ export default function Home() {
             </Link>
 
             {/* Footer links */}
-            <nav style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+            <nav className="home-footer-nav" style={{ display: 'flex', gap: '1.8rem', flexWrap: 'wrap' }}>
               {[['Explore City', '/city'], ['Properties', '/buy'], ['FAQ', '/faq'], ['About', '/about'], ['Contact', '/contact']].map(([label, href]) => (
                 <Link key={href} href={href} style={{ fontSize: '0.88rem', fontWeight: 500, color: '#64748b', textDecoration: 'none' }}>
                   {label}
@@ -681,6 +689,7 @@ export default function Home() {
 
           {/* Copyright */}
           <div
+            className="home-footer-copyright"
             style={{
               maxWidth: '1340px', margin: '1.5rem auto 0',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',

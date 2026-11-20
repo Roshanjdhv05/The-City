@@ -2773,3 +2773,313 @@ kbd {
   background: #f0fdf4;
   box-shadow: 0 2px 12px rgba(22, 163, 74, 0.08);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   HOME PAGE PHONE RESPONSIVE STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 3-Line Hamburger Button & Mobile Navigation ── */
+.nav-desktop-links {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.nav-desktop-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.nav-hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(241, 245, 249, 0.85);
+  border: 1px solid rgba(203, 213, 225, 0.6);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+  z-index: 60;
+}
+
+.nav-hamburger-btn:hover {
+  background: rgba(226, 232, 240, 0.95);
+}
+
+.nav-bar-line {
+  display: block;
+  width: 20px;
+  height: 2.2px;
+  background: #0f2918;
+  border-radius: 99px;
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+
+.nav-bar-line.top.active {
+  transform: translateY(7.2px) rotate(45deg);
+}
+
+.nav-bar-line.mid.active {
+  opacity: 0;
+}
+
+.nav-bar-line.bot.active {
+  transform: translateY(-7.2px) rotate(-45deg);
+}
+
+/* Mobile dropdown menu */
+.nav-mobile-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 24px;
+  padding: 1.25rem;
+  box-shadow: 0 20px 48px -12px rgba(15, 23, 42, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  animation: navSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
+}
+
+@keyframes navSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nav-mobile-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #334155;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.nav-mobile-link:hover,
+.nav-mobile-link.active {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+/* ── Home Page Media Queries for Phone Screens ── */
+@media (max-width: 860px) {
+  .nav-desktop-links {
+    display: none !important;
+  }
+
+  .nav-desktop-actions .nav-signin-link {
+    display: none !important;
+  }
+
+  .nav-desktop-actions .nav-play-btn {
+    padding: 0.55rem 1rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  .nav-hamburger-btn {
+    display: flex !important;
+  }
+
+  .home-nav-container {
+    top: 0.6rem !important;
+    left: 0.6rem !important;
+    right: 0.6rem !important;
+  }
+
+  .home-nav-header {
+    height: 58px !important;
+    padding: 0 0.85rem 0 1.1rem !important;
+  }
+}
+
+/* ── Hero Section Responsive ── */
+@media (max-width: 960px) {
+  .home-hero-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2.2rem !important;
+    padding: clamp(5.2rem, 11vh, 7rem) 1.25rem 2.5rem !important;
+    text-align: left;
+  }
+
+  .home-hero-scene-container {
+    height: clamp(300px, 45vh, 420px) !important;
+    order: 2;
+  }
+
+  .home-hero-content {
+    order: 1;
+    align-items: flex-start !important;
+  }
+
+  .home-hero-ctas {
+    width: 100% !important;
+  }
+
+  .home-hero-ctas a {
+    flex: 1 1 140px;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 540px) {
+  .home-hero-grid {
+    padding: 5rem 1rem 2rem !important;
+    gap: 1.8rem !important;
+  }
+
+  .home-hero-title {
+    font-size: 2.3rem !important;
+    line-height: 1.08 !important;
+  }
+
+  .home-hero-scene-container {
+    height: 310px !important;
+  }
+
+  .home-hero-ctas {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  .home-hero-ctas a {
+    width: 100% !important;
+    padding: 0.85rem 1.4rem !important;
+  }
+}
+
+/* ── Discover Businesses & Stats Responsive ── */
+@media (max-width: 768px) {
+  .home-stats-row {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.65rem !important;
+    margin-top: 1.2rem !important;
+  }
+
+  .home-stat-pill {
+    padding: 8px !important;
+    gap: 6px !important;
+  }
+
+  .home-marquee-fade {
+    width: 25px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .home-stats-row {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  .home-discover-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1.25rem !important;
+  }
+
+  .home-discover-header a {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* ── Property Customizer Responsive Grid ── */
+@media (max-width: 1060px) {
+  .home-property-customizer {
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
+    padding: 1.5rem !important;
+    border-radius: 24px !important;
+  }
+
+  .home-customizer-canvas-col {
+    height: 360px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .home-property-customizer {
+    padding: 1.2rem !important;
+    gap: 1.6rem !important;
+    border-radius: 20px !important;
+  }
+
+  .home-customizer-canvas-col {
+    height: 300px !important;
+  }
+
+  .home-customizer-badges {
+    flex-direction: column !important;
+    gap: 0.4rem !important;
+  }
+
+  .home-customizer-badges > div {
+    width: 100% !important;
+  }
+
+  .home-claim-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* ── CTA Banner Responsive ── */
+@media (max-width: 768px) {
+  .home-cta-banner-box {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 2rem 1.4rem !important;
+    gap: 1.5rem !important;
+  }
+
+  .home-cta-banner-box a {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+}
+
+/* ── Footer Responsive ── */
+@media (max-width: 768px) {
+  .home-footer-inner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1.5rem !important;
+  }
+
+  .home-footer-nav {
+    flex-wrap: wrap !important;
+    gap: 1rem 1.5rem !important;
+  }
+
+  .home-footer-copyright {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.4rem !important;
+  }
+}
+
