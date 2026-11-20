@@ -377,6 +377,7 @@ export default function Home() {
               <div className="home-hero-ctas" style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <Link
                   href="/city"
+                  className="home-explore-btn"
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
                     background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
@@ -393,6 +394,7 @@ export default function Home() {
 
                 <Link
                   href="/city"
+                  className="home-watch-demo-btn"
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
                     background: 'rgba(255, 255, 255, 0.85)',

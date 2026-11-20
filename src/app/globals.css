@@ -2937,10 +2937,16 @@ kbd {
     width: 100% !important;
   }
 
-  .home-hero-ctas a {
-    flex: 1 1 140px;
-    justify-content: center;
-    text-align: center;
+  .home-watch-demo-btn {
+    display: none !important;
+  }
+
+  .home-explore-btn {
+    width: fit-content !important;
+    padding: 0.62rem 1.35rem !important;
+    font-size: 0.88rem !important;
+    gap: 0.45rem !important;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35) !important;
   }
 }
 
@@ -2960,13 +2966,19 @@ kbd {
   }
 
   .home-hero-ctas {
-    flex-direction: column !important;
-    gap: 0.75rem !important;
+    flex-direction: row !important;
+    gap: 0.65rem !important;
   }
 
-  .home-hero-ctas a {
-    width: 100% !important;
-    padding: 0.85rem 1.4rem !important;
+  .home-watch-demo-btn {
+    display: none !important;
+  }
+
+  .home-explore-btn {
+    width: fit-content !important;
+    padding: 0.58rem 1.25rem !important;
+    font-size: 0.86rem !important;
+    font-weight: 700 !important;
   }
 }
 
