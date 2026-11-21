@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { QUALITY, useUI, landing, getQualityConfig, isMobileDevice } from '@/lib/state';
+import { useExplorationStore } from '@/lib/exploration';
 import { buildColliders, storeDoor, plotFront } from '@/lib/plots';
 import { Layout, layoutBounds } from '@/lib/layout';
 import { genProps } from '@/lib/props';
@@ -112,6 +113,7 @@ export default function CityCanvas({
 
   useEffect(() => {
     useUI.getState().init();
+    useExplorationStore.getState().init();
     if (!isLanding) useUI.getState().setInv(loadInventory());
   }, [isLanding]);
 

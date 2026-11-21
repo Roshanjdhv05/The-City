@@ -13,6 +13,7 @@ import AdminMap from '@/components/admin/AdminMap';
 import { PerformanceMonitor } from '@/components/PerformanceMonitor';
 import { useTimeStore, formatClock, getTimePhase, TIME_PRESETS } from '@/lib/time';
 import { useMultiplayer } from '@/lib/multiplayer';
+import { useExplorationStore } from '@/lib/exploration';
 
 type Guide = { id: string; name: string; x: number; z: number };
 function Minimap({
@@ -618,16 +619,35 @@ function OnlinePlayersPanel({
 export default function HUD({ stores, layout, initialStore }: { stores: Store[]; layout: Layout; initialStore?: string | null }) {
   const { view, setView, nearPlot, quality, setQuality, panelOpen, setPanel, nearRes, inv } = useUI();
   const { myName, myColor, remotePlayers } = useMultiplayer();
+  const { exploredAreas, exploredCellsCount, recordPosition, init: initExploration } = useExplorationStore();
   const [q, setQ] = useState(''), [intro, setIntro] = useState(true), [help, setHelp] = useState(false), [map, setMap] = useState(true), [district, setDistrict] = useState(''), distIdx = useRef(0), done = useRef(false);
   const [guide, setGuide] = useState<Guide | null>(null), [gInfo, setGInfo] = useState({ d: 0, a: 0 }), [mapOpen, setMapOpen] = useState(false), [pick, setPick] = useState<string | null>(null);
-  const [area, setArea] = useState<Area | null>(null), [found, setFound] = useState<string[]>([]), [toast, setToast] = useState('');
+  const [area, setArea] = useState<Area | null>(null), [toast, setToast] = useState('');
   const [dismissedPlot, setDismissedPlot] = useState<string | null>(null);
   const lastTrackedPlot = useRef<string | null>(null);
   const occupied = useMemo(() => new Set(stores.map(s => s.plotId)), [stores]), terrain = useMemo(() => terrainFor(layoutBounds(layout, 0)), [layout]);
   const totalAreas = useMemo(() => new Set([...layout.plots.map(p => p.district), 'Civic Plaza', ...NATURE]).size, [layout]);
-  useEffect(() => { const t = setTimeout(() => setIntro(false), 7000); return () => clearTimeout(t); }, []);
-  useEffect(() => { try { setFound(JSON.parse(localStorage.getItem('thecity.discovered') || '[]')); } catch {} }, []);
-  useEffect(() => { const id = setInterval(() => { const a = areaAt(player.x, player.z, layout, terrain); setArea(prev => (prev && prev.name === a.name ? prev : a)); }, 350); return () => clearInterval(id); }, [layout, terrain]);
+
+  useEffect(() => {
+    initExploration();
+    const t = setTimeout(() => setIntro(false), 7000);
+    return () => clearTimeout(t);
+  }, [initExploration]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const a = areaAt(player.x, player.z, layout, terrain);
+      setArea(prev => (prev && prev.name === a.name ? prev : a));
+
+      // Record player spatial movement into persistent exploration store
+      const res = recordPosition(player.x, player.z, layout, terrain);
+      if (res.newArea) {
+        setToast(res.newArea);
+        setTimeout(() => setToast(''), 3600);
+      }
+    }, 350);
+    return () => clearInterval(id);
+  }, [layout, terrain, recordPosition]);
   const [marketBanner, setMarketBanner] = useState<string | null>(null);
   const lastMarket = useRef<string | null>(null);
 
@@ -828,9 +848,10 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
             color: '#ffffff',
             boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
           }}
+          title={`Explored: ${exploredAreas.size} Named Areas, ${exploredCellsCount} World Zones`}
         >
           <span style={{ color: '#facc15', fontSize: isMobile ? 12 : 14 }}>🏛️</span>
-          <span>{Math.min(found.length, totalAreas)} Discoveries</span>
+          <span>{Math.min(exploredAreas.size, totalAreas)} Discoveries</span>
         </div>
 
         {/* Prev / Next Circular Arrows with Lime Glow Borders */}
