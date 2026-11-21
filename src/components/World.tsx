@@ -8,7 +8,7 @@ import { getPlace } from '@/lib/plots';
 import { Layout, layoutBounds } from '@/lib/layout';
 import { genProps } from '@/lib/props';
 import { mat, solid } from '@/lib/materials';
-import { QUALITY, Quality } from '@/lib/state';
+import { QUALITY, Quality, getQualityConfig } from '@/lib/state';
 import { terrainFor } from '@/lib/terrain';
 import type { Store } from '@/lib/types';
 import { buildCityChunks, getVisibleChunks } from '@/lib/chunks';
@@ -107,8 +107,18 @@ function AO({ w, d }: { w: number; d: number }) {
   return <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.07, 0]}><planeGeometry args={[w, d]} /><meshBasicMaterial map={t} transparent depthWrite={false} polygonOffset polygonOffsetFactor={-2} /></mesh>;
 }
 
-export function World({ stores, layout, quality }: { stores: Store[]; layout: Layout; quality: Quality }) {
-  const Q = QUALITY[quality], byPlot = useMemo(() => new Map(stores.map(s => [s.plotId, s])), [stores]);
+export function World({
+  stores,
+  layout,
+  quality,
+  isMobile = false,
+}: {
+  stores: Store[];
+  layout: Layout;
+  quality: Quality;
+  isMobile?: boolean;
+}) {
+  const Q = getQualityConfig(quality, isMobile), byPlot = useMemo(() => new Map(stores.map(s => [s.plotId, s])), [stores]);
   const b0 = useMemo(() => layoutBounds(layout, 0), [layout]), terrain = useMemo(() => terrainFor(b0), [b0]);
   const props = useMemo(() => genProps(layout, { trees: Q.trees, forest: Q.forest, radius: Q.radius }, terrain), [layout, Q.trees, Q.forest, Q.radius, terrain]);
   const empty = useMemo(() => layout.plots.filter(p => !byPlot.has(p.id)), [layout, byPlot]), built = useMemo(() => layout.plots.filter(p => byPlot.has(p.id)), [layout, byPlot]);
@@ -117,11 +127,11 @@ export function World({ stores, layout, quality }: { stores: Store[]; layout: La
   return (
     <>
       <SkyDome />
-      <FogController quality={quality} />
-      <SceneLighting q={quality} span={span} center={[cx, cz]} />
+      <FogController quality={quality} isMobile={isMobile} />
+      <SceneLighting q={quality} span={span} center={[cx, cz]} isMobile={isMobile} />
       <TerrainMesh terrain={terrain} seg={Q.seg} /><Water terrain={terrain} />
       <CityRoads layout={layout} /><Plaza />
-      <CityTraffic layout={layout} />
+      <CityTraffic layout={layout} isMobile={isMobile} />
       <PlazaDecorations />
       <MarketPropsManager layout={layout} />
       <Furniture props={props} /><Trees trees={props.trees} /><Pines pines={props.pines} /><Rocks rocks={props.rocks} /><Hedges bushes={props.bushes} flowers={props.flowers} /><ResourceMeshes nodes={props.resources} />
@@ -130,7 +140,7 @@ export function World({ stores, layout, quality }: { stores: Store[]; layout: La
       <AdvertPlane />
       <BirdFlock />
       {/* ── Spatial District Chunks: Progressive loading, Frustum Culling & Seamless LOD ── */}
-      <CityChunkRenderer layout={layout} stores={stores} interiors={Q.interiors} viewDistance={Q.renderRadius} />
+      <CityChunkRenderer layout={layout} stores={stores} interiors={Q.interiors} viewDistance={Q.renderRadius} isMobile={isMobile} />
     </>
   );
 }

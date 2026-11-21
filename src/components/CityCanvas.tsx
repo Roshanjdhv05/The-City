@@ -1,8 +1,8 @@
 'use client';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { QUALITY, useUI, landing } from '@/lib/state';
+import { QUALITY, useUI, landing, getQualityConfig, isMobileDevice } from '@/lib/state';
 import { buildColliders, storeDoor, plotFront } from '@/lib/plots';
 import { Layout, layoutBounds } from '@/lib/layout';
 import { genProps } from '@/lib/props';
@@ -74,7 +74,21 @@ export default function CityCanvas({
   paused?: boolean;
   onReady?: () => void;
 }) {
-  const quality = useUI(s => s.quality), Q = QUALITY[quality];
+  const quality = useUI(s => s.quality);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(isMobileDevice());
+    check();
+    window.addEventListener('resize', check);
+    window.addEventListener('orientationchange', check);
+    return () => {
+      window.removeEventListener('resize', check);
+      window.removeEventListener('orientationchange', check);
+    };
+  }, []);
+
+  const Q = useMemo(() => getQualityConfig(quality, isMobile), [quality, isMobile]);
   const isLanding = mode === 'landing';
   const terrain = useMemo(() => terrainFor(layoutBounds(layout, 0)), [layout]);
   const props = useMemo(() => genProps(layout, { trees: Q.trees, forest: Q.forest, radius: Q.radius }, terrain), [layout, Q.trees, Q.forest, Q.radius, terrain]);
@@ -104,17 +118,18 @@ export default function CityCanvas({
   return (
     <>
       <Canvas
-        key={quality}
+        key={`${quality}-${isMobile ? 'm' : 'd'}`}
         frameloop={paused ? 'never' : 'always'}
-        shadows={!isLanding && Q.shadow > 0}
+        shadows={!isLanding && !isMobile && Q.shadow > 0}
         dpr={isLanding ? [1, 1.25] : Q.dpr}
         camera={{
-          fov: mode === 'city' ? 58 : 42,
+          fov: mode === 'city' ? (isMobile ? 62 : 58) : 42,
           near: 0.1,
-          far: 2200,
+          far: isMobile ? 1200 : 2200,
           position: mode === 'city' ? [-4.4, 5.5, 51.0] : [0, 95, 145],
         }}
-        gl={{ antialias: isLanding || !Q.post, powerPreference: 'high-performance' }}
+        gl={{ antialias: isLanding || isMobile || !Q.post, powerPreference: 'high-performance' }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', touchAction: 'none' }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.NoToneMapping;
         }}
@@ -128,10 +143,10 @@ export default function CityCanvas({
           </>
         ) : (
           <>
-            <World stores={stores} layout={layout} quality={quality} />
+            <World stores={stores} layout={layout} quality={quality} isMobile={isMobile} />
             <OtherPlayers />
             <Player colliders={colliders} doors={doors} bounds={bounds} terrain={terrain} resources={props.resources} />
-            <Effects q={quality} />
+            <Effects q={quality} disabled={isMobile} />
           </>
         )}
       </Canvas>

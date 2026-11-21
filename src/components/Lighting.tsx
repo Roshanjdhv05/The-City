@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { EffectComposer, Bloom, Vignette, SSAO } from '@react-three/postprocessing';
-import { QUALITY, Quality } from '@/lib/state';
+import { QUALITY, Quality, MOBILE_QUALITY } from '@/lib/state';
 import { cityTime, getTimePhase, useTimeStore, getDeviceHour } from '@/lib/time';
 import { solid } from '@/lib/materials';
 
@@ -180,8 +180,18 @@ function lerpSky(a: SkyColorStop, b: SkyColorStop, t: number): SkyColorStop {
 // -------------------------------------------------------------
 // Master Dynamic Scene Lighting (Sun & Moon with Building Shadows)
 // -------------------------------------------------------------
-export function SceneLighting({ q, span = 340, center = [0, 0] }: { q: Quality; span?: number; center?: [number, number] }) {
-  const S = QUALITY[q].shadow;
+export function SceneLighting({
+  q,
+  span = 340,
+  center = [0, 0],
+  isMobile = false,
+}: {
+  q: Quality;
+  span?: number;
+  center?: [number, number];
+  isMobile?: boolean;
+}) {
+  const S = isMobile ? 0 : QUALITY[q].shadow;
   const dirLightRef = useRef<THREE.DirectionalLight>(null);
   const hemiLightRef = useRef<THREE.HemisphereLight>(null);
   const lastSyncTime = useRef(0);
@@ -481,7 +491,7 @@ const FOG_BAND: Record<string, [number, number]> = {
   high:   [60, 230],  // 8 chunks
 };
 
-export function FogController({ quality }: { quality: string }) {
+export function FogController({ quality, isMobile = false }: { quality: string; isMobile?: boolean }) {
   const { scene } = useThree();
 
   // Ensure scene has a linear fog object from the start
@@ -495,7 +505,11 @@ export function FogController({ quality }: { quality: string }) {
     if (!scene.fog || !(scene.fog instanceof THREE.Fog)) return;
 
     const sky = sampleSky(cityTime.hour);
-    const [near, far] = FOG_BAND[quality] ?? FOG_BAND.medium;
+    const [near, far] = isMobile
+      ? (MOBILE_QUALITY[quality as Quality]
+          ? [MOBILE_QUALITY[quality as Quality].fogNear, MOBILE_QUALITY[quality as Quality].fogFar]
+          : [24, 98])
+      : (FOG_BAND[quality] ?? FOG_BAND.medium);
 
     // Smoothly interpolate toward target values (avoids pop on quality change)
     scene.fog.near += (near - scene.fog.near) * 0.05;
@@ -566,7 +580,8 @@ export function SkyDome() {
 // -------------------------------------------------------------
 // Post-Processing Camera Effects (Bloom, SSAO, Vignette)
 // -------------------------------------------------------------
-export function Effects({ q }: { q: Quality }) {
+export function Effects({ q, disabled = false }: { q: Quality; disabled?: boolean }) {
+  if (disabled) return null;
   const Q = QUALITY[q];
   if (!Q.post) return null;
   return (

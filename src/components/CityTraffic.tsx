@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import React, { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Layout } from '@/lib/layout';
-import { CityTrafficSystem, VehicleAgent, CarDef } from '@/lib/traffic';
+import { CityTrafficSystem, VehicleAgent, CarDef, TRAFFIC_FLEET } from '@/lib/traffic';
 
 // ── Shared Materials ──────────────────────────────────────────────────────────
 const SHARED_TIRE_MAT = new THREE.MeshStandardMaterial({
@@ -1307,9 +1307,12 @@ function CarAgentView({ agent }: CarAgentProps) {
 }
 
 // ── Main CityTraffic Component ────────────────────────────────────────────────
-export function CityTraffic({ layout }: { layout: Layout }) {
-  // Initialize traffic simulation system once for the current city layout
-  const trafficSystem = useMemo(() => new CityTrafficSystem(layout), [layout]);
+export function CityTraffic({ layout, isMobile = false }: { layout: Layout; isMobile?: boolean }) {
+  // Initialize traffic simulation system once for the current city layout (lighter fleet on mobile)
+  const trafficSystem = useMemo(() => {
+    const fleet = isMobile ? TRAFFIC_FLEET.slice(0, 5) : TRAFFIC_FLEET;
+    return new CityTrafficSystem(layout, fleet);
+  }, [layout, isMobile]);
 
   // Run simulation loop every animation frame
   useFrame((_, delta) => {

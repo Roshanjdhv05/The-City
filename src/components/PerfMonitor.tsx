@@ -85,6 +85,10 @@ export function PerfOverlay() {
   }, [toggle]);
 
   if (!enabled) {
+    // Only show the desktop debug toggle button on non-mobile screens unless explicitly enabled via URL ?perf=1
+    if (typeof window !== 'undefined' && (window.innerWidth <= 860 || 'ontouchstart' in window)) {
+      return null;
+    }
     return (
       <button
         onClick={toggle}

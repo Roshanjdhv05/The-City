@@ -17,22 +17,21 @@ function Explore() {
   const store = useSearchParams().get('store');
   const [worldReady, setWorldReady] = useState(false);
 
-  useEffect(() => {
-    // Try to lock orientation to landscape on mobile browsers that support it
-    const lock = async () => {
-      try {
-        if (screen.orientation && 'lock' in screen.orientation) {
-          await (screen.orientation as any).lock('landscape');
-        }
-      } catch {
-        // lock not supported (desktop/iOS) — ignore silently
-      }
-    };
-    lock();
-  }, []);
-
   return (
-    <div className="fullscreen">
+    <div
+      className="fullscreen"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100dvh',
+        overflow: 'hidden',
+        touchAction: 'none',
+      }}
+    >
       <WorldLoadingScreen isReady={worldReady && !loading} />
       <CityCanvas
         stores={stores}

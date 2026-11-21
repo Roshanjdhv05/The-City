@@ -48,6 +48,7 @@ interface ChunkBuildingItemProps {
   nearPlot: string | null;
   chunkLodTier: 'full' | 'medium' | 'low';
   viewDistance: number;
+  isMobile?: boolean;
 }
 
 function ChunkBuildingItem({
@@ -57,6 +58,7 @@ function ChunkBuildingItem({
   nearPlot,
   chunkLodTier,
   viewDistance,
+  isMobile = false,
 }: ChunkBuildingItemProps) {
   const itemRef = useRef<THREE.Group>(null);
   const [effectiveLod, setEffectiveLod] = useState<'full' | 'medium' | 'low'>(chunkLodTier);
@@ -72,19 +74,19 @@ function ChunkBuildingItem({
     // Euclidean distance in XZ plane from player's feet
     const distToPlayer = Math.hypot(player.x - p.x, player.z - p.z);
 
-    // Circular boundary: hide if outside render radius (+12m padding to match fog horizon)
-    const isVisible = distToPlayer <= viewDistance + 12;
+    // Circular boundary: hide if outside render radius (+8m padding on mobile, +12m on desktop)
+    const isVisible = distToPlayer <= viewDistance + (isMobile ? 8 : 12);
     if (itemRef.current.visible !== isVisible) {
       itemRef.current.visible = isVisible;
     }
 
     if (isVisible) {
       // Dynamic progressive detail (Minecraft style):
-      // - Near player (< 75m): Full detail with interiors and crisp models
-      // - Middle distance (< 135m): Medium LOD
-      // - Outer circle (>= 135m): Lightweight low-poly silhouette
-      const targetLod: 'full' | 'medium' | 'low' =
-        distToPlayer < 75 ? 'full' : distToPlayer < 135 ? 'medium' : 'low';
+      // On mobile: Closer proximity for full LOD, aggressive medium/low LOD to reduce polygon workload
+      // On desktop: Preserved 100% untouched
+      const targetLod: 'full' | 'medium' | 'low' = isMobile
+        ? (distToPlayer < 35 ? 'full' : distToPlayer < 70 ? 'medium' : 'low')
+        : (distToPlayer < 75 ? 'full' : distToPlayer < 135 ? 'medium' : 'low');
       if (targetLod !== effectiveLod) {
         setEffectiveLod(targetLod);
       }
@@ -136,6 +138,7 @@ interface ChunkGroupViewProps {
   nearPlot: string | null;
   lodTier: 'full' | 'medium' | 'low';
   viewDistance: number;
+  isMobile?: boolean;
 }
 
 function ChunkGroupView({
@@ -145,6 +148,7 @@ function ChunkGroupView({
   nearPlot,
   lodTier,
   viewDistance,
+  isMobile = false,
 }: ChunkGroupViewProps) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -172,6 +176,7 @@ function ChunkGroupView({
             nearPlot={nearPlot}
             chunkLodTier={lodTier}
             viewDistance={viewDistance}
+            isMobile={isMobile}
           />
         );
       })}
@@ -185,11 +190,13 @@ export function CityChunkRenderer({
   stores,
   interiors = true,
   viewDistance = 320,
+  isMobile = false,
 }: {
   layout: Layout;
   stores: Store[];
   interiors?: boolean;
   viewDistance?: number;
+  isMobile?: boolean;
 }) {
   const { nearPlot } = useUI();
   const byPlot = useMemo(() => new Map(stores.map(s => [s.plotId, s])), [stores]);
@@ -273,6 +280,7 @@ export function CityChunkRenderer({
           nearPlot={nearPlot}
           lodTier={chunkLODs.get(chunk.id) || 'medium'}
           viewDistance={viewDistance}
+          isMobile={isMobile}
         />
       ))}
     </group>

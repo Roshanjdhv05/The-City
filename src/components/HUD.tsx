@@ -6,7 +6,7 @@ import { storeDoor, plotFront, OBSTACLES } from '@/lib/plots';
 import { Layout, isRing, layoutBounds } from '@/lib/layout';
 import { areaAt, NATURE, Area } from '@/lib/areas';
 import { terrainFor } from '@/lib/terrain';
-import { player, useUI, QUALITY, Quality } from '@/lib/state';
+import { player, useUI, QUALITY, Quality, isMobileDevice } from '@/lib/state';
 import { trackEvent } from '@/lib/data';
 import type { Plot, Store } from '@/lib/types';
 import AdminMap from '@/components/admin/AdminMap';
@@ -700,7 +700,7 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   useEffect(() => {
-    const check = () => setIsMobile(typeof window !== 'undefined' && window.innerWidth <= 840);
+    const check = () => setIsMobile(isMobileDevice());
     check();
     window.addEventListener('resize', check);
     window.addEventListener('orientationchange', check);

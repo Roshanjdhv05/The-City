@@ -1,11 +1,55 @@
 import { create } from 'zustand';
 
 export type Quality = 'low' | 'medium' | 'high';
-export const QUALITY: Record<Quality, { dpr: [number, number]; shadow: number; post: boolean; ssao: boolean; trees: number; forest: number; radius: number; seg: number; lod: number; interiors: boolean; label: string; fogNear: number; fogFar: number; renderRadius: number }> = {
+
+export interface QualityConfig {
+  dpr: [number, number];
+  shadow: number;
+  post: boolean;
+  ssao: boolean;
+  trees: number;
+  forest: number;
+  radius: number;
+  seg: number;
+  lod: number;
+  interiors: boolean;
+  label: string;
+  fogNear: number;
+  fogFar: number;
+  renderRadius: number;
+}
+
+/** Original uncompromised Desktop Quality profiles - 100% preserved */
+export const DESKTOP_QUALITY: Record<Quality, QualityConfig> = {
   low:    { dpr: [1, 1],   shadow: 0,    post: false, ssao: false, trees: 20,  forest: 120, radius: 130, seg: 90,   lod: 35, interiors: false, label: 'Low (4 Chunks / 120m)',   fogNear: 30,  fogFar: 120,  renderRadius: 130 },
   medium: { dpr: [1, 1.5], shadow: 2048, post: true,  ssao: false, trees: 50,  forest: 350, radius: 165, seg: 140,  lod: 55, interiors: true,  label: 'Medium (6 Chunks / 165m)', fogNear: 45,  fogFar: 165,  renderRadius: 170 },
   high:   { dpr: [1, 2],   shadow: 4096, post: true,  ssao: true,  trees: 90, forest: 700, radius: 230, seg: 200,  lod: 85, interiors: true,  label: 'High (8 Chunks / 230m)',   fogNear: 60,  fogFar: 230,  renderRadius: 240 },
 };
+
+/** Dedicated Mobile Phone Quality profiles: optimized for mobile GPUs and battery efficiency */
+export const MOBILE_QUALITY: Record<Quality, QualityConfig> = {
+  low:    { dpr: [1, 1],    shadow: 0, post: false, ssao: false, trees: 12, forest: 60,  radius: 80,  seg: 60, lod: 22, interiors: false, label: 'Mobile Low (80m)',    fogNear: 18, fogFar: 75,  renderRadius: 80 },
+  medium: { dpr: [1, 1.15], shadow: 0, post: false, ssao: false, trees: 22, forest: 105, radius: 105, seg: 80, lod: 32, interiors: false, label: 'Mobile Med (105m)',   fogNear: 24, fogFar: 98,  renderRadius: 105 },
+  high:   { dpr: [1, 1.25], shadow: 0, post: false, ssao: false, trees: 32, forest: 150, radius: 130, seg: 90, lod: 40, interiors: false, label: 'Mobile High (130m)',  fogNear: 30, fogFar: 120, renderRadius: 130 },
+};
+
+/** Backwards-compatible alias default */
+export const QUALITY = DESKTOP_QUALITY;
+
+/** Universal device detection: true if running on a phone or mobile-sized screen */
+export function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  const ua = navigator.userAgent || navigator.vendor || (window as any).opera || '';
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(ua);
+  const isNarrow = window.innerWidth <= 860;
+  const hasTouch = ('ontouchstart' in window || navigator.maxTouchPoints > 0) && isNarrow;
+  return isMobileUA || hasTouch;
+}
+
+/** Select active configuration separating Mobile vs Desktop pipelines */
+export function getQualityConfig(quality: Quality, isMobile: boolean): QualityConfig {
+  return isMobile ? (MOBILE_QUALITY[quality] || MOBILE_QUALITY.medium) : (DESKTOP_QUALITY[quality] || DESKTOP_QUALITY.medium);
+}
 
 interface UI {
   quality: Quality; view: '1p' | '3p' | 'free'; nearPlot: string | null; panelOpen: boolean; teleportMapOpen: boolean; debugMonitorOpen: boolean; nearRes: { id: string; type: string } | null; inv: { wood: number; stone: number; crystal: number }; setNearRes: (r: { id: string; type: string } | null) => void; setInv: (i: { wood: number; stone: number; crystal: number }) => void;
@@ -35,17 +79,18 @@ export const useUI = create<UI>((set) => ({
   init: () => {
     try {
       const saved = localStorage.getItem('thecity.quality') as Quality | null;
-      if (saved && QUALITY[saved]) {
+      if (saved && DESKTOP_QUALITY[saved]) {
         set({ quality: saved });
       } else {
-        set({ quality: 'low' });
+        const isMob = isMobileDevice();
+        set({ quality: isMob ? 'low' : 'medium' });
       }
       const sp = parseFloat(localStorage.getItem('thecity.walkSpeed') || '1.0');
       if (!isNaN(sp) && sp > 0) set({ walkSpeed: sp });
       const sens = parseFloat(localStorage.getItem('thecity.sensitivity') || '1.0');
       if (!isNaN(sens) && sens > 0) set({ sensitivity: sens });
     } catch {
-      set({ quality: 'low' });
+      set({ quality: 'medium' });
     }
   },
 }));

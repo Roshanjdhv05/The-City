@@ -180,7 +180,7 @@ export class CityTrafficSystem {
   junctionsByRoad: Map<string, RoadJunctionRef[]>;
   vehicles: VehicleAgent[];
 
-  constructor(layout: Layout) {
+  constructor(layout: Layout, customFleet?: CarDef[]) {
     this.roads = new Map(layout.roads.map(r => [r.id, r]));
     this.junctions = intersections(layout.roads);
     this.junctionsByRoad = new Map();
@@ -220,7 +220,7 @@ export class CityTrafficSystem {
     }
 
     // Initialize the fleet across diverse roads
-    this.vehicles = this.initVehicles(TRAFFIC_FLEET);
+    this.vehicles = this.initVehicles(customFleet || TRAFFIC_FLEET);
   }
 
   initVehicles(fleet: CarDef[]): VehicleAgent[] {
