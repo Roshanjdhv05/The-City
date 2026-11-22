@@ -24,11 +24,12 @@ const distColor = (n: string) => DIST_COLOR.find(([k]) => n.includes(k))?.[1] ||
 type VB = { x: number; y: number; w: number; h: number };
 const pts = (P: Pt[]) => P.map(p => p.join(',')).join(' ');
 
-export default function AdminMap({ layout, stores, selected, onSelect, matches, preview, showLabels, showBuildings, fitKey, selectedRoad, onSelectRoad, highlightRoads, onCoordClick, theme = 'dark' }: {
+export default function AdminMap({ layout, stores, selected, onSelect, matches, preview, showLabels, showBuildings, fitKey, selectedRoad, onSelectRoad, highlightRoads, onCoordClick, theme = 'dark', exploredAreas }: {
   layout: Layout; stores: Store[]; selected: string | null; onSelect: (id: string | null) => void; matches: Set<string> | null; preview: ExpansionPlan | null; showLabels: boolean; showBuildings: boolean; fitKey: number;
   selectedRoad?: string | null; onSelectRoad?: (id: string) => void; highlightRoads?: Set<string> | null;
   onCoordClick?: (x: number, z: number) => void;
   theme?: 'dark' | 'light';
+  exploredAreas?: Set<string>;
 }) {
   const svg = useRef<SVGSVGElement>(null), drag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const [vb, setVb] = useState<VB>({ x: -360, y: -360, w: 720, h: 720 });
@@ -202,7 +203,27 @@ export default function AdminMap({ layout, stores, selected, onSelect, matches, 
             </g>
           );
         })}
-        {showLabels && far && labels.map(l => <g key={l.name} style={{ pointerEvents: 'none' }}><rect x={l.x - vb.w / 12} y={l.z - vb.w / 60} width={vb.w / 6} height={vb.w / 30} rx={vb.w / 60} fill={distColor(l.name)} opacity={0.92} /><text x={l.x} y={l.z} fontSize={vb.w / 62} fill="#fff" fontWeight={700} textAnchor="middle" dominantBaseline="middle">{l.name.replace(' District', '')}</text></g>)}
+        {showLabels && far && labels.map(l => {
+          const isExplored = exploredAreas ? exploredAreas.has(l.name) : false;
+          return (
+            <g key={l.name} style={{ pointerEvents: 'none' }}>
+              <rect
+                x={l.x - vb.w / 12}
+                y={l.z - vb.w / 60}
+                width={vb.w / 6}
+                height={vb.w / 30}
+                rx={vb.w / 60}
+                fill={distColor(l.name)}
+                opacity={0.92}
+                stroke={isExplored ? '#38bdf8' : undefined}
+                strokeWidth={isExplored ? 1.5 : 0}
+              />
+              <text x={l.x} y={l.z} fontSize={vb.w / 62} fill="#fff" fontWeight={700} textAnchor="middle" dominantBaseline="middle">
+                {isExplored ? `✓ ${l.name.replace(' District', '')}` : l.name.replace(' District', '')}
+              </text>
+            </g>
+          );
+        })}
         {showLabels && far && <g style={{ pointerEvents: 'none' }}><rect x={-34} y={-7} width={68} height={14} rx={7} fill="#0f172a" /><text x={0} y={0} fontSize={7} fill="#fff" fontWeight={700} textAnchor="middle" dominantBaseline="middle">J Enterprise Tower</text></g>}
         {preview && preview.region.id && <g style={{ pointerEvents: 'none' }}>
           {preview.roads.map(r => <polygon key={r.id} points={pts(roadPoly(r))} fill={preview.errors.length ? '#7f1d1d' : '#1e3a8a'} opacity={0.85} stroke="#93c5fd" strokeWidth={0.3} strokeDasharray="1.5 1" />)}

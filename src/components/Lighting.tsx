@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { EffectComposer, Bloom, Vignette, SSAO } from '@react-three/postprocessing';
-import { QUALITY, Quality, MOBILE_QUALITY } from '@/lib/state';
+import { QUALITY, Quality, DESKTOP_QUALITY, MOBILE_QUALITY, getQualityConfig } from '@/lib/state';
 import { cityTime, getTimePhase, useTimeStore, getDeviceHour } from '@/lib/time';
 import { solid } from '@/lib/materials';
 
@@ -497,7 +497,7 @@ export function FogController({ quality, isMobile = false }: { quality: string; 
   // Ensure scene has a linear fog object from the start
   useEffect(() => {
     if (!scene.fog) {
-      scene.fog = new THREE.Fog('#c8dff5', 45, 165);
+      scene.fog = new THREE.Fog('#c8dff5', 55, 850);
     }
   }, [scene]);
 
@@ -505,11 +505,9 @@ export function FogController({ quality, isMobile = false }: { quality: string; 
     if (!scene.fog || !(scene.fog instanceof THREE.Fog)) return;
 
     const sky = sampleSky(cityTime.hour);
-    const [near, far] = isMobile
-      ? (MOBILE_QUALITY[quality as Quality]
-          ? [MOBILE_QUALITY[quality as Quality].fogNear, MOBILE_QUALITY[quality as Quality].fogFar]
-          : [24, 98])
-      : (FOG_BAND[quality] ?? FOG_BAND.medium);
+    const cfg = getQualityConfig((quality as Quality) || 'medium', isMobile);
+    const near = cfg.fogNear;
+    const far = cfg.fogFar;
 
     // Smoothly interpolate toward target values (avoids pop on quality change)
     scene.fog.near += (near - scene.fog.near) * 0.05;

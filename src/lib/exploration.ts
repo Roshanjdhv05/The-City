@@ -80,15 +80,20 @@ export function loadExplorationFromStorage(): { cells: Set<string>; areas: Set<s
   return { cells, areas };
 }
 
-/** Safely write exploration data to LocalStorage */
+/** Safely write exploration data to LocalStorage (strictly additive - never removes or overwrites prior progress) */
 export function saveExplorationToStorage(cells: Set<string>, areas: Set<string>): boolean {
   if (typeof window === 'undefined') return false;
 
   try {
+    // 1. Read existing storage to guarantee strictly additive persistence
+    const existing = loadExplorationFromStorage();
+    for (const c of cells) existing.cells.add(c);
+    for (const a of areas) existing.areas.add(a);
+
     const payload: ExplorationPayload = {
       v: 1,
-      cells: Array.from(cells),
-      areas: Array.from(areas),
+      cells: Array.from(existing.cells),
+      areas: Array.from(existing.areas),
       updatedAt: Date.now(),
     };
 
@@ -114,8 +119,12 @@ interface ExplorationState {
   recordPosition: (x: number, z: number, layout?: Layout, terrain?: Terrain) => { newCell: boolean; newArea: string | null };
   isCellExplored: (x: number, z: number) => boolean;
   isAreaExplored: (name: string) => boolean;
+  isPlotExplored: (plot: { x: number; z: number; district?: string }) => boolean;
+  isChunkExplored: (chunkCodeOrName: string) => boolean;
+  getExplorationProgress: (totalWorldAreas?: number) => { discoveredAreas: number; totalAreas: number; percentage: number; discoveredCells: number };
   clearToast: () => void;
   flushSave: () => void;
+  resetExploration: () => void;
 }
 
 // In-memory persistent tracking state
@@ -124,6 +133,90 @@ let activeAreas = new Set<string>();
 let isDirty = false;
 let autoSaveInterval: NodeJS.Timeout | null = null;
 let lastSamplePosition: { x: number; z: number } | null = null;
+
+// Eagerly restore storage if running on client so isAreaOrChunkExplored is immediately available
+if (typeof window !== 'undefined') {
+  const loaded = loadExplorationFromStorage();
+  for (const c of loaded.cells) activeCells.add(c);
+  for (const a of loaded.areas) activeAreas.add(a);
+}
+
+const DISTRICT_CODE_MAP: Record<string, string> = {
+  SAS: 'SAAS',
+  AIM: 'AI',
+  DEV: 'DEVELOPMENT',
+  WIN: 'WINDOWS APPS',
+  MAC: 'MAC APPS',
+  MOB: 'MOBILE APPS',
+  GAM: 'GAMING',
+  DES: 'DESIGN',
+  MKT: 'MARKETING',
+};
+
+// Inverse map: Name -> Code
+const DISTRICT_NAME_TO_CODE: Record<string, string> = Object.entries(DISTRICT_CODE_MAP).reduce(
+  (acc, [code, name]) => {
+    acc[name] = code;
+    return acc;
+  },
+  {} as Record<string, string>
+);
+
+/**
+ * High-performance synchronous query for Three.js render loops:
+ * Returns true if the chunk, district, market, or plot coordinates have been explored.
+ * Explored places remain permanently discovered and visible in the long distance.
+ */
+export function isAreaOrChunkExplored(
+  chunkIdOrName: string,
+  districtName?: string,
+  coords?: { x: number; z: number }
+): boolean {
+  // 1. Central Plaza and Central Hub are the starting area - always permanently visible
+  if (
+    chunkIdOrName === 'CENTRAL' ||
+    chunkIdOrName.toLowerCase().includes('civic') ||
+    chunkIdOrName.toLowerCase().includes('central')
+  ) {
+    return true;
+  }
+
+  // 2. Direct O(1) in-memory checks
+  if (activeAreas.has(chunkIdOrName)) return true;
+  if (districtName && activeAreas.has(districtName)) return true;
+
+  // 3. Resolve district code <-> name
+  const upperTarget = chunkIdOrName.toUpperCase().trim();
+  const mappedName = DISTRICT_CODE_MAP[upperTarget];
+  if (mappedName && activeAreas.has(mappedName)) return true;
+
+  const mappedCode = DISTRICT_NAME_TO_CODE[upperTarget];
+  if (mappedCode && activeAreas.has(mappedCode)) return true;
+
+  if (districtName) {
+    const upperDist = districtName.toUpperCase().trim();
+    if (activeAreas.has(upperDist)) return true;
+    const mappedDistName = DISTRICT_CODE_MAP[upperDist];
+    if (mappedDistName && activeAreas.has(mappedDistName)) return true;
+  }
+
+  // 4. Robust case-insensitive comparison
+  for (const a of activeAreas) {
+    const au = a.toUpperCase().trim();
+    if (au === upperTarget) return true;
+    if (mappedName && au === mappedName.toUpperCase()) return true;
+    if (districtName && au === districtName.toUpperCase().trim()) return true;
+    if (au.includes(upperTarget) || upperTarget.includes(au)) return true;
+  }
+
+  // 5. Spatial grid cell check if coordinates are provided
+  if (coords) {
+    const cellKey = getGridCellKey(coords.x, coords.z);
+    if (activeCells.has(cellKey)) return true;
+  }
+
+  return false;
+}
 
 export const useExplorationStore = create<ExplorationState>((set, get) => ({
   exploredCells: activeCells,
@@ -136,9 +229,10 @@ export const useExplorationStore = create<ExplorationState>((set, get) => ({
   init: () => {
     if (get().initialized) return;
 
+    // Load saved discoveries and merge additively with in-memory state
     const { cells, areas } = loadExplorationFromStorage();
-    activeCells = cells;
-    activeAreas = areas;
+    for (const c of cells) activeCells.add(c);
+    for (const a of areas) activeAreas.add(a);
     isDirty = false;
 
     set({
@@ -223,11 +317,36 @@ export const useExplorationStore = create<ExplorationState>((set, get) => ({
   },
 
   isCellExplored: (x: number, z: number) => {
+    if (!get().initialized) get().init();
     return activeCells.has(getGridCellKey(x, z));
   },
 
   isAreaExplored: (name: string) => {
+    if (!get().initialized) get().init();
     return activeAreas.has(name);
+  },
+
+  isPlotExplored: (plot: { x: number; z: number; district?: string }) => {
+    if (!get().initialized) get().init();
+    if (plot.district && activeAreas.has(plot.district)) return true;
+    return activeCells.has(getGridCellKey(plot.x, plot.z));
+  },
+
+  isChunkExplored: (chunkCodeOrName: string) => {
+    if (!get().initialized) get().init();
+    return activeAreas.has(chunkCodeOrName);
+  },
+
+  getExplorationProgress: (totalWorldAreas = 15) => {
+    if (!get().initialized) get().init();
+    const discovered = activeAreas.size;
+    const pct = totalWorldAreas > 0 ? Math.min(100, Math.round((discovered / totalWorldAreas) * 100)) : 0;
+    return {
+      discoveredAreas: discovered,
+      totalAreas: totalWorldAreas,
+      percentage: pct,
+      discoveredCells: activeCells.size,
+    };
   },
 
   clearToast: () => {
@@ -239,5 +358,27 @@ export const useExplorationStore = create<ExplorationState>((set, get) => ({
       saveExplorationToStorage(activeCells, activeAreas);
       isDirty = false;
     }
+  },
+
+  resetExploration: () => {
+    // Only triggered when user explicitly invokes reset
+    activeCells.clear();
+    activeAreas.clear();
+    lastSamplePosition = null;
+    isDirty = false;
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(EXPLORATION_STORAGE_KEY);
+        localStorage.removeItem(LEGACY_DISCOVERED_KEY);
+      } catch (err) {
+        console.warn('[Exploration] Storage reset failed:', err);
+      }
+    }
+    set({
+      exploredCells: activeCells,
+      exploredAreas: activeAreas,
+      exploredCellsCount: 0,
+      exploredAreasCount: 0,
+    });
   },
 }));

@@ -1297,6 +1297,7 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
                 showLabels
                 showBuildings
                 fitKey={0}
+                exploredAreas={exploredAreas}
               />
             </div>
             <aside className="map-side">
@@ -1314,6 +1315,9 @@ export default function HUD({ stores, layout, initialStore }: { stores: Store[];
                         <span className="badge" style={{ fontSize: '0.68rem', padding: '0.12rem 0.5rem', background: 'rgba(34,197,94,0.2)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 99 }}>🟢 Available · Free</span>
                       ) : (
                         <span className="badge" style={{ fontSize: '0.68rem', padding: '0.12rem 0.5rem', background: 'rgba(234,88,12,0.2)', color: '#fb923c', border: '1px solid rgba(234,88,12,0.4)', borderRadius: 99 }}>🟠 Claimed</span>
+                      )}
+                      {exploredAreas.has(pickP.district) && (
+                        <span className="badge" style={{ fontSize: '0.68rem', padding: '0.12rem 0.5rem', background: 'rgba(56,189,248,0.2)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.4)', borderRadius: 99 }}>✨ Discovered Area</span>
                       )}
                     </div>
                     <p className="note" style={{ margin: 0 }}>

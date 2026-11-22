@@ -3,6 +3,7 @@ import type { Layout } from './layout';
 import type { Store, Plot } from './types';
 import { CITY, DISTRICTS } from './city';
 import { polar } from './geom';
+import { isAreaOrChunkExplored } from './exploration';
 
 // ─── Spatial Chunk Definition ────────────────────────────────────────────────
 export interface CityRenderChunk {
@@ -264,7 +265,10 @@ export class CitySpatialSystem {
       const isPlayerInside = distToPlayer < chunk.radius + 30;
       const isNearActivePlot = chunk.plots.some(p => p.id === nearPlotId);
 
-      // ── Circular render distance filter (primary filter) ───────────────────
+      // Check if this chunk or market has already been explored
+      const isExplored = chunk.isCentral || isAreaOrChunkExplored(chunk.id, chunk.name);
+
+      // ── Circular render distance filter (primary filter for undiscovered areas) ───────────────────
       // A chunk is included if any part of it overlaps the player's circle
       const chunkEdgeDist = distToPlayer - chunk.radius;
       const withinCircle = chunkEdgeDist < renderRadius;
@@ -274,19 +278,22 @@ export class CitySpatialSystem {
       this._sphereTarget.radius = chunk.radius + 24;
       const inFrustum = this._frustum.intersectsSphere(this._sphereTarget);
 
-      // Determine final visibility
-      if ((withinCircle && inFrustum) || isPlayerInside || isNearActivePlot) {
+      // EXPLORED PLACES NEVER VANISH:
+      // Once a market/district is explored, it remains permanently visible across long distances!
+      // Undiscovered areas only load when the player approaches within circular render radius.
+      if (isExplored || (withinCircle && inFrustum) || isPlayerInside || isNearActivePlot) {
         chunk.visible = true;
         chunk.lastSeenTime = now;
         this.cachedChunks.add(chunk.id);
         activeCount++;
         visibleAssets += chunk.plots.length;
 
-        // LOD tiers based on player distance (not camera)
+        // LOD tiers based on player distance:
+        // Explored chunks in the far distance use lightweight low-poly silhouette LOD
         if (distToPlayer < 85 || isPlayerInside || isNearActivePlot) {
           chunk.lodTier = 'full';
           lodCounts.full += chunk.plots.length;
-        } else if (distToPlayer < renderRadius * 0.55) {
+        } else if (distToPlayer < 175) {
           chunk.lodTier = 'medium';
           lodCounts.medium += chunk.plots.length;
         } else {

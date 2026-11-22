@@ -10,6 +10,7 @@ import { CitySpatialSystem, CityRenderChunk, liveMetrics } from '@/lib/spatial';
 import { BuildingLOD } from './BuildingLOD';
 import { JEnterpriseLOD } from './JEnterprise';
 import { useUI, player } from '@/lib/state';
+import { isAreaOrChunkExplored } from '@/lib/exploration';
 
 // ── Ambient Occlusion Ground Contact Shadow ───────────────────────────────────
 function ChunkBuildingAO({ w, d }: { w: number; d: number }) {
@@ -74,19 +75,22 @@ function ChunkBuildingItem({
     // Euclidean distance in XZ plane from player's feet
     const distToPlayer = Math.hypot(player.x - p.x, player.z - p.z);
 
-    // Circular boundary: hide if outside render radius (+8m padding on mobile, +12m on desktop)
-    const isVisible = distToPlayer <= viewDistance + (isMobile ? 8 : 12);
+    // EXPLORED PLACES NEVER VANISH:
+    // Once explored, a building/market remains permanently visible across long distances!
+    // Undiscovered areas only render inside the circular boundary around the player.
+    const isExplored = isAreaOrChunkExplored(p.district, p.district, { x: p.x, z: p.z });
+    const isVisible = isExplored || (distToPlayer <= viewDistance + (isMobile ? 8 : 12));
     if (itemRef.current.visible !== isVisible) {
       itemRef.current.visible = isVisible;
     }
 
     if (isVisible) {
       // Dynamic progressive detail (Minecraft style):
-      // On mobile: Closer proximity for full LOD, aggressive medium/low LOD to reduce polygon workload
-      // On desktop: Preserved 100% untouched
+      // When far away in explored territory: lightweight 'low' silhouette LOD for high FPS
+      // When close to player: 'full' or 'medium' detail
       const targetLod: 'full' | 'medium' | 'low' = isMobile
-        ? (distToPlayer < 35 ? 'full' : distToPlayer < 70 ? 'medium' : 'low')
-        : (distToPlayer < 75 ? 'full' : distToPlayer < 135 ? 'medium' : 'low');
+        ? (distToPlayer < 35 ? 'full' : distToPlayer < 75 ? 'medium' : 'low')
+        : (distToPlayer < 80 ? 'full' : distToPlayer < 175 ? 'medium' : 'low');
       if (targetLod !== effectiveLod) {
         setEffectiveLod(targetLod);
       }
@@ -155,8 +159,10 @@ function ChunkGroupView({
   // Sync group visibility directly in Three.js without React re-render
   useFrame(() => {
     if (groupRef.current) {
-      if (groupRef.current.visible !== chunk.visible) {
-        groupRef.current.visible = chunk.visible;
+      const isExplored = isAreaOrChunkExplored(chunk.id, chunk.name);
+      const shouldBeVisible = isExplored || chunk.visible;
+      if (groupRef.current.visible !== shouldBeVisible) {
+        groupRef.current.visible = shouldBeVisible;
       }
     }
   });

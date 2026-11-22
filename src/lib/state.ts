@@ -19,18 +19,18 @@ export interface QualityConfig {
   renderRadius: number;
 }
 
-/** Original uncompromised Desktop Quality profiles - 100% preserved */
+/** Original uncompromised Desktop Quality profiles - Explored areas remain visible in long distance */
 export const DESKTOP_QUALITY: Record<Quality, QualityConfig> = {
-  low:    { dpr: [1, 1],   shadow: 0,    post: false, ssao: false, trees: 20,  forest: 120, radius: 130, seg: 90,   lod: 35, interiors: false, label: 'Low (4 Chunks / 120m)',   fogNear: 30,  fogFar: 120,  renderRadius: 130 },
-  medium: { dpr: [1, 1.5], shadow: 2048, post: true,  ssao: false, trees: 50,  forest: 350, radius: 165, seg: 140,  lod: 55, interiors: true,  label: 'Medium (6 Chunks / 165m)', fogNear: 45,  fogFar: 165,  renderRadius: 170 },
-  high:   { dpr: [1, 2],   shadow: 4096, post: true,  ssao: true,  trees: 90, forest: 700, radius: 230, seg: 200,  lod: 85, interiors: true,  label: 'High (8 Chunks / 230m)',   fogNear: 60,  fogFar: 230,  renderRadius: 240 },
+  low:    { dpr: [1, 1],   shadow: 0,    post: false, ssao: false, trees: 20,  forest: 120, radius: 220, seg: 90,   lod: 35, interiors: false, label: 'Low',    fogNear: 45, fogFar: 650, renderRadius: 240 },
+  medium: { dpr: [1, 1.5], shadow: 2048, post: true,  ssao: false, trees: 50,  forest: 350, radius: 320, seg: 140,  lod: 55, interiors: true,  label: 'Medium', fogNear: 60, fogFar: 850, renderRadius: 340 },
+  high:   { dpr: [1, 2],   shadow: 4096, post: true,  ssao: true,  trees: 90, forest: 700, radius: 420, seg: 200,  lod: 85, interiors: true,  label: 'High',   fogNear: 80, fogFar: 1100, renderRadius: 440 },
 };
 
 /** Dedicated Mobile Phone Quality profiles: optimized for mobile GPUs and battery efficiency */
 export const MOBILE_QUALITY: Record<Quality, QualityConfig> = {
-  low:    { dpr: [1, 1],    shadow: 0, post: false, ssao: false, trees: 12, forest: 60,  radius: 80,  seg: 60, lod: 22, interiors: false, label: 'Mobile Low (80m)',    fogNear: 18, fogFar: 75,  renderRadius: 80 },
-  medium: { dpr: [1, 1.15], shadow: 0, post: false, ssao: false, trees: 22, forest: 105, radius: 105, seg: 80, lod: 32, interiors: false, label: 'Mobile Med (105m)',   fogNear: 24, fogFar: 98,  renderRadius: 105 },
-  high:   { dpr: [1, 1.25], shadow: 0, post: false, ssao: false, trees: 32, forest: 150, radius: 130, seg: 90, lod: 40, interiors: false, label: 'Mobile High (130m)',  fogNear: 30, fogFar: 120, renderRadius: 130 },
+  low:    { dpr: [1, 1],    shadow: 0, post: false, ssao: false, trees: 12, forest: 60,  radius: 160, seg: 60, lod: 22, interiors: false, label: 'Mobile Low',  fogNear: 30, fogFar: 500, renderRadius: 180 },
+  medium: { dpr: [1, 1.15], shadow: 0, post: false, ssao: false, trees: 22, forest: 105, radius: 220, seg: 80, lod: 32, interiors: false, label: 'Mobile Med',  fogNear: 40, fogFar: 650, renderRadius: 240 },
+  high:   { dpr: [1, 1.25], shadow: 0, post: false, ssao: false, trees: 32, forest: 150, radius: 280, seg: 90, lod: 40, interiors: false, label: 'Mobile High', fogNear: 50, fogFar: 780, renderRadius: 300 },
 };
 
 /** Backwards-compatible alias default */
