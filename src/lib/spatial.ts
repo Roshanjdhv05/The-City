@@ -3,7 +3,6 @@ import type { Layout } from './layout';
 import type { Store, Plot } from './types';
 import { CITY, DISTRICTS } from './city';
 import { polar } from './geom';
-import { isAreaOrChunkExplored } from './exploration';
 
 // ─── Spatial Chunk Definition ────────────────────────────────────────────────
 export interface CityRenderChunk {
@@ -226,7 +225,8 @@ export class CitySpatialSystem {
     nearPlotId: string | null = null,
     viewDistance = 170,
     playerX?: number,
-    playerZ?: number
+    playerZ?: number,
+    isChunkExploredFn?: (chunkId: string, chunkName: string) => boolean
   ): { activeCount: number; visibleAssets: number } {
     this._projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this._frustum.setFromProjectionMatrix(this._projScreenMatrix);
@@ -266,7 +266,7 @@ export class CitySpatialSystem {
       const isNearActivePlot = chunk.plots.some(p => p.id === nearPlotId);
 
       // Check if this chunk or market has already been explored
-      const isExplored = chunk.isCentral || isAreaOrChunkExplored(chunk.id, chunk.name);
+      const isExplored = chunk.isCentral || (isChunkExploredFn ? isChunkExploredFn(chunk.id, chunk.name) : false);
 
       // ── Circular render distance filter (primary filter for undiscovered areas) ───────────────────
       // A chunk is included if any part of it overlaps the player's circle

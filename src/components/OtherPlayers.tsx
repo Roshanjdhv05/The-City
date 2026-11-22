@@ -35,27 +35,32 @@ function RemoteAvatar({ player }: { player: RemotePlayer }) {
 
   return (
     <group ref={root} position={[player.x, player.y, player.z]} rotation={[0, player.yaw, 0]}>
-      {/* ── Floating Nametag Above Character (Classic Clean Banner Style) ── */}
-      <Html position={[0, 2.18, 0]} center distanceFactor={50} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+      {/* ── Floating Nametag Above Character (Sleek Small Compact Style) ── */}
+      <Html position={[0, 2.12, 0]} center distanceFactor={15} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
         <div
           style={{
-            background: 'rgba(0, 0, 0, 0.45)',
-            padding: '0.8px 3px',
-            borderRadius: '1px',
+            background: 'rgba(15, 23, 42, 0.72)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            padding: '2px 7px',
+            borderRadius: '999px',
             whiteSpace: 'nowrap',
             transform: 'translate3d(0, 0, 0)',
             userSelect: 'none',
-            display: 'inline-block',
+            display: 'inline-flex',
+            alignItems: 'center',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.4)',
           }}
         >
           <span
             style={{
-              color: '#ffffff',
-              fontSize: '5.8px',
-              fontWeight: 700,
+              color: '#f8fafc',
+              fontSize: '9.5px',
+              fontWeight: 600,
               fontFamily: 'system-ui, -apple-system, sans-serif',
               letterSpacing: '0.02em',
-              textShadow: '0.8px 0.8px 0px rgba(0, 0, 0, 0.9)',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)',
               lineHeight: 1.1,
               display: 'block',
             }}

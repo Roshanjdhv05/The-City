@@ -256,7 +256,7 @@ export function CityChunkRenderer({
     // 2. Throttled Frustum Culling & Visibility Calculation (runs every 60ms)
     if (now - lastUpdateRef.current > 60) {
       lastUpdateRef.current = now;
-      spatialSystem.updateVisibility(camera, nearPlot, viewDistance, player.x, player.z);
+      spatialSystem.updateVisibility(camera, nearPlot, viewDistance, player.x, player.z, isAreaOrChunkExplored);
 
       // Diff check for LOD tier state to minimize React state updates
       let lodChanged = false;
