@@ -16,8 +16,8 @@ const LINKS: [string, string, string][] = [
 export default function Nav({ overlay = false, floating = false }: { overlay?: boolean; floating?: boolean }) {
   const { user, init, signOut } = useAuth(), path = usePathname();
 
-  // Only show on the home page
-  if (path !== '/') return null;
+  // Do not show on the full-screen 3D city canvas which uses HUD
+  if (path === '/city') return null;
   const [admin, setAdmin] = useState(false), [open, setOpen] = useState(false);
   useEffect(() => { init(); }, [init]);
   useEffect(() => { let on = true; isAdmin(user).then(v => on && setAdmin(v)).catch(() => {}); return () => { on = false; }; }, [user]);
@@ -128,42 +128,41 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
         {/* Action Button & 3-Line Hamburger for Mobile */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
           <div className="nav-desktop-actions">
+            <Link
+              href="/profile"
+              className="nav-signin-link"
+              style={{
+                color: (path as string) === '/profile' ? '#1b4d2e' : '#4b5563',
+                fontSize: '0.88rem',
+                fontWeight: (path as string) === '/profile' ? 700 : 500,
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.35rem 0.65rem',
+                borderRadius: '999px',
+                background: (path as string) === '/profile' ? '#e8f5e9' : 'transparent',
+              }}
+            >
+              <span>👤</span>
+              <span>Profile</span>
+            </Link>
+
             {user ? (
-              <>
-                <Link
-                  href="/profile"
-                  className="nav-signin-link"
-                  style={{
-                    color: (path as string) === '/profile' ? '#1b4d2e' : '#4b5563',
-                    fontSize: '0.88rem',
-                    fontWeight: (path as string) === '/profile' ? 700 : 500,
-                    textDecoration: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    padding: '0.35rem 0.65rem',
-                    borderRadius: '999px',
-                    background: (path as string) === '/profile' ? '#e8f5e9' : 'transparent',
-                  }}
-                >
-                  <span>👤</span>
-                  <span>Profile</span>
-                </Link>
-                <button
-                  onClick={signOut}
-                  className="nav-signin-link"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#94a3b8',
-                    fontSize: '0.84rem',
-                    cursor: 'pointer',
-                    fontWeight: 500,
-                  }}
-                >
-                  Sign out
-                </button>
-              </>
+              <button
+                onClick={signOut}
+                className="nav-signin-link"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  fontSize: '0.84rem',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                }}
+              >
+                Sign out
+              </button>
             ) : (
               <Link
                 href="/login"
@@ -266,24 +265,24 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
 
             {/* Mobile Auth and Play Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.4rem 0' }}>
-              {user ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px' }}>
-                  <Link
-                    href="/profile"
-                    onClick={() => setOpen(false)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      fontSize: '0.92rem',
-                      fontWeight: 600,
-                      color: '#1e293b',
-                      textDecoration: 'none',
-                    }}
-                  >
-                    <span>👤</span>
-                    <span>My Profile</span>
-                  </Link>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px' }}>
+                <Link
+                  href="/profile"
+                  onClick={() => setOpen(false)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    fontSize: '0.92rem',
+                    fontWeight: (path as string) === '/profile' ? 700 : 600,
+                    color: (path as string) === '/profile' ? '#166534' : '#1e293b',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <span>👤</span>
+                  <span>My Profile</span>
+                </Link>
+                {user ? (
                   <button
                     onClick={() => { signOut(); setOpen(false); }}
                     style={{
@@ -297,28 +296,21 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
                   >
                     Sign out
                   </button>
-                </div>
-              ) : (
-                <Link
-                  href="/login"
-                  onClick={() => setOpen(false)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.4rem',
-                    padding: '10px 16px',
-                    borderRadius: '12px',
-                    background: '#f1f5f9',
-                    color: '#1e293b',
-                    fontSize: '0.92rem',
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                  }}
-                >
-                  Sign in
-                </Link>
-              )}
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    style={{
+                      fontSize: '0.85rem',
+                      color: '#2563eb',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Sign in
+                  </Link>
+                )}
+              </div>
 
               <Link
                 href="/city"

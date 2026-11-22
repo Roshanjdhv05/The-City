@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
-import { useAuth } from '@/lib/data';
+import { useAuth, isAdmin } from '@/lib/data';
 import { useStores } from '@/components/useStores';
 import { fetchProfile, saveProfile, checkUsernameAvailable, AVATAR_COLORS } from '@/lib/profile';
 import { getLocalPlayerId, getPlayerColor } from '@/lib/multiplayer';
@@ -119,6 +119,13 @@ export default function ProfilePage() {
   const [savedUsername, setSavedUsername] = useState<string | null>(null);
   const [avatarColor, setAvatarColor] = useState('#2563eb');
   const [loading, setLoading] = useState(true);
+  const [admin, setAdmin] = useState(false);
+
+  useEffect(() => {
+    let on = true;
+    isAdmin(user).then(v => on && setAdmin(v)).catch(() => {});
+    return () => { on = false; };
+  }, [user]);
 
   // Edit state
   const [editing, setEditing] = useState(false);
@@ -289,14 +296,35 @@ export default function ProfilePage() {
 
           {/* Identity */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: '0 0 0.3rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-              Your Profile
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', marginBottom: '0.4rem' }}>
+              <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', textDecoration: 'none' }}>
+                <div
+                  style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '7px',
+                    background: '#e8f5e9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 20V10L10 6V20M10 20V4L18 8V20M4 20H20" stroke="#1b4d2e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx="19" cy="17" r="2.5" fill="#2e7d32" />
+                  </svg>
+                </div>
+                <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#86efac', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  TheCity Resident
+                </span>
+              </Link>
+            </div>
             <h1 style={{ margin: '0 0 0.3rem', fontSize: '2rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
               {displayName}
             </h1>
             <p style={{ margin: 0, fontSize: '0.88rem', color: 'rgba(255,255,255,0.55)' }}>{emailOrGuest}</p>
-            <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', background: 'rgba(255,255,255,0.1)', borderRadius: 999, padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.15)' }}>
                 🏢 {mine.length} {mine.length === 1 ? 'Property' : 'Properties'}
               </span>
@@ -304,8 +332,27 @@ export default function ProfilePage() {
                 style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.1)', borderRadius: 999, padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' }}
                 onClick={startEdit}
               >
-                ✏️ Edit Profile
+                ✏️ Edit Avatar & Username
               </span>
+              <Link
+                href="/city"
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  background: '#22c55e',
+                  color: '#052e16',
+                  borderRadius: 999,
+                  padding: '0.25rem 0.85rem',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  boxShadow: '0 2px 8px rgba(34, 197, 94, 0.4)',
+                }}
+              >
+                <span>Enter 3D City</span>
+                <span>→</span>
+              </Link>
             </div>
           </div>
         </div>
@@ -416,6 +463,191 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
+
+        {/* ── Connected City Destinations ────────────────────────────── */}
+        <section style={{ marginBottom: '2.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.4rem' }}>
+            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>🌐</span>
+              <span>City Destinations</span>
+            </h2>
+            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Connect directly to other parts of The City</span>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+              gap: '0.85rem',
+            }}
+          >
+            {/* Explore City */}
+            <Link
+              href="/city"
+              style={{
+                background: '#ffffff',
+                border: '1.5px solid #bbf7d0',
+                borderRadius: '16px',
+                padding: '1.1rem',
+                textDecoration: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: '0.8rem',
+                boxShadow: '0 2px 10px rgba(16, 185, 129, 0.08)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '1.6rem' }}>🏙️</span>
+                  <span style={{ fontSize: '0.72rem', background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: 999 }}>Live 3D</span>
+                </div>
+                <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a', marginBottom: '0.25rem' }}>Explore 3D City</div>
+                <div style={{ fontSize: '0.82rem', color: '#64748b', lineHeight: 1.4 }}>
+                  Walk through all 9 market districts with your custom avatar and discover new areas.
+                </div>
+              </div>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#16a34a', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <span>Launch Metaverse</span>
+                <span>→</span>
+              </div>
+            </Link>
+
+            {/* Properties */}
+            <Link
+              href="/buy"
+              style={{
+                background: '#ffffff',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: '16px',
+                padding: '1.1rem',
+                textDecoration: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: '0.8rem',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '1.6rem' }}>🏢</span>
+                  <span style={{ fontSize: '0.72rem', background: '#e0f2fe', color: '#0284c7', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: 999 }}>Marketplace</span>
+                </div>
+                <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a', marginBottom: '0.25rem' }}>Buy & Claim Plots</div>
+                <div style={{ fontSize: '0.82rem', color: '#64748b', lineHeight: 1.4 }}>
+                  Claim free available buildings, unlock Central District spots with promo code, and customize stores.
+                </div>
+              </div>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0284c7', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <span>Browse Storefronts</span>
+                <span>→</span>
+              </div>
+            </Link>
+
+            {/* Home */}
+            <Link
+              href="/"
+              style={{
+                background: '#ffffff',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: '16px',
+                padding: '1.1rem',
+                textDecoration: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: '0.8rem',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '1.6rem' }}>🏠</span>
+                  <span style={{ fontSize: '0.72rem', background: '#f1f5f9', color: '#475569', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: 999 }}>Home</span>
+                </div>
+                <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a', marginBottom: '0.25rem' }}>Metropolis Overview</div>
+                <div style={{ fontSize: '0.82rem', color: '#64748b', lineHeight: 1.4 }}>
+                  Interactive circular map, city features, online statistics, and global community roadmap.
+                </div>
+              </div>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <span>Visit Home</span>
+                <span>→</span>
+              </div>
+            </Link>
+
+            {/* Admin (if admin) or About */}
+            {admin ? (
+              <Link
+                href="/admin"
+                style={{
+                  background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                  border: '1.5px solid #38bdf8',
+                  borderRadius: '16px',
+                  padding: '1.1rem',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '0.8rem',
+                  boxShadow: '0 4px 14px rgba(15, 23, 42, 0.2)',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '1.6rem' }}>⚙️</span>
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: 999 }}>Admin</span>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '1rem', color: '#ffffff', marginBottom: '0.25rem' }}>Admin Dashboard</div>
+                  <div style={{ fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                    Manage plots, road networks, 3D advertising billboards, and district expansion.
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <span>Open Admin Portal</span>
+                  <span>→</span>
+                </div>
+              </Link>
+            ) : (
+              <Link
+                href="/about"
+                style={{
+                  background: '#ffffff',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: '16px',
+                  padding: '1.1rem',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '0.8rem',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '1.6rem' }}>ℹ️</span>
+                    <span style={{ fontSize: '0.72rem', background: '#fef3c7', color: '#b45309', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: 999 }}>About</span>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a', marginBottom: '0.25rem' }}>About The City</div>
+                  <div style={{ fontSize: '0.82rem', color: '#64748b', lineHeight: 1.4 }}>
+                    Read the backstory of the 9 commercial districts and the vision behind the metaverse.
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#b45309', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <span>Read Story</span>
+                  <span>→</span>
+                </div>
+              </Link>
+            )}
+          </div>
+        </section>
 
         {/* ── My Properties ───────────────────────────────────────────── */}
         <section style={{ marginBottom: '2rem' }}>
