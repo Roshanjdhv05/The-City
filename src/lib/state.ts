@@ -110,7 +110,7 @@ export const player = {
   vy: 0,
   onGround: true,
   inWater: false,
-  camDist: 11.5,
+  camDist: 7.2,
   teleport: null as null | { x: number; z: number; yaw: number },
   moveInput: { f: 0, s: 0, run: false, jump: false, up: false, down: false },
 };

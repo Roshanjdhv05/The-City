@@ -128,7 +128,7 @@ export default function CityCanvas({
           fov: mode === 'city' ? (isMobile ? 62 : 58) : 42,
           near: 0.1,
           far: isMobile ? 1200 : 2200,
-          position: mode === 'city' ? [-4.4, 5.5, 51.0] : [0, 95, 145],
+          position: mode === 'city' ? [-4.4, 4.0, 46.5] : [0, 95, 145],
         }}
         gl={{ antialias: isLanding || isMobile || !Q.post, powerPreference: 'high-performance' }}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', touchAction: 'none' }}

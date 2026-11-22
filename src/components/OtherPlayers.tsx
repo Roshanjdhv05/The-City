@@ -36,27 +36,27 @@ function RemoteAvatar({ player }: { player: RemotePlayer }) {
   return (
     <group ref={root} position={[player.x, player.y, player.z]} rotation={[0, player.yaw, 0]}>
       {/* ── Floating Nametag Above Character (Sleek Small Compact Style) ── */}
-      <Html position={[0, 2.12, 0]} center distanceFactor={15} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+      <Html position={[0, 2.08, 0]} center distanceFactor={8.5} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
         <div
           style={{
             background: 'rgba(15, 23, 42, 0.72)',
             backdropFilter: 'blur(4px)',
             WebkitBackdropFilter: 'blur(4px)',
             border: '1px solid rgba(255, 255, 255, 0.2)',
-            padding: '2px 7px',
+            padding: '1.5px 6px',
             borderRadius: '999px',
             whiteSpace: 'nowrap',
             transform: 'translate3d(0, 0, 0)',
             userSelect: 'none',
             display: 'inline-flex',
             alignItems: 'center',
-            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.4)',
+            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.4)',
           }}
         >
           <span
             style={{
               color: '#f8fafc',
-              fontSize: '9.5px',
+              fontSize: '9px',
               fontWeight: 600,
               fontFamily: 'system-ui, -apple-system, sans-serif',
               letterSpacing: '0.02em',
