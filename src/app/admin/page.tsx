@@ -1,9 +1,10 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Nav from '@/components/Nav';
 import { useStores } from '@/components/useStores';
+import { useBillboardStore, Billboard, generateDefaultBillboards, uploadBillboardMedia } from '@/lib/billboards';
 import {
   useAuth,
   isAdmin,
@@ -62,7 +63,7 @@ export default function Admin() {
   const { user, ready, init } = useAuth(), { stores, layout, reload } = useStores();
   const [allowed, setAllowed] = useState<null | boolean>(null);
   const [sel, setSel] = useState<string | null>(null);
-  const [tab, setTab] = useState<'overview' | 'plot' | 'promo' | 'owners' | 'roads' | 'expand' | 'network'>('overview');
+  const [tab, setTab] = useState<'overview' | 'plot' | 'promo' | 'owners' | 'roads' | 'expand' | 'network' | 'billboards'>('overview');
   const [q, setQ] = useState(''), [labels, setLabels] = useState(true), [builds, setBuilds] = useState(true), [fitKey, setFitKey] = useState(0);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null), [modal, setModal] = useState<Modal>(null), [busy, setBusy] = useState(false);
   const [emails, setEmails] = useState<Record<string, string>>({});
@@ -81,12 +82,25 @@ export default function Admin() {
   // Redemptions list
   const [redemptions, setRedemptions] = useState<any[]>([]);
 
+  // Billboard store
+  const { billboards: bbList, loading: bbLoading, initialized: bbInit, init: bbInitFn, saveBillboard, deleteBillboard, resetToDefaults: bbReset } = useBillboardStore();
+  const [bbQ, setBbQ] = useState('');
+  const [bbMarket, setBbMarket] = useState('all');
+  const [bbStatus, setBbStatus] = useState('all');
+  const [bbEditId, setBbEditId] = useState<string | null>(null);
+  const [bbDraft, setBbDraft] = useState<Billboard | null>(null);
+  const [bbUploading, setBbUploading] = useState(false);
+
   useEffect(() => { init(); }, [init]);
   useEffect(() => {
     if (ready) {
       isAdmin(user).then(setAllowed);
     }
   }, [user, ready]);
+
+  useEffect(() => {
+    if (tab === 'billboards' && !bbInit) bbInitFn();
+  }, [tab, bbInit, bbInitFn]);
 
   useEffect(() => {
     try {
@@ -377,6 +391,7 @@ export default function Admin() {
     ['roads', '🛣️ Roads'],
     ['expand', '🏗️ Expand'],
     ['network', '🌐 Network'],
+    ['billboards', '📺 Billboards'],
   ];
 
   return (
@@ -723,6 +738,211 @@ export default function Admin() {
               : <p className="ok-msg">Preview: region <b>{plan.region.id}</b> · {plan.plots.length} plots ({plan.plots[0]?.id} … {plan.plots[plan.plots.length - 1]?.id}) · {plan.roads.length} roads. No overlaps found.</p>)}
             <button className="btn" disabled={!plan || !!plan.errors.length || !plan.plots.length} onClick={() => setModal('expand')}>Confirm expansion…</button>
           </>)}
+
+          {/* ── 8. Billboard Management Tab ── */}
+          {tab === 'billboards' && (() => {
+            const allMarkets = ['all', ...Array.from(new Set(bbList.map(b => b.market)))];
+            const filtered = bbList.filter(b => {
+              const mOk = bbMarket === 'all' || b.market === bbMarket;
+              const sOk = bbStatus === 'all' || b.status === bbStatus;
+              const qOk = !bbQ || b.name.toLowerCase().includes(bbQ.toLowerCase()) || b.market.toLowerCase().includes(bbQ.toLowerCase()) || b.adTitle.toLowerCase().includes(bbQ.toLowerCase());
+              return mOk && sOk && qOk;
+            });
+            const totalActive = bbList.filter(b => b.status === 'active').length;
+            const totalInactive = bbList.filter(b => b.status === 'inactive').length;
+            const totalEmpty = bbList.filter(b => b.status === 'empty').length;
+
+            const openEdit = (bb: Billboard) => { setBbDraft({ ...bb }); setBbEditId(bb.id); };
+            const closeEdit = () => { setBbDraft(null); setBbEditId(null); };
+            const handleSave = async () => {
+              if (!bbDraft) return;
+              await saveBillboard(bbDraft);
+              closeEdit();
+            };
+            const handleDelete = async (id: string) => {
+              if (!confirm('Delete this billboard?')) return;
+              await deleteBillboard(id);
+              if (bbEditId === id) closeEdit();
+            };
+            const handleMedia = async (e: React.ChangeEvent<HTMLInputElement>) => {
+              const file = e.target.files?.[0];
+              if (!file || !bbDraft) return;
+              setBbUploading(true);
+              try {
+                const { url, mediaType } = await uploadBillboardMedia(file);
+                setBbDraft(d => d ? { ...d, mediaUrl: url, mediaType } : d);
+              } finally { setBbUploading(false); }
+            };
+            const handleAddNew = () => {
+              const newBb: Billboard = {
+                id: `BB-CUSTOM-${Date.now()}`,
+                name: 'New Billboard',
+                market: 'Civic Plaza',
+                location: 'Custom Location',
+                wallSide: 'freestanding',
+                format: 'landscape',
+                size: 'large',
+                width: 7.5, height: 4.2, elevation: 5.5,
+                x: 0, y: 5.5, z: 0, rot: 0,
+                status: 'empty',
+                adTitle: '', adDescription: '',
+                mediaType: 'image', mediaUrl: '',
+                lighting: true,
+                updatedAt: new Date().toISOString(),
+              };
+              openEdit(newBb);
+            };
+
+            return (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <h2 style={{ margin: 0 }}>Billboard Management</h2>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn" style={{ fontSize: '0.8rem', padding: '6px 12px' }} onClick={handleAddNew}>+ Add Billboard</button>
+                    <button className="ghost" style={{ fontSize: '0.8rem', padding: '6px 12px' }} onClick={async () => { if (confirm('Reset all billboards to city defaults?')) await bbReset(); }}>↺ Reset Defaults</button>
+                  </div>
+                </div>
+
+                {/* Stats bar */}
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                  {[['Total', bbList.length, '#60a5fa'], ['Active', totalActive, '#34d399'], ['Inactive', totalInactive, '#f87171'], ['Empty', totalEmpty, '#fbbf24']].map(([label, val, color]) => (
+                    <div key={String(label)} style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${color}40`, borderRadius: '8px', padding: '10px 18px', minWidth: '80px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 700, color: String(color) }}>{String(val)}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{String(label)}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Filters */}
+                <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                  <input placeholder="Search billboards…" value={bbQ} onChange={e => setBbQ(e.target.value)} style={{ flex: 1, minWidth: '160px' }} />
+                  <select value={bbMarket} onChange={e => setBbMarket(e.target.value)} style={{ minWidth: '140px' }}>
+                    {allMarkets.map(m => <option key={m} value={m}>{m === 'all' ? 'All Markets' : m}</option>)}
+                  </select>
+                  <select value={bbStatus} onChange={e => setBbStatus(e.target.value)}>
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="empty">Empty</option>
+                  </select>
+                </div>
+
+                {bbLoading && <p className="note">Loading billboards…</p>}
+
+                {/* Billboard grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem', maxHeight: '55vh', overflowY: 'auto' }}>
+                  {filtered.map(bb => (
+                    <div key={bb.id} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${bb.status === 'active' ? '#34d39930' : bb.status === 'inactive' ? '#f8717130' : '#fbbf2430'}`, borderRadius: '10px', padding: '12px', cursor: 'pointer' }} onClick={() => openEdit(bb)}>
+                      {/* Thumbnail */}
+                      {bb.mediaUrl && bb.mediaType === 'image' && (
+                        <img src={bb.mediaUrl} alt={bb.adTitle} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '6px', marginBottom: '8px', background: '#0f172a' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      )}
+                      {bb.mediaUrl && bb.mediaType === 'video' && (
+                        <div style={{ width: '100%', height: '100px', background: '#0f172a', borderRadius: '6px', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem' }}>▶</div>
+                      )}
+                      {!bb.mediaUrl && (
+                        <div style={{ width: '100%', height: '60px', background: '#1e293b', borderRadius: '6px', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontSize: '0.8rem' }}>No media</div>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '4px' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: '0.82rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bb.name}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{bb.market} · {bb.format}</div>
+                          {bb.adTitle && <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bb.adTitle}</div>}
+                        </div>
+                        <span style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: '999px', background: bb.status === 'active' ? '#16a34a30' : bb.status === 'inactive' ? '#dc262630' : '#d9770630', color: bb.status === 'active' ? '#4ade80' : bb.status === 'inactive' ? '#f87171' : '#fbbf24', flexShrink: 0 }}>{bb.status}</span>
+                      </div>
+                      <div style={{ marginTop: '8px', display: 'flex', gap: '6px' }}>
+                        <button className="btn" style={{ fontSize: '0.72rem', padding: '4px 10px', flex: 1 }} onClick={e => { e.stopPropagation(); openEdit(bb); }}>Edit</button>
+                        <button className="ghost" style={{ fontSize: '0.72rem', padding: '4px 10px', color: '#f87171' }} onClick={e => { e.stopPropagation(); handleDelete(bb.id); }}>Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                  {filtered.length === 0 && !bbLoading && <p className="note" style={{ gridColumn: '1/-1' }}>No billboards match your filter.</p>}
+                </div>
+
+                {/* Edit Panel */}
+                {bbDraft && (
+                  <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(480px, 100vw)', background: '#0f172a', borderLeft: '1px solid rgba(99,179,237,0.25)', overflowY: 'auto', zIndex: 200, padding: '1.5rem', boxShadow: '-8px 0 32px rgba(0,0,0,0.6)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+                      <h3 style={{ margin: 0, fontSize: '1rem' }}>{bbEditId === bbDraft.id && bbList.some(b => b.id === bbDraft.id) ? 'Edit Billboard' : 'New Billboard'}</h3>
+                      <button className="ghost" onClick={closeEdit} style={{ fontSize: '1.2rem', padding: '2px 8px' }}>✕</button>
+                    </div>
+
+                    <label>ID <input value={bbDraft.id} readOnly style={{ opacity: 0.5 }} /></label>
+                    <label>Name <input value={bbDraft.name} onChange={e => setBbDraft(d => d ? { ...d, name: e.target.value } : d)} /></label>
+                    <label>Market
+                      <select value={bbDraft.market} onChange={e => setBbDraft(d => d ? { ...d, market: e.target.value } : d)}>
+                        {['Civic Plaza', 'SAAS', 'AI', 'DEVELOPMENT', 'WINDOWS APPS', 'MAC APPS', 'MOBILE APPS', 'GAMING', 'DESIGN', 'MARKETING'].map(m => <option key={m}>{m}</option>)}
+                      </select>
+                    </label>
+                    <label>Location description <input value={bbDraft.location} onChange={e => setBbDraft(d => d ? { ...d, location: e.target.value } : d)} /></label>
+
+                    <div className="grid2">
+                      <label>Status
+                        <select value={bbDraft.status} onChange={e => setBbDraft(d => d ? { ...d, status: e.target.value as Billboard['status'] } : d)}>
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                          <option value="empty">Empty</option>
+                        </select>
+                      </label>
+                      <label>Format
+                        <select value={bbDraft.format} onChange={e => setBbDraft(d => d ? { ...d, format: e.target.value as Billboard['format'] } : d)}>
+                          <option value="landscape">Landscape</option>
+                          <option value="portrait">Portrait</option>
+                        </select>
+                      </label>
+                      <label>Wall side
+                        <select value={bbDraft.wallSide} onChange={e => setBbDraft(d => d ? { ...d, wallSide: e.target.value as Billboard['wallSide'] } : d)}>
+                          <option value="freestanding">Freestanding</option>
+                          <option value="back_wall">Back wall</option>
+                          <option value="side_wall_left">Side wall left</option>
+                          <option value="side_wall_right">Side wall right</option>
+                          <option value="corner">Corner</option>
+                        </select>
+                      </label>
+                      <label>Lighting <select value={bbDraft.lighting ? 'on' : 'off'} onChange={e => setBbDraft(d => d ? { ...d, lighting: e.target.value === 'on' } : d)}><option value="on">On</option><option value="off">Off</option></select></label>
+                    </div>
+
+                    <div className="grid2">
+                      <label>Width (m) <input type="number" step="0.1" value={bbDraft.width} onChange={e => setBbDraft(d => d ? { ...d, width: parseFloat(e.target.value) } : d)} /></label>
+                      <label>Height (m) <input type="number" step="0.1" value={bbDraft.height} onChange={e => setBbDraft(d => d ? { ...d, height: parseFloat(e.target.value) } : d)} /></label>
+                      <label>Elevation Y <input type="number" step="0.1" value={bbDraft.elevation} onChange={e => setBbDraft(d => d ? { ...d, elevation: parseFloat(e.target.value), y: parseFloat(e.target.value) } : d)} /></label>
+                      <label>Rotation (rad) <input type="number" step="0.01" value={Math.round(bbDraft.rot * 100) / 100} onChange={e => setBbDraft(d => d ? { ...d, rot: parseFloat(e.target.value) } : d)} /></label>
+                      <label>X position <input type="number" step="1" value={bbDraft.x} onChange={e => setBbDraft(d => d ? { ...d, x: parseFloat(e.target.value) } : d)} /></label>
+                      <label>Z position <input type="number" step="1" value={bbDraft.z} onChange={e => setBbDraft(d => d ? { ...d, z: parseFloat(e.target.value) } : d)} /></label>
+                    </div>
+
+                    <hr style={{ borderColor: 'rgba(255,255,255,0.08)', margin: '1rem 0' }} />
+                    <label>Ad title <input value={bbDraft.adTitle} onChange={e => setBbDraft(d => d ? { ...d, adTitle: e.target.value } : d)} /></label>
+                    <label>Ad description <textarea value={bbDraft.adDescription || ''} onChange={e => setBbDraft(d => d ? { ...d, adDescription: e.target.value } : d)} rows={2} style={{ width: '100%', resize: 'vertical' }} /></label>
+                    <label>Target URL <input type="url" value={bbDraft.targetUrl || ''} onChange={e => setBbDraft(d => d ? { ...d, targetUrl: e.target.value } : d)} placeholder="https://…" /></label>
+
+                    <hr style={{ borderColor: 'rgba(255,255,255,0.08)', margin: '1rem 0' }} />
+                    <label style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 600 }}>Media</label>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <select value={bbDraft.mediaType} onChange={e => setBbDraft(d => d ? { ...d, mediaType: e.target.value as Billboard['mediaType'] } : d)}>
+                        <option value="image">Image</option>
+                        <option value="video">Video</option>
+                      </select>
+                    </div>
+                    <label>Media URL <input value={bbDraft.mediaUrl} onChange={e => setBbDraft(d => d ? { ...d, mediaUrl: e.target.value } : d)} placeholder="https://…" /></label>
+                    {bbDraft.mediaUrl && bbDraft.mediaType === 'image' && (
+                      <img src={bbDraft.mediaUrl} alt="preview" style={{ width: '100%', maxHeight: '140px', objectFit: 'cover', borderRadius: '6px', marginTop: '6px' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    )}
+                    <label style={{ display: 'block', marginTop: '0.75rem' }}>
+                      Upload file {bbUploading && <span style={{ color: '#60a5fa' }}>Uploading…</span>}
+                      <input type="file" accept="image/*,video/*" onChange={handleMedia} style={{ display: 'block', marginTop: '4px' }} />
+                    </label>
+
+                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+                      <button className="btn" style={{ flex: 1 }} onClick={handleSave} disabled={bbUploading}>Save Billboard</button>
+                      <button className="ghost" onClick={closeEdit}>Cancel</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </aside>
       </div>
 

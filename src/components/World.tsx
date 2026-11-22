@@ -25,6 +25,7 @@ import { PlazaDecorations } from './PlazaDecor';
 import { MarketPropsManager } from './MarketProps';
 import { Inst, Item, UBOX, UCYL } from './Inst';
 import { AdvertPlane, BirdFlock } from './CityLife';
+import { CityBillboards } from './CityBillboards';
 
 function foliageGeo() {
   const g = new THREE.IcosahedronGeometry(1, 1), p = g.attributes.position;
@@ -134,6 +135,7 @@ export function World({
       <CityTraffic layout={layout} isMobile={isMobile} />
       <PlazaDecorations />
       <MarketPropsManager layout={layout} />
+      <CityBillboards />
       <Furniture props={props} /><Trees trees={props.trees} /><Pines pines={props.pines} /><Rocks rocks={props.rocks} /><Hedges bushes={props.bushes} flowers={props.flowers} /><ResourceMeshes nodes={props.resources} />
       <EmptyPlots plots={empty} />
       {/* ── Sky: advert plane + bird flock ── */}
