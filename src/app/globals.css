@@ -2587,8 +2587,14 @@ kbd {
   min-height: 100vh;
   background: #f4f6f8;
   color: #0f172a;
-  padding: 24px 32px 56px;
+  padding: 108px 32px 56px;
   font-family: var(--f-body);
+}
+
+@media (max-width: 768px) {
+  .buy-page-wrap {
+    padding: 96px 16px 48px;
+  }
 }
 
 .buy-header {

@@ -3,6 +3,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Nav from '@/components/Nav';
 import { useStores } from '@/components/useStores';
 import { purchasePlot, claimWithPromoCode, useAuth } from '@/lib/data';
 import { syncSavedPlotsToSupabase, loadSavedPlotsFromSupabase } from '@/lib/sync';
@@ -193,6 +194,7 @@ function Marketplace() {
 
   return (
     <div className="buy-page-wrap">
+      <Nav />
       {/* ── Top Header matching the design reference ── */}
       <header className="buy-header">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -892,7 +894,14 @@ function Marketplace() {
 
 export default function Buy() {
   return (
-    <Suspense fallback={<div className="loading" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#f4f6f8', color: '#0f172a' }}>Loading marketplace…</div>}>
+    <Suspense
+      fallback={
+        <div className="buy-page-wrap" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
+          <Nav />
+          <div style={{ color: '#64748b', fontWeight: 600 }}>Loading marketplace…</div>
+        </div>
+      }
+    >
       <Marketplace />
     </Suspense>
   );
