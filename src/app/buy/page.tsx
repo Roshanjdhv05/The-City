@@ -224,29 +224,147 @@ function Marketplace() {
         </p>
       </header>
 
-      {/* ── Main Two-Column Layout ── */}
-      <div className="buy-grid">
-        {/* Left Side: Map + Selected Plot & 3D Live Preview */}
-        <div>
-          {/* Card 1: Circular City Map */}
-          <div className="buy-map-card">
-            <AdminMap
-              layout={layout}
-              stores={stores}
-              selected={sel}
-              onSelect={id => setSel(id)}
-              matches={q || filter !== 'all' || district !== 'All' ? matches : null}
-              preview={null}
-              showLabels
-              showBuildings
-              fitKey={0}
-              theme="light"
+      {/* ── Top Row: Map on Left & Search/Listings on Right (Matching Area) ── */}
+      <div className="buy-top-grid">
+        {/* Card 1: Circular City Map */}
+        <div className="buy-map-card">
+          <AdminMap
+            layout={layout}
+            stores={stores}
+            selected={sel}
+            onSelect={id => setSel(id)}
+            matches={q || filter !== 'all' || district !== 'All' ? matches : null}
+            preview={null}
+            showLabels
+            showBuildings
+            fitKey={0}
+            theme="light"
+          />
+        </div>
+
+        {/* Card 2: Plot Listings & Search (Matching Height alongside Map) */}
+        <aside className="buy-list-card" aria-label="Plot listings">
+          {/* Search Box */}
+          <div className="buy-search-wrap">
+            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '0.9rem' }}>
+              🔍
+            </span>
+            <input
+              className="buy-search-input"
+              placeholder="Search plot ID, district, category…"
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              aria-label="Search plots"
             />
           </div>
 
-          {/* Cards 2 & 3: Selected Plot Specifications + Live 3D Building Preview */}
-          {plot && st ? (
-            <div className="buy-detail-grid">
+          {/* Filter Tabs */}
+          <div className="buy-filter-tabs">
+            {FILTERS.map(([k, l]) => (
+              <button
+                key={k}
+                className={`buy-tab-btn ${filter === k ? 'active' : ''}`}
+                onClick={() => setFilter(k)}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+
+          {/* Dropdown Selectors */}
+          <div className="buy-dropdowns-row">
+            <select
+              className="buy-select"
+              value={district}
+              onChange={e => setDistrict(e.target.value)}
+              aria-label="District"
+            >
+              {districts.map(d => (
+                <option key={d}>{d}</option>
+              ))}
+            </select>
+            <select
+              className="buy-select"
+              value={sort}
+              onChange={e => setSort(e.target.value)}
+              aria-label="Sort"
+            >
+              <option value="id">Sort by: ID</option>
+              <option value="low">Price: Low to High</option>
+              <option value="high">Price: High to Low</option>
+            </select>
+          </div>
+
+          {/* Plots Count */}
+          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b' }}>
+            {listed.length} plots {saved.length ? `• ${saved.length} saved` : ''}
+          </div>
+
+          {/* Scrollable Plot Items */}
+          <div className="buy-plots-scroll">
+            {listed.map(p => {
+              const state = S.state(p);
+              const isSelected = sel === p.id;
+              return (
+                <div
+                  key={p.id}
+                  className={`buy-plot-item ${isSelected ? 'selected' : ''}`}
+                  onClick={() => setSel(p.id)}
+                >
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.94rem', color: '#0f172a', marginBottom: '2px' }}>
+                      {saved.includes(p.id) ? '★ ' : ''}
+                      {p.id} . {p.district.replace(' District', '')}
+                    </div>
+                    <div style={{ fontSize: '0.76rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span>⛶ {p.w}×{p.d} m</span>
+                      <span>•</span>
+                      <span>{p.category}</span>
+                      {p.tier !== 'free' && (
+                        <>
+                          <span>•</span>
+                          <span style={{ textTransform: 'lowercase' }}>{p.tier}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.94rem', color: '#0f172a' }}>
+                      {state === 'reserved' ? 'Locked' : state === 'occupied' ? 'Claimed' : 'Free'}
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '0.66rem',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        letterSpacing: '0.04em',
+                        textTransform: 'uppercase',
+                        background: state === 'available' ? '#dcfce7' : state === 'occupied' ? '#ffedd5' : '#f1f5f9',
+                        color: state === 'available' ? '#15803d' : state === 'occupied' ? '#c2410c' : '#475569',
+                        border: state === 'available' ? '1px solid #86efac' : state === 'occupied' ? '1px solid #fed7aa' : '1px solid #cbd5e1',
+                      }}
+                    >
+                      {state === 'available' ? 'AVAILABLE' : state === 'reserved' ? '🔒 LOCKED' : 'OCCUPIED'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            {!listed.length && (
+              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.88rem' }}>
+                No plots match these filters.
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
+
+      {/* ── Below: Big Building Showcase Area ── */}
+      <section className="buy-showcase-section">
+        {plot && st ? (
+          <div className="buy-detail-grid">
               {/* Left Sub-card: Plot Information & Controls */}
               <div className="buy-detail-card">
                 {/* Badges */}
@@ -742,135 +860,32 @@ function Marketplace() {
                   <span>Live Preview • Click to explore</span>
                 </div>
                 <div style={{ position: 'absolute', inset: 0 }}>
-                  <EditorCanvas cfg={previewCfg} setCfg={noop} tool={TOOL as any} showGrid={false} onMsg={noop} />
+                  <EditorCanvas cfg={previewCfg} setCfg={noop} tool={TOOL as any} showGrid={false} onMsg={noop} dayOnly />
                 </div>
               </div>
             </div>
           ) : (
-            <div style={{ marginTop: '16px', padding: '24px', background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', textAlign: 'center', color: '#64748b' }}>
-              Select a plot on the map or in the list to see its details and live 3D preview.
+            <div
+              style={{
+                padding: '40px 24px',
+                background: '#ffffff',
+                borderRadius: '24px',
+                border: '1px solid #e2e8f0',
+                textAlign: 'center',
+                color: '#64748b',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+              }}
+            >
+              <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🏢</div>
+              <h3 style={{ margin: '0 0 6px', fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+                Select a plot to enter the 3D Building Showcase
+              </h3>
+              <p style={{ margin: 0, color: '#64748b', fontSize: '0.92rem' }}>
+                Choose any plot on the circular map or in the search list above to customize architecture, colors, and explore in live 3D.
+              </p>
             </div>
           )}
-        </div>
-
-        {/* Right Side: Plot Listings Card */}
-        <aside className="buy-list-card" aria-label="Plot listings">
-          {/* Search Box */}
-          <div className="buy-search-wrap">
-            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '0.9rem' }}>
-              🔍
-            </span>
-            <input
-              className="buy-search-input"
-              placeholder="Search plot ID, district, category…"
-              value={q}
-              onChange={e => setQ(e.target.value)}
-              aria-label="Search plots"
-            />
-          </div>
-
-          {/* Filter Tabs */}
-          <div className="buy-filter-tabs">
-            {FILTERS.map(([k, l]) => (
-              <button
-                key={k}
-                className={`buy-tab-btn ${filter === k ? 'active' : ''}`}
-                onClick={() => setFilter(k)}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
-
-          {/* Dropdown Selectors */}
-          <div className="buy-dropdowns-row">
-            <select
-              className="buy-select"
-              value={district}
-              onChange={e => setDistrict(e.target.value)}
-              aria-label="District"
-            >
-              {districts.map(d => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
-            <select
-              className="buy-select"
-              value={sort}
-              onChange={e => setSort(e.target.value)}
-              aria-label="Sort"
-            >
-              <option value="id">Sort by: ID</option>
-              <option value="low">Price: Low to High</option>
-              <option value="high">Price: High to Low</option>
-            </select>
-          </div>
-
-          {/* Plots Count */}
-          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b' }}>
-            {listed.length} plots {saved.length ? `• ${saved.length} saved` : ''}
-          </div>
-
-          {/* Scrollable Plot Items */}
-          <div className="buy-plots-scroll">
-            {listed.map(p => {
-              const state = S.state(p);
-              const isSelected = sel === p.id;
-              return (
-                <div
-                  key={p.id}
-                  className={`buy-plot-item ${isSelected ? 'selected' : ''}`}
-                  onClick={() => setSel(p.id)}
-                >
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.94rem', color: '#0f172a', marginBottom: '2px' }}>
-                      {saved.includes(p.id) ? '★ ' : ''}
-                      {p.id} . {p.district.replace(' District', '')}
-                    </div>
-                    <div style={{ fontSize: '0.76rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span>⛶ {p.w}×{p.d} m</span>
-                      <span>•</span>
-                      <span>{p.category}</span>
-                      {p.tier !== 'free' && (
-                        <>
-                          <span>•</span>
-                          <span style={{ textTransform: 'lowercase' }}>{p.tier}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.94rem', color: '#0f172a' }}>
-                      {state === 'reserved' ? 'Locked' : state === 'occupied' ? 'Claimed' : 'Free'}
-                    </div>
-                    <span
-                      style={{
-                        fontSize: '0.66rem',
-                        fontWeight: 800,
-                        padding: '2px 8px',
-                        borderRadius: '999px',
-                        letterSpacing: '0.04em',
-                        textTransform: 'uppercase',
-                        background: state === 'available' ? '#dcfce7' : state === 'occupied' ? '#ffedd5' : '#f1f5f9',
-                        color: state === 'available' ? '#15803d' : state === 'occupied' ? '#c2410c' : '#475569',
-                        border: state === 'available' ? '1px solid #86efac' : state === 'occupied' ? '1px solid #fed7aa' : '1px solid #cbd5e1',
-                      }}
-                    >
-                      {state === 'available' ? 'AVAILABLE' : state === 'reserved' ? '🔒 LOCKED' : 'OCCUPIED'}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-            {!listed.length && (
-              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.88rem' }}>
-                No plots match these filters.
-              </div>
-            )}
-          </div>
-        </aside>
-      </div>
+      </section>
     </div>
   );
 }

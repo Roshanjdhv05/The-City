@@ -50,7 +50,7 @@ function Grid({ cfg, tool, setCfg, onMsg }: { cfg: StoreConfig; tool: Tool; setC
   return <group>{cells}</group>;
 }
 
-export default function EditorCanvas({ cfg, setCfg, tool, showGrid, onMsg }: { cfg: StoreConfig; setCfg: (c: StoreConfig) => void; tool: Tool; showGrid: boolean; onMsg: (m: string) => void }) {
+export default function EditorCanvas({ cfg, setCfg, tool, showGrid, onMsg, dayOnly }: { cfg: StoreConfig; setCfg: (c: StoreConfig) => void; tool: Tool; showGrid: boolean; onMsg: (m: string) => void; dayOnly?: boolean }) {
   const quality = useUI(s => s.quality), Q = QUALITY[quality];
   useEffect(() => { useUI.getState().init(); }, []);
   const modular = cfg.mode === 'modular';
@@ -63,7 +63,7 @@ export default function EditorCanvas({ cfg, setCfg, tool, showGrid, onMsg }: { c
   return (
     <Canvas key={quality} shadows={Q.shadow > 0} dpr={Q.dpr} camera={{ fov: 38, position: [17, 11, 20], near: 0.1, far: 1400 }} gl={{ antialias: !Q.post }}
       onCreated={({ gl }) => { gl.toneMapping = THREE.NoToneMapping; }}>
-      <SkyDome /><SceneLighting q={quality} span={26} />
+      <SkyDome fixedHour={dayOnly ? 12 : undefined} /><SceneLighting q={quality} span={26} fixedHour={dayOnly ? 12 : undefined} />
       <Ground />
       <group position={[0, 0, 0]}>
         {modular ? (

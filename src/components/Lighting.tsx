@@ -185,11 +185,13 @@ export function SceneLighting({
   span = 340,
   center = [0, 0],
   isMobile = false,
+  fixedHour,
 }: {
   q: Quality;
   span?: number;
   center?: [number, number];
   isMobile?: boolean;
+  fixedHour?: number;
 }) {
   const S = isMobile ? 0 : QUALITY[q].shadow;
   const dirLightRef = useRef<THREE.DirectionalLight>(null);
@@ -206,10 +208,13 @@ export function SceneLighting({
 
   useFrame((_, dt) => {
     // 1. Advance simulation clock if playing, or sync with local device clock if isLiveDevice
-    if (cityTime.isLiveDevice) {
-      cityTime.hour = getDeviceHour();
-    } else if (cityTime.isPlaying) {
-      cityTime.hour = (cityTime.hour + (dt / cityTime.cycleDurationSec) * 24 * cityTime.speed) % 24;
+    // Skip clock updates entirely when fixedHour is provided (e.g., /buy page day-only preview)
+    if (fixedHour === undefined) {
+      if (cityTime.isLiveDevice) {
+        cityTime.hour = getDeviceHour();
+      } else if (cityTime.isPlaying) {
+        cityTime.hour = (cityTime.hour + (dt / cityTime.cycleDurationSec) * 24 * cityTime.speed) % 24;
+      }
     }
 
     // 2. Throttle sync to React HUD state (every 120ms)
@@ -219,7 +224,7 @@ export function SceneLighting({
       useTimeStore.getState().syncFromSimulation(cityTime.hour);
     }
 
-    const hour = cityTime.hour;
+    const hour = fixedHour !== undefined ? fixedHour : cityTime.hour;
     const sky = sampleSky(hour);
     const { darkness, isNight } = getTimePhase(hour);
 
@@ -523,7 +528,7 @@ export function FogController({ quality, isMobile = false }: { quality: string; 
 // -------------------------------------------------------------
 // Dynamic Sky Dome & Fog
 // -------------------------------------------------------------
-export function SkyDome() {
+export function SkyDome({ fixedHour }: { fixedHour?: number } = {}) {
   const dome = useRef<THREE.Mesh>(null);
   const fogRef = useRef<THREE.Fog>(null);
   const { camera, scene } = useThree();
@@ -539,7 +544,7 @@ export function SkyDome() {
   useFrame(() => {
     if (dome.current) dome.current.position.copy(camera.position);
 
-    const sky = sampleSky(cityTime.hour);
+    const sky = sampleSky(fixedHour !== undefined ? fixedHour : cityTime.hour);
     const p = geo.attributes.position;
     const cols = colorAttr.array as Float32Array;
     const c = new THREE.Color();
