@@ -10,6 +10,7 @@ import { genProps } from '@/lib/props';
 import { terrainFor } from '@/lib/terrain';
 import { loadInventory } from '@/lib/resources';
 import { usePreloadStore } from '@/lib/preload';
+import { useAuth } from '@/lib/data';
 import type { Store } from '@/lib/types';
 import { World } from './World';
 import { PreviewWorld } from './PreviewWorld';
@@ -75,6 +76,7 @@ export default function CityCanvas({
   paused?: boolean;
   onReady?: () => void;
 }) {
+  const { user } = useAuth();
   const quality = useUI(s => s.quality);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -113,9 +115,9 @@ export default function CityCanvas({
 
   useEffect(() => {
     useUI.getState().init();
-    useExplorationStore.getState().init();
-    if (!isLanding) useUI.getState().setInv(loadInventory());
-  }, [isLanding]);
+    useExplorationStore.getState().init(user?.id);
+    if (!isLanding) useUI.getState().setInv(loadInventory(user?.id));
+  }, [isLanding, user?.id]);
 
   return (
     <>

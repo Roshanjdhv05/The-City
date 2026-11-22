@@ -3,10 +3,16 @@ import { create } from 'zustand';
 import type { Layout } from './layout';
 import type { Terrain } from './terrain';
 import { areaAt, Area, NATURE } from './areas';
+import { syncExplorationToSupabase, loadExplorationFromSupabase } from './sync';
 
 export const GRID_CELL_SIZE = 24; // 24-meter grid cell resolution
 export const EXPLORATION_STORAGE_KEY = 'thecity.exploration.v1';
 export const LEGACY_DISCOVERED_KEY = 'thecity.discovered';
+
+let explorationUserId: string | null = null;
+export function setExplorationUserId(id: string | null) {
+  explorationUserId = id;
+}
 
 export interface ExplorationPayload {
   v: 1;
@@ -115,7 +121,7 @@ interface ExplorationState {
   newDiscoveryToast: string | null;
   initialized: boolean;
 
-  init: () => void;
+  init: (userId?: string) => void;
   recordPosition: (x: number, z: number, layout?: Layout, terrain?: Terrain) => { newCell: boolean; newArea: string | null };
   isCellExplored: (x: number, z: number) => boolean;
   isAreaExplored: (name: string) => boolean;
@@ -226,7 +232,8 @@ export const useExplorationStore = create<ExplorationState>((set, get) => ({
   newDiscoveryToast: null,
   initialized: false,
 
-  init: () => {
+  init: (userId?: string) => {
+    if (userId) explorationUserId = userId;
     if (get().initialized) return;
 
     // Load saved discoveries and merge additively with in-memory state
@@ -243,11 +250,40 @@ export const useExplorationStore = create<ExplorationState>((set, get) => ({
       initialized: true,
     });
 
+    // Asynchronously load and merge exploration progress from Supabase DB if signed in
+    const uid = userId || explorationUserId;
+    if (uid) {
+      loadExplorationFromSupabase(uid).then((remote) => {
+        if (remote) {
+          let updated = false;
+          for (const c of remote.cells) {
+            if (!activeCells.has(c)) { activeCells.add(c); updated = true; }
+          }
+          for (const a of remote.areas) {
+            if (!activeAreas.has(a)) { activeAreas.add(a); updated = true; }
+          }
+          if (updated) {
+            saveExplorationToStorage(activeCells, activeAreas);
+            set({
+              exploredCells: activeCells,
+              exploredAreas: activeAreas,
+              exploredCellsCount: activeCells.size,
+              exploredAreasCount: activeAreas.size,
+            });
+          }
+        }
+      }).catch(() => {});
+    }
+
     // Auto-save debounced timer: every 3.5 seconds if dirty
     if (typeof window !== 'undefined' && !autoSaveInterval) {
       autoSaveInterval = setInterval(() => {
         if (isDirty) {
           saveExplorationToStorage(activeCells, activeAreas);
+          const currentUid = explorationUserId;
+          if (currentUid) {
+            syncExplorationToSupabase(activeCells, activeAreas, currentUid);
+          }
           isDirty = false;
         }
       }, 3500);
@@ -255,6 +291,10 @@ export const useExplorationStore = create<ExplorationState>((set, get) => ({
       const handleExit = () => {
         if (isDirty) {
           saveExplorationToStorage(activeCells, activeAreas);
+          const currentUid = explorationUserId;
+          if (currentUid) {
+            syncExplorationToSupabase(activeCells, activeAreas, currentUid);
+          }
           isDirty = false;
         }
       };

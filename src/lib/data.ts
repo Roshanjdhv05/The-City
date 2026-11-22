@@ -6,6 +6,9 @@ import { Layout, makeLayout, baseLayout } from './layout';
 import type { Store, StoreConfig, User, Plot, Road, Region, Tier } from './types';
 import type { ExpansionPlan } from './expansion';
 import { create } from 'zustand';
+import { runLocalStorageMigration } from './sync';
+import { setExplorationUserId } from './exploration';
+import { setInventoryUserId } from './resources';
 
 export { SEED_STORES };
 const LS = 'thecity.stores', LU = 'thecity.user', LSV = 'thecity.seeded19', LSL = 'thecity.layout';
@@ -192,6 +195,15 @@ export async function claimWithPromoCode(
         updated_at: new Date().toISOString(),
       }, { onConflict: 'plot_id' });
       if (storeErr) throw new Error(storeErr.message);
+
+      // Record promo redemption in Supabase
+      try {
+        await supabase.from('promo_redemptions').insert({
+          promo_code: cleanCode,
+          user_id: user.id,
+          plot_id: plotId,
+        });
+      } catch {}
     }
   } else {
     ensureSeeded();
@@ -248,6 +260,28 @@ export async function verifyAdminCredentials(username: string, password: string)
   const u = (username || '').trim().toLowerCase();
   const p = (password || '').trim();
 
+  // If Supabase is connected, verify against database credentials via RPC
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.rpc('admin_verify_login', {
+        p_username: u,
+        p_password: p,
+      });
+      if (!error && data?.success) {
+        const adminUser: User = {
+          id: 'admin-master',
+          email: data.email || 'admin@thecity.local',
+        };
+        return { success: true, user: adminUser };
+      }
+      if (data?.error) {
+        return { success: false, error: data.error };
+      }
+    } catch (err) {
+      console.warn('[Admin] Server verification error, checking demo credentials fallback:', err);
+    }
+  }
+
   // Validate credentials requested: username 'admin', password 'adminjdhv114'
   const isMatch = (u === 'admin' || u === 'admin@thecity.local') && p === 'adminjdhv114';
 
@@ -275,11 +309,22 @@ export async function adminLogout(): Promise<void> {
 }
 
 export async function isAdmin(user: User | null): Promise<boolean> {
+  // When Supabase is connected, only trust the server RPC and never client LocalStorage
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.rpc('is_admin');
+      if (!error && data === true) return true;
+    } catch {}
+    if (!user) return false;
+    const em = (user.email || '').toLowerCase();
+    return em === 'admin@thecity.local' || em === DEMO_ADMIN.toLowerCase();
+  }
+
+  // Local demo mode only
   if (typeof window !== 'undefined' && localStorage.getItem('thecity.admin_session') === '1') {
     return true;
   }
   if (!user) return false;
-  if (supabase) { const { data, error } = await supabase.rpc('is_admin'); if (!error && data === true) return true; }
   const em = (user.email || '').toLowerCase();
   return em === 'admin' || em === 'admin@thecity.local' || em === DEMO_ADMIN.toLowerCase();
 }
@@ -350,16 +395,64 @@ export const useAuth = create<Auth>((set) => ({
   user: null, ready: false,
   init: () => {
     if (supabase) {
-      supabase.auth.getSession().then(({ data }) => set({ user: data.session ? { id: data.session.user.id, email: data.session.user.email || '' } : null, ready: true }));
-      supabase.auth.onAuthStateChange((_e, s) => set({ user: s ? { id: s.user.id, email: s.user.email || '' } : null }));
-    } else { try { set({ user: JSON.parse(localStorage.getItem(LU) || 'null'), ready: true }); } catch { set({ ready: true }); } }
+      supabase.auth.getSession().then(({ data }) => {
+        const u = data.session ? { id: data.session.user.id, email: data.session.user.email || '' } : null;
+        set({ user: u, ready: true });
+        if (u) {
+          setExplorationUserId(u.id);
+          setInventoryUserId(u.id);
+          runLocalStorageMigration(u.id);
+        }
+      });
+      supabase.auth.onAuthStateChange((_e, s) => {
+        const u = s ? { id: s.user.id, email: s.user.email || '' } : null;
+        set({ user: u });
+        if (u) {
+          setExplorationUserId(u.id);
+          setInventoryUserId(u.id);
+          runLocalStorageMigration(u.id);
+        }
+      });
+    } else {
+      try {
+        const u = JSON.parse(localStorage.getItem(LU) || 'null');
+        set({ user: u, ready: true });
+        if (u?.id) {
+          setExplorationUserId(u.id);
+          setInventoryUserId(u.id);
+        }
+      } catch {
+        set({ ready: true });
+      }
+    }
   },
   signIn: async (email, password, up) => {
     if (supabase) {
       const r = up ? await supabase.auth.signUp({ email, password }) : await supabase.auth.signInWithPassword({ email, password });
       if (r.error) throw new Error(r.error.message);
       if (up && !r.data.session) throw new Error('Check your email to confirm your account, then sign in.');
-    } else { const u = { id: 'demo-' + btoa(email).slice(0, 10), email }; localStorage.setItem(LU, JSON.stringify(u)); set({ user: u }); }
+      if (r.data.session) {
+        const u = { id: r.data.session.user.id, email: r.data.session.user.email || '' };
+        setExplorationUserId(u.id);
+        setInventoryUserId(u.id);
+        runLocalStorageMigration(u.id);
+      }
+    } else {
+      const u = { id: 'demo-' + btoa(email).slice(0, 10), email };
+      localStorage.setItem(LU, JSON.stringify(u));
+      set({ user: u });
+      setExplorationUserId(u.id);
+      setInventoryUserId(u.id);
+    }
   },
-  signOut: async () => { if (supabase) await supabase.auth.signOut(); else { localStorage.removeItem(LU); set({ user: null }); } },
+  signOut: async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    } else {
+      localStorage.removeItem(LU);
+    }
+    setExplorationUserId(null);
+    setInventoryUserId(null);
+    set({ user: null });
+  },
 }));

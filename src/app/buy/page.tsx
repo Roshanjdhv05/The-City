@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useStores } from '@/components/useStores';
 import { purchasePlot, claimWithPromoCode, useAuth } from '@/lib/data';
+import { syncSavedPlotsToSupabase, loadSavedPlotsFromSupabase } from '@/lib/sync';
 import { FACADES, TEMPLATES, THEMES, BUILDING_CATEGORIES, defaultConfig } from '@/lib/templates';
 import { computeStats } from '@/lib/stats';
 import type { Plot, StoreConfig } from '@/lib/types';
@@ -58,11 +59,25 @@ function Marketplace() {
 
   useEffect(() => {
     try { setSaved(JSON.parse(localStorage.getItem('thecity.saved') || '[]')); } catch {}
-  }, []);
+    if (user?.id) {
+      loadSavedPlotsFromSupabase(user.id).then(remote => {
+        if (remote && Array.isArray(remote)) {
+          setSaved(curr => {
+            const merged = Array.from(new Set([...curr, ...remote]));
+            try { localStorage.setItem('thecity.saved', JSON.stringify(merged)); } catch {}
+            return merged;
+          });
+        }
+      }).catch(() => {});
+    }
+  }, [user]);
 
   const toggleSave = (id: string) => setSaved(s => {
     const n = s.includes(id) ? s.filter(x => x !== id) : [...s, id];
     try { localStorage.setItem('thecity.saved', JSON.stringify(n)); } catch {}
+    if (user?.id) {
+      syncSavedPlotsToSupabase(n, user.id);
+    }
     return n;
   });
 
