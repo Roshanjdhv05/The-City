@@ -194,3 +194,32 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.sync_user_exploration(text[], text[]) TO authenticated;
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- User Profiles (Migration 011)
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+  user_id text PRIMARY KEY,
+  username text UNIQUE NOT NULL,
+  avatar_color text DEFAULT '#2563eb',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS user_profiles_username_lower_idx
+  ON public.user_profiles (lower(username));
+
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "user_profiles are public to read"
+  ON public.user_profiles FOR SELECT
+  USING (true);
+
+CREATE POLICY "allow insert user_profiles"
+  ON public.user_profiles FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "allow update user_profiles"
+  ON public.user_profiles FOR UPDATE
+  USING (true);
+
+
