@@ -7,8 +7,8 @@ import { DEMO } from '@/lib/supabase';
 
 const LINKS: [string, string, string][] = [
   ['/', 'Home', '🏠'],
-  ['/city', 'Explore City', '🏙️'],
-  ['/buy', 'Properties', '🏢'],
+  ['/city', 'Explore', '🏙️'],
+  ['/buy', 'Markets', '🏢'],
   ['/about', 'About', 'ℹ️'],
   ['/faq', 'FAQ', '❓'],
 ];
@@ -84,42 +84,45 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
         </Link>
 
         {/* Center Navigation Links (Desktop) */}
-        <nav className="nav-desktop-links">
-          {LINKS.map(([h, l]) => {
+        <nav className="nav-desktop-links" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          {LINKS.map(([h, l, icon]) => {
             const active = path === h;
             return (
               <Link
                 key={h}
                 href={h}
                 style={{
-                  position: 'relative',
-                  fontSize: '0.94rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '0.88rem',
                   fontWeight: active ? '700' : '500',
-                  color: active ? '#1b4d2e' : '#4b5563',
+                  color: active ? '#0f172a' : '#475569',
                   textDecoration: 'none',
-                  padding: '0.4rem 0.2rem',
-                  transition: 'color 0.2s ease',
+                  padding: '0.42rem 0.95rem',
+                  borderRadius: '999px',
+                  background: active ? '#f1f5f9' : 'transparent',
+                  transition: 'all 0.2s ease',
                 }}
               >
-                {l}
-                {active && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: '10%',
-                      right: '10%',
-                      height: '2px',
-                      background: '#1b4d2e',
-                      borderRadius: '2px',
-                    }}
-                  />
-                )}
+                {active && <span>{icon}</span>}
+                <span>{l}</span>
               </Link>
             );
           })}
           {admin && (
-            <Link href="/admin" style={{ fontSize: '0.94rem', fontWeight: '500', color: '#4b5563', textDecoration: 'none' }}>
+            <Link
+              href="/admin"
+              style={{
+                fontSize: '0.88rem',
+                fontWeight: (path as string) === '/admin' ? '700' : '500',
+                color: (path as string) === '/admin' ? '#0f172a' : '#475569',
+                textDecoration: 'none',
+                padding: '0.42rem 0.95rem',
+                borderRadius: '999px',
+                background: (path as string) === '/admin' ? '#f1f5f9' : 'transparent',
+              }}
+            >
               Admin
             </Link>
           )}
@@ -127,79 +130,27 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
 
         {/* Action Button & 3-Line Hamburger for Mobile */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <div className="nav-desktop-actions">
+          <div className="nav-desktop-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Link
-              href="/profile"
-              className="nav-signin-link"
-              style={{
-                color: (path as string) === '/profile' ? '#1b4d2e' : '#4b5563',
-                fontSize: '0.88rem',
-                fontWeight: (path as string) === '/profile' ? 700 : 500,
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.35rem 0.65rem',
-                borderRadius: '999px',
-                background: (path as string) === '/profile' ? '#e8f5e9' : 'transparent',
-              }}
-            >
-              <span>👤</span>
-              <span>Profile</span>
-            </Link>
-
-            {user ? (
-              <button
-                onClick={signOut}
-                className="nav-signin-link"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#94a3b8',
-                  fontSize: '0.84rem',
-                  cursor: 'pointer',
-                  fontWeight: 500,
-                }}
-              >
-                Sign out
-              </button>
-            ) : (
-              <Link
-                href="/login"
-                className="nav-signin-link"
-                style={{
-                  color: '#4b5563',
-                  fontSize: '0.9rem',
-                  fontWeight: 500,
-                  textDecoration: 'none',
-                  padding: '0.4rem 0.8rem',
-                }}
-              >
-                Sign in
-              </Link>
-            )}
-
-            <Link
-              href="/city"
-              className="nav-play-btn"
+              href={user ? '/profile' : '/login'}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.45rem',
-                background: '#0d2d1a',
-                color: '#ffffff',
-                padding: '0.68rem 1.4rem',
+                gap: '6px',
+                padding: '0.45rem 1.15rem',
                 borderRadius: '999px',
-                fontSize: '0.92rem',
+                border: '1px solid #cbd5e1',
+                background: '#ffffff',
+                color: '#0f172a',
+                fontSize: '0.86rem',
                 fontWeight: 600,
                 textDecoration: 'none',
-                boxShadow: '0 4px 14px rgba(13, 45, 26, 0.28)',
-                transition: 'transform 0.15s ease, background 0.2s',
-                whiteSpace: 'nowrap',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                transition: 'all 0.2s ease',
               }}
             >
-              <span>Play Now</span>
-              <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>→</span>
+              <span style={{ fontSize: '0.9rem' }}>👤</span>
+              <span>{user ? (user.email.split('@')[0]) : 'Login'}</span>
             </Link>
           </div>
 

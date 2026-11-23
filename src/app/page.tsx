@@ -1,713 +1,673 @@
 'use client';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import Image from 'next/image';
 import Nav from '@/components/Nav';
-
-const CityHeroScene = dynamic(() => import('@/components/CityHeroScene'), { ssr: false });
-const PropertyCustomizer = dynamic(() => import('@/components/PropertyCustomizer'), { ssr: false });
-
-// ── Professional SVG icons for each category ─────────────────────────────────
-const CATEGORIES = [
-  {
-    label: 'Software & Tech',
-    count: '120+ Stores',
-    gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-    bg: '#eff6ff',
-    text: '#1d4ed8',
-    svg: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
-        <line x1="14" y1="4" x2="10" y2="20" />
-      </svg>
-    ),
-  },
-  {
-    label: 'E-Commerce & Retail',
-    count: '80+ Stores',
-    gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-    bg: '#fffbeb',
-    text: '#d97706',
-    svg: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-        <line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Gaming & Entertainment',
-    count: '60+ Stores',
-    gradient: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
-    bg: '#f5f3ff',
-    text: '#6d28d9',
-    svg: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="6" width="20" height="12" rx="4" />
-        <line x1="6" y1="12" x2="10" y2="12" /><line x1="8" y1="10" x2="8" y2="14" />
-        <circle cx="15" cy="10" r="1" fill="currentColor" /><circle cx="17" cy="13" r="1" fill="currentColor" />
-      </svg>
-    ),
-  },
-  {
-    label: 'AI & Innovation',
-    count: '70+ Stores',
-    gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    bg: '#ecfdf5',
-    text: '#059669',
-    svg: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 110 2h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 110-2h1a7 7 0 017-7h1V5.73A2 2 0 0110 4a2 2 0 012-2z" />
-        <circle cx="8.5" cy="13.5" r="1.5" fill="currentColor" /><circle cx="15.5" cy="13.5" r="1.5" fill="currentColor" />
-        <path d="M9 17c.83 1 5.17 1 6 0" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Real Estate',
-    count: '50+ Stores',
-    gradient: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)',
-    bg: '#fdf2f8',
-    text: '#be185d',
-    svg: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Creative Studios',
-    count: '40+ Stores',
-    gradient: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-    bg: '#ecfeff',
-    text: '#0891b2',
-    svg: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Finance & Banking',
-    count: '35+ Stores',
-    gradient: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
-    bg: '#f0f9ff',
-    text: '#0284c7',
-    svg: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Health & Wellness',
-    count: '45+ Stores',
-    gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-    bg: '#fff7ed',
-    text: '#ea580c',
-    svg: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Education & Learning',
-    count: '55+ Stores',
-    gradient: 'linear-gradient(135deg, #84cc16 0%, #65a30d 100%)',
-    bg: '#f7fee7',
-    text: '#65a30d',
-    svg: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-        <path d="M6 12v5c3 3 9 3 12 0v-5" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Food & Dining',
-    count: '90+ Stores',
-    gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-    bg: '#fef2f2',
-    text: '#dc2626',
-    svg: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18 8h1a4 4 0 010 8h-1" /><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z" />
-        <line x1="6" y1="1" x2="6" y2="4" /><line x1="10" y1="1" x2="10" y2="4" /><line x1="14" y1="1" x2="14" y2="4" />
-      </svg>
-    ),
-  },
-];
-
-// ── Infinite auto-scroll marquee track ───────────────────────────────────────
-function DiscoverMarquee() {
-  // Duplicate for seamless loop
-  const all = [...CATEGORIES, ...CATEGORIES];
-
-  return (
-    <div
-      style={{
-        overflow: 'hidden',
-        width: '100%',
-        position: 'relative',
-        // fade edges
-      }}
-    >
-      {/* Left & right fade masks */}
-      <div
-        className="home-marquee-fade"
-        style={{
-          position: 'absolute', top: 0, left: 0, bottom: 0, width: '80px', zIndex: 2,
-          background: 'linear-gradient(to right, #ffffff 0%, transparent 100%)',
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        className="home-marquee-fade"
-        style={{
-          position: 'absolute', top: 0, right: 0, bottom: 0, width: '80px', zIndex: 2,
-          background: 'linear-gradient(to left, #ffffff 0%, transparent 100%)',
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Scrolling track */}
-      <div
-        className="marquee-track"
-        style={{
-          display: 'flex',
-          gap: '1.25rem',
-          width: 'max-content',
-        }}
-      >
-        {all.map((cat, i) => (
-          <Link
-            key={i}
-            href="/city"
-            className="marquee-card"
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '0.9rem',
-              padding: '1.6rem 1.4rem',
-              background: '#ffffff',
-              borderRadius: '24px',
-              border: '1px solid rgba(226,232,240,0.9)',
-              boxShadow: '0 4px 20px rgba(15,23,42,0.06)',
-              textDecoration: 'none',
-              minWidth: '170px',
-              flexShrink: 0,
-              transition: 'transform 0.25s ease, box-shadow 0.25s ease',
-              cursor: 'pointer',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Icon circle */}
-            <div
-              style={{
-                width: 68, height: 68, borderRadius: '20px',
-                background: cat.bg,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: cat.text,
-                position: 'relative',
-                flexShrink: 0,
-              }}
-            >
-              {/* Gradient glow behind icon */}
-              <div
-                style={{
-                  position: 'absolute', inset: 0, borderRadius: '20px',
-                  background: cat.gradient, opacity: 0.12,
-                }}
-              />
-              {cat.svg}
-            </div>
-
-            {/* Label */}
-            <div style={{ textAlign: 'center' }}>
-              <div
-                style={{
-                  fontSize: '0.86rem', fontWeight: 700, color: '#0f172a',
-                  lineHeight: 1.25, marginBottom: '5px',
-                }}
-              >
-                {cat.label}
-              </div>
-              <div
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '4px',
-                  background: cat.bg, color: cat.text,
-                  padding: '3px 10px', borderRadius: '999px',
-                  fontSize: '0.72rem', fontWeight: 700,
-                }}
-              >
-                {cat.count}
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Bottom gradient accent bar */}
-            <div
-              style={{
-                position: 'absolute', bottom: 0, left: 0, right: 0,
-                height: '3px', background: cat.gradient, opacity: 0.7,
-              }}
-            />
-          </Link>
-        ))}
-      </div>
-
-      <style>{`
-        .marquee-track {
-          animation: marqueeScroll 38s linear infinite;
-        }
-        .marquee-track:hover {
-          animation-play-state: paused;
-        }
-        @keyframes marqueeScroll {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .marquee-card:hover {
-          transform: translateY(-6px) scale(1.03);
-          box-shadow: 0 16px 40px rgba(15,23,42,0.13) !important;
-          border-color: rgba(37,99,235,0.3) !important;
-        }
-      `}</style>
-    </div>
-  );
-}
 
 export default function Home() {
   return (
-    <>
-      {/* ── Navbar ── */}
+    <div className="new-home-wrap">
+      {/* ── Top Floating Navigation ── */}
       <Nav overlay />
 
-      {/* ── Page Wrapper ── */}
-      <div style={{ background: '#f0f7ff', minHeight: '100vh', overflowX: 'hidden' }}>
+      {/* ════════════════════════════════════════════════════════════
+          1. HERO SECTION (100% matched to herosection.png artwork)
+          ════════════════════════════════════════════════════════════ */}
+      <section
+        className="new-home-hero"
+        style={{ backgroundImage: "url('/herosection.png')" }}
+      >
+        <div className="home-hero-overlay" />
 
-        {/* ════════════════════════════════════════════
-            HERO SECTION — Left copy + Right 3D Model
-            ════════════════════════════════════════════ */}
-        <section
-          style={{
-            position: 'relative',
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            overflow: 'hidden',
-            background: 'linear-gradient(135deg, #e8f4ff 0%, #f0f7ff 40%, #dbeafe 100%)',
-          }}
-        >
-          {/* Background soft radial glows */}
-          <div
-            style={{
-              position: 'absolute', inset: 0, pointerEvents: 'none',
-              background: 'radial-gradient(ellipse 60% 55% at 70% 50%, rgba(99, 180, 255, 0.22) 0%, transparent 70%), radial-gradient(ellipse 40% 40% at 15% 30%, rgba(190, 227, 255, 0.35) 0%, transparent 70%)',
-            }}
-          />
+        {/* Hero Left Content */}
+        <div className="home-hero-content">
+          {/* Badge */}
+          <div className="home-pill-badge home-badge-glass">
+            <span style={{ color: '#22c55e', fontSize: '0.85rem' }}>●</span>
+            <span>Virtual Business Marketplace</span>
+          </div>
 
-          <div
-            className="home-hero-grid"
+          {/* Heading */}
+          <h1
             style={{
-              maxWidth: '1340px', margin: '0 auto', padding: 'clamp(6rem, 10vh, 9rem) clamp(1.5rem, 5vw, 3.5rem) clamp(3rem, 6vh, 5rem)',
-              display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.3fr)',
-              gap: 'clamp(2rem, 5vw, 5rem)', alignItems: 'center', width: '100%',
+              fontSize: 'clamp(2.4rem, 5.2vw, 4.2rem)',
+              fontWeight: 800,
+              color: '#ffffff',
+              lineHeight: 1.12,
+              letterSpacing: '-0.02em',
+              textShadow: '0 4px 24px rgba(0,0,0,0.45)',
+              margin: '0 0 16px',
             }}
           >
-            {/* ── LEFT: Text & CTAs ── */}
-            <div className="home-hero-content" style={{ display: 'flex', flexDirection: 'column', gap: '1.6rem' }}>
-              {/* Tagline pill */}
-              <div
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '8px',
-                  padding: '8px 18px', borderRadius: '999px',
-                  background: 'rgba(37, 99, 235, 0.1)', border: '1px solid rgba(37, 99, 235, 0.25)',
-                  fontSize: '0.88rem', fontWeight: 700, color: '#1d4ed8',
-                  width: 'fit-content',
-                }}
-              >
-                <span
-                  style={{
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: '#2563eb', boxShadow: '0 0 8px rgba(37, 99, 235, 0.6)',
-                    display: 'inline-block',
-                  }}
+            Explore. Connect.<br />
+            Grow in <span style={{ color: '#facc15' }}>THE CITY</span>
+          </h1>
+
+          {/* Subtitle */}
+          <p
+            style={{
+              color: 'rgba(255, 255, 255, 0.92)',
+              fontSize: 'clamp(0.95rem, 1.4vw, 1.15rem)',
+              lineHeight: 1.55,
+              textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+              margin: '0 0 28px',
+              maxWidth: '520px',
+            }}
+          >
+            Step into a vibrant virtual world where businesses, people and opportunities meet.
+          </p>
+
+          {/* Buttons */}
+          <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Link href="/city" className="home-hero-btn-primary">
+              <span style={{ fontSize: '0.78rem' }}>▶</span>
+              <span>Explore the City</span>
+              <span style={{ fontSize: '1rem', marginLeft: '2px' }}>›</span>
+            </Link>
+            <Link href="/buy" className="home-hero-btn-secondary">
+              <span>📍</span>
+              <span>View Map</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Right Floating Badge attached to City Building */}
+        <div className="home-hero-badge-right">
+          <span style={{ fontSize: '1.25rem', marginBottom: '2px' }}>🛍️</span>
+          <span>Shop</span>
+          <span>Learn</span>
+          <span>Network</span>
+        </div>
+
+        {/* Bottom Floating Glass Pill Bar */}
+        <div className="home-hero-bottom-bar">
+          <Link href="/buy" className="home-hero-bottom-item">
+            <span style={{ fontSize: '1.3rem' }}>🏪</span>
+            <span>Discover<br /><strong>Businesses</strong></span>
+          </Link>
+          <div style={{ width: '1px', height: '22px', background: 'rgba(255,255,255,0.25)' }} />
+          <Link href="/city" className="home-hero-bottom-item">
+            <span style={{ fontSize: '1.3rem' }}>👥</span>
+            <span>Meet<br /><strong>People</strong></span>
+          </Link>
+          <div style={{ width: '1px', height: '22px', background: 'rgba(255,255,255,0.25)' }} />
+          <Link href="/buy" className="home-hero-bottom-item">
+            <span style={{ fontSize: '1.3rem' }}>🚀</span>
+            <span>Explore<br /><strong>New Opportunities</strong></span>
+          </Link>
+          <div style={{ width: '1px', height: '22px', background: 'rgba(255,255,255,0.25)' }} />
+          <Link href="/about" className="home-hero-bottom-item">
+            <span style={{ fontSize: '1.3rem' }}>🌐</span>
+            <span>Be Part of a<br /><strong>Growing Community</strong></span>
+          </Link>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════
+          2. WHY THE CITY? A Smarter Way to Explore & Grow
+          ════════════════════════════════════════════════════════════ */}
+      <section style={{ background: '#ffffff' }}>
+        <div className="home-section-grid">
+          {/* Left Title Column */}
+          <div>
+            <div className="home-pill-badge home-badge-green">
+              Why THE CITY?
+            </div>
+            <h2
+              style={{
+                fontSize: 'clamp(2rem, 3.2vw, 2.7rem)',
+                fontWeight: 800,
+                color: '#0f172a',
+                lineHeight: 1.18,
+                letterSpacing: '-0.02em',
+                margin: '0 0 16px',
+              }}
+            >
+              A Smarter Way to Explore & Grow
+            </h2>
+            <p
+              style={{
+                fontSize: '0.94rem',
+                color: '#64748b',
+                lineHeight: 1.6,
+                margin: '0 0 24px',
+              }}
+            >
+              Discover a world full of possibilities — from businesses and services to events and communities, all in one immersive virtual space.
+            </p>
+            <Link href="/about" className="home-green-btn">
+              <span>Learn More</span>
+              <span>›</span>
+            </Link>
+          </div>
+
+          {/* Right 4 Cards Grid */}
+          <div className="home-why-cards-grid">
+            {/* Card 1 */}
+            <div className="home-why-card">
+              <div style={{ width: 48, height: 48, position: 'relative', marginBottom: '8px' }}>
+                <Image
+                  src="/images/home/icon-store.png"
+                  alt="Discover Businesses"
+                  fill
+                  style={{ objectFit: 'contain' }}
                 />
-                Virtual Business City
               </div>
-
-              {/* Headline */}
-              <h1
-                className="home-hero-title"
-                style={{
-                  margin: 0,
-                  fontSize: 'clamp(2.4rem, 5.5vw, 4.8rem)',
-                  fontWeight: 900,
-                  lineHeight: 1.05,
-                  letterSpacing: '-0.03em',
-                  color: '#0f172a',
-                }}
-              >
-                A New Place<br />
-                for Businesses<br />
-                to <span style={{ color: '#2563eb' }}>Exist.</span>
-              </h1>
-
-              {/* Sub */}
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 'clamp(1rem, 1.3vw, 1.15rem)',
-                  color: '#475569',
-                  lineHeight: 1.65,
-                  maxWidth: '42ch',
-                }}
-              >
-                Explore a vibrant virtual city, discover businesses and claim your own building.
+              <h3 style={{ fontSize: '0.96rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>
+                Discover Businesses
+              </h3>
+              <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+                Explore top stores and services.
               </p>
-
-              {/* CTAs */}
-              <div className="home-hero-ctas" style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <Link
-                  href="/city"
-                  className="home-explore-btn"
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
-                    background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                    color: '#ffffff', padding: '0.95rem 2rem',
-                    borderRadius: '999px', fontSize: '1rem', fontWeight: 700,
-                    textDecoration: 'none',
-                    boxShadow: '0 8px 28px rgba(37, 99, 235, 0.4), 0 2px 6px rgba(37, 99, 235, 0.3)',
-                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                  }}
-                >
-                  Explore City
-                  <span style={{ fontSize: '1.1rem' }}>→</span>
-                </Link>
-
-                <Link
-                  href="/city"
-                  className="home-watch-demo-btn"
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                    background: 'rgba(255, 255, 255, 0.85)',
-                    backdropFilter: 'blur(12px)',
-                    color: '#0f172a', padding: '0.95rem 1.6rem',
-                    borderRadius: '999px', fontSize: '1rem', fontWeight: 600,
-                    textDecoration: 'none',
-                    border: '1px solid rgba(203, 213, 225, 0.8)',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-                    transition: 'transform 0.15s ease',
-                  }}
-                >
-                  <span style={{ fontSize: '1rem' }}>▶</span>
-                  Watch Demo
-                </Link>
-              </div>
             </div>
 
-            {/* ── RIGHT: Procedural 3D City Scene ── */}
+            {/* Card 2 */}
+            <div className="home-why-card">
+              <div style={{ width: 48, height: 48, position: 'relative', marginBottom: '8px' }}>
+                <Image
+                  src="/images/home/icon-meet.png"
+                  alt="Meet People"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                />
+              </div>
+              <h3 style={{ fontSize: '0.96rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>
+                Meet People
+              </h3>
+              <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+                Connect with like-minded users.
+              </p>
+            </div>
+
+            {/* Card 3 */}
+            <div className="home-why-card">
+              <div style={{ width: 48, height: 48, position: 'relative', marginBottom: '8px' }}>
+                <Image
+                  src="/images/home/icon-rocket.png"
+                  alt="Explore Opportunities"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                />
+              </div>
+              <h3 style={{ fontSize: '0.96rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>
+                Explore Opportunities
+              </h3>
+              <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+                Find new ideas and opportunities.
+              </p>
+            </div>
+
+            {/* Card 4 */}
+            <div className="home-why-card">
+              <div style={{ width: 48, height: 48, position: 'relative', marginBottom: '8px' }}>
+                <Image
+                  src="/images/home/icon-handshake.png"
+                  alt="Be Part of Community"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                />
+              </div>
+              <h3 style={{ fontSize: '0.96rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>
+                Be Part of Community
+              </h3>
+              <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+                Join a growing community.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════
+          3. DISCOVER THE VIBRANT CITY (Interactive Map Artwork)
+          ════════════════════════════════════════════════════════════ */}
+      <section style={{ background: '#f8fafc', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+        <div className="home-section-grid">
+          {/* Left Title Column */}
+          <div>
+            <div className="home-pill-badge home-badge-green">
+              Explore
+            </div>
+            <h2
+              style={{
+                fontSize: 'clamp(2rem, 3.2vw, 2.7rem)',
+                fontWeight: 800,
+                color: '#0f172a',
+                lineHeight: 1.18,
+                letterSpacing: '-0.02em',
+                margin: '0 0 16px',
+              }}
+            >
+              Discover the Vibrant City
+            </h2>
+            <p
+              style={{
+                fontSize: '0.94rem',
+                color: '#64748b',
+                lineHeight: 1.6,
+                margin: '0 0 24px',
+              }}
+            >
+              Walk, explore and experience a dynamic city filled with shops, offices, restaurants and more.
+            </p>
+            <Link href="/buy" className="home-green-btn">
+              <span>Open City Map</span>
+              <span>›</span>
+            </Link>
+          </div>
+
+          {/* Right City Artwork Card with Interactive Pins */}
+          <div className="home-discover-card">
+            <Image
+              src="/discover.png"
+              alt="Discover the Vibrant City 3D Map"
+              width={1400}
+              height={800}
+              priority
+              style={{ width: '100%', height: 'auto', display: 'block' }}
+            />
+
+            {/* Pin 1: Shopping District */}
+            <Link
+              href="/buy?district=Retail"
+              className="home-map-pin"
+              style={{
+                top: '18%',
+                left: '12%',
+                color: '#7e22ce',
+                border: '1.5px solid #d8b4fe',
+              }}
+            >
+              <span>🛍️</span>
+              <span>Shopping District</span>
+            </Link>
+
+            {/* Pin 2: Civic Plaza */}
+            <Link
+              href="/city"
+              className="home-map-pin"
+              style={{
+                top: '12%',
+                left: '46%',
+                color: '#1e3a8a',
+                border: '1.5px solid #93c5fd',
+              }}
+            >
+              <span>📍</span>
+              <span>Civic Plaza</span>
+            </Link>
+
+            {/* Pin 3: Business Hub */}
+            <Link
+              href="/buy?district=Financial"
+              className="home-map-pin"
+              style={{
+                top: '18%',
+                right: '12%',
+                color: '#6b21a8',
+                border: '1.5px solid #d8b4fe',
+              }}
+            >
+              <span>🏢</span>
+              <span>Business Hub</span>
+            </Link>
+
+            {/* Pin 4: Food Zone */}
+            <Link
+              href="/buy?district=Commercial"
+              className="home-map-pin"
+              style={{
+                bottom: '24%',
+                left: '32%',
+                color: '#c2410c',
+                border: '1.5px solid #fdba74',
+              }}
+            >
+              <span>🍽️</span>
+              <span>Food Zone</span>
+            </Link>
+
+            {/* Pin 5: Entertainment */}
+            <Link
+              href="/buy?district=Innovation"
+              className="home-map-pin"
+              style={{
+                bottom: '24%',
+                right: '26%',
+                color: '#1d4ed8',
+                border: '1.5px solid #93c5fd',
+              }}
+            >
+              <span>🎮</span>
+              <span>Entertainment</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════
+          4. VISIT OUR MARKETPLACES
+          ════════════════════════════════════════════════════════════ */}
+      <section style={{ background: '#ffffff' }}>
+        <div className="home-section-grid">
+          {/* Left Title Column */}
+          <div>
+            <div className="home-pill-badge home-badge-green">
+              Our Marketplaces
+            </div>
+            <h2
+              style={{
+                fontSize: 'clamp(2rem, 3.2vw, 2.7rem)',
+                fontWeight: 800,
+                color: '#0f172a',
+                lineHeight: 1.18,
+                letterSpacing: '-0.02em',
+                margin: '0 0 16px',
+              }}
+            >
+              Visit Our Marketplaces
+            </h2>
+            <p
+              style={{
+                fontSize: '0.94rem',
+                color: '#64748b',
+                lineHeight: 1.6,
+                margin: '0 0 24px',
+              }}
+            >
+              Explore and grow with the best markets for modern technology and services.
+            </p>
+            <Link href="/buy" className="home-green-btn">
+              <span>Explore All Markets</span>
+              <span>›</span>
+            </Link>
+          </div>
+
+          {/* Right 5 Category Cards */}
+          <div className="home-market-cards-grid">
+            {/* Market 1 */}
+            <Link href="/buy" className="home-market-card">
+              <div style={{ width: 52, height: 50, position: 'relative', margin: '0 auto 12px' }}>
+                <Image
+                  src="/images/home/market-saas.png"
+                  alt="SaaS Market"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '4px' }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.25 }}>
+                  SaaS<br />Market
+                </span>
+                <span className="home-market-arrow">→</span>
+              </div>
+            </Link>
+
+            {/* Market 2 */}
+            <Link href="/buy" className="home-market-card">
+              <div style={{ width: 52, height: 50, position: 'relative', margin: '0 auto 12px' }}>
+                <Image
+                  src="/images/home/market-web.png"
+                  alt="Web Development"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '4px' }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.25 }}>
+                  Web<br />Development
+                </span>
+                <span className="home-market-arrow">→</span>
+              </div>
+            </Link>
+
+            {/* Market 3 */}
+            <Link href="/buy" className="home-market-card">
+              <div style={{ width: 52, height: 50, position: 'relative', margin: '0 auto 12px' }}>
+                <Image
+                  src="/images/home/market-ai.png"
+                  alt="AI"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '4px' }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.25 }}>
+                  AI
+                </span>
+                <span className="home-market-arrow">→</span>
+              </div>
+            </Link>
+
+            {/* Market 4 */}
+            <Link href="/buy" className="home-market-card">
+              <div style={{ width: 52, height: 50, position: 'relative', margin: '0 auto 12px' }}>
+                <Image
+                  src="/images/home/market-mobile.png"
+                  alt="Mobile App"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '4px' }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.25 }}>
+                  Mobile<br />App
+                </span>
+                <span className="home-market-arrow">→</span>
+              </div>
+            </Link>
+
+            {/* Market 5 */}
+            <Link href="/buy" className="home-market-card">
+              <div style={{ width: 52, height: 50, position: 'relative', margin: '0 auto 12px' }}>
+                <Image
+                  src="/images/home/market-windows.png"
+                  alt="Windows App"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '4px' }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.25 }}>
+                  Windows<br />App
+                </span>
+                <span className="home-market-arrow">→</span>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════
+          5. COMMUNITY BANNER & FREE BUILDING CLAIM
+          ════════════════════════════════════════════════════════════ */}
+      <section style={{ background: '#f8fafc', paddingTop: '40px' }}>
+        <div className="home-community-grid">
+          {/* Left Community Card */}
+          <div className="home-community-banner">
+            <div style={{ zIndex: 2, maxWidth: '420px' }}>
+              <div className="home-pill-badge home-badge-glass" style={{ marginBottom: '14px' }}>
+                Join the Movement
+              </div>
+              <h2
+                style={{
+                  fontSize: 'clamp(1.8rem, 2.8vw, 2.3rem)',
+                  fontWeight: 800,
+                  color: '#ffffff',
+                  lineHeight: 1.15,
+                  margin: '0 0 12px',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                Be Part of a Growing Community
+              </h2>
+              <p style={{ fontSize: '0.94rem', color: 'rgba(255, 255, 255, 0.9)', margin: 0, lineHeight: 1.5 }}>
+                Connect, collaborate and grow with people across the world.
+              </p>
+            </div>
+
+            {/* Characters Artwork */}
             <div
-              className="home-hero-scene-container"
               style={{
                 position: 'relative',
+                width: 'clamp(180px, 28vw, 260px)',
+                height: '135px',
+                flexShrink: 0,
+                alignSelf: 'flex-end',
+              }}
+            >
+              <Image
+                src="/images/home/community-avatars.png"
+                alt="Community Members"
+                fill
+                style={{ objectFit: 'contain', objectPosition: 'bottom right' }}
+              />
+            </div>
+          </div>
+
+          {/* Right Free Building Card */}
+          <div className="home-gift-card">
+            <div style={{ width: 48, height: 40, position: 'relative', margin: '0 auto 4px' }}>
+              <Image
+                src="/images/home/gift-icon.png"
+                alt="Gift Ribbon"
+                fill
+                style={{ objectFit: 'contain' }}
+              />
+            </div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>
+              Get Free<br />Building Now!
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 14px', lineHeight: 1.45, maxWidth: '200px' }}>
+              Claim your own building and start your journey.
+            </p>
+            <Link href="/buy" className="home-green-btn" style={{ padding: '9px 24px', fontSize: '0.86rem' }}>
+              <span>Claim Now</span>
+              <span>›</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════
+          6. PRE-FOOTER READY TO EXPLORE CAPSULE
+          ════════════════════════════════════════════════════════════ */}
+      <section style={{ background: '#f8fafc', padding: '0 24px 40px' }}>
+        <div className="home-prefooter-capsule">
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                height: 'clamp(460px, 60vh, 680px)',
+                color: '#ffffff',
+                fontWeight: 900,
+                fontSize: '1.1rem',
               }}
             >
-              <div style={{ position: 'relative', width: '100%', height: '100%', zIndex: 1 }}>
-                <CityHeroScene />
-              </div>
+              C
             </div>
+            <span style={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '-0.02em', color: '#0f172a' }}>
+              THE CITY
+            </span>
           </div>
-        </section>
 
-        {/* ════════════════════════════════════════════
-            SECTION 2 — Discover Businesses (Auto-Scroll Marquee)
-            ════════════════════════════════════════════ */}
-        <section
-          style={{
-            padding: 'clamp(3.5rem, 6vh, 6rem) 0',
-            background: '#ffffff',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Section heading (padded) */}
-          <div style={{ maxWidth: '1340px', margin: '0 auto', padding: '0 clamp(1rem, 5vw, 3.5rem)', marginBottom: '2.5rem' }}>
-            <div className="home-discover-header" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-              <div>
-                {/* Step badge */}
-                <div
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '8px',
-                    background: 'linear-gradient(135deg, rgba(37,99,235,0.08), rgba(99,102,241,0.08))',
-                    border: '1px solid rgba(37,99,235,0.18)',
-                    padding: '5px 14px', borderRadius: '999px',
-                    fontSize: '0.76rem', fontWeight: 800, color: '#2563eb',
-                    letterSpacing: '0.08em', textTransform: 'uppercase',
-                    marginBottom: '0.75rem',
-                  }}
-                >
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb', display: 'inline-block' }} />
-                  Step 2 · Discover
-                </div>
+          {/* Text Center */}
+          <div style={{ textAlign: 'center' }}>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0 0 3px' }}>
+              Ready to Explore THE CITY?
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+              Step in, connect and be part of something bigger.
+            </p>
+          </div>
 
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: 'clamp(1.8rem, 3.5vw, 2.9rem)',
-                    fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', lineHeight: 1.1,
-                  }}
-                >
-                  Discover{' '}
-                  <span
-                    style={{
-                      background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
-                    }}
-                  >
-                    Businesses
-                  </span>
-                </h2>
-                <p style={{ margin: '0.6rem 0 0', color: '#64748b', fontSize: '1rem', lineHeight: 1.55, maxWidth: '52ch' }}>
-                  From startups to global brands — explore a diverse range of businesses across Nextown&apos;s virtual marketplace.
-                </p>
-              </div>
+          {/* Action */}
+          <Link href="/city" className="home-green-btn">
+            <span>Start Exploring</span>
+            <span>›</span>
+          </Link>
+        </div>
+      </section>
 
-              {/* CTA link */}
-              <Link
-                href="/city"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '8px',
-                  padding: '0.75rem 1.5rem',
-                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                  color: '#ffffff', borderRadius: '999px',
-                  fontSize: '0.88rem', fontWeight: 700,
-                  textDecoration: 'none',
-                  boxShadow: '0 4px 16px rgba(37,99,235,0.3)',
-                  flexShrink: 0,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Browse All
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
+      {/* ════════════════════════════════════════════════════════════
+          7. FOOTER
+          ════════════════════════════════════════════════════════════ */}
+      <footer style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0', padding: '36px 24px' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+          {/* Top Row: Links & Social Icons */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '20px',
+              paddingBottom: '24px',
+              borderBottom: '1px solid #f1f5f9',
+            }}
+          >
+            {/* Links */}
+            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+              <Link href="/" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#475569', textDecoration: 'none' }}>
+                Home
+              </Link>
+              <Link href="/city" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#475569', textDecoration: 'none' }}>
+                Explore
+              </Link>
+              <Link href="/buy" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#475569', textDecoration: 'none' }}>
+                Markets
+              </Link>
+              <Link href="/about" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#475569', textDecoration: 'none' }}>
+                About
+              </Link>
+              <Link href="/faq" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#475569', textDecoration: 'none' }}>
+                FAQ
               </Link>
             </div>
 
-            {/* Stats row */}
-            <div className="home-stats-row" style={{ display: 'flex', gap: '2rem', marginTop: '1.6rem', flexWrap: 'wrap' }}>
-              {[
-                { n: '10', label: 'Categories', icon: '⬡' },
-                { n: '460+', label: 'Plots Available', icon: '📍' },
-                { n: '9', label: 'Districts', icon: '🏙️' },
-              ].map((s) => (
-                <div key={s.label} className="home-stat-pill" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div
-                    style={{
-                      width: 36, height: 36, borderRadius: '10px',
-                      background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '1rem',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {s.icon}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{s.n}</div>
-                    <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>{s.label}</div>
-                  </div>
-                </div>
-              ))}
+            {/* Social Icons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: '#64748b' }}>
+              <a href="https://discord.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }} title="Discord">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+              </a>
+              <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }} title="YouTube">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              </a>
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }} title="X">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </a>
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }} title="LinkedIn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+              </a>
+              <a href="https://thecity.app" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }} title="Web">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              </a>
             </div>
           </div>
 
-          {/* Auto-scrolling marquee */}
-          <DiscoverMarquee />
-        </section>
-
-        {/* ════════════════════════════════════════════
-            SECTION 3 — Design Your Virtual Property
-            ════════════════════════════════════════════ */}
-        <section
-          style={{
-            padding: 'clamp(4rem, 7vh, 6.5rem) clamp(1.5rem, 5vw, 3.5rem)',
-            background: 'linear-gradient(180deg, #f8faff 0%, #eef4ff 100%)',
-          }}
-        >
-          <div style={{ maxWidth: '1340px', margin: '0 auto' }}>
-            {/* Section header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', marginBottom: '2.8rem' }}>
-              <div
-                style={{
-                  width: 36, height: 36, borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                  color: '#fff', fontSize: '0.9rem', fontWeight: 800,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}
-              >
-                3
-              </div>
-              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Claim
-              </div>
-            </div>
-
-            <PropertyCustomizer />
-          </div>
-        </section>
-
-        {/* ════════════════════════════════════════════
-            CTA BANNER — Step into Nextown today
-            ════════════════════════════════════════════ */}
-        <section style={{ padding: 'clamp(1.5rem, 3vw, 2rem) clamp(1.2rem, 5vw, 3.5rem)' }}>
-          <div style={{ maxWidth: '1340px', margin: '0 auto' }}>
-            <div
-              className="home-cta-banner-box"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                flexWrap: 'wrap', gap: '1.5rem',
-                background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0d2a5e 100%)',
-                borderRadius: '28px', padding: 'clamp(1.8rem, 3vw, 2.5rem) clamp(2rem, 4vw, 3.5rem)',
-                boxShadow: '0 20px 60px rgba(15, 23, 42, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.07)',
-                position: 'relative', overflow: 'hidden',
-              }}
-            >
-              {/* Background decoration */}
-              <div
-                style={{
-                  position: 'absolute', right: '15%', top: '50%', transform: 'translateY(-55%)',
-                  fontSize: '8rem', opacity: 0.07, lineHeight: 1, pointerEvents: 'none',
-                  userSelect: 'none', filter: 'blur(2px)',
-                }}
-              >
-                ✈️
-              </div>
-
-              <div>
-                <h3 style={{ margin: '0 0 0.3rem', fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
-                  Step into Nextown today!
-                </h3>
-                <p style={{ margin: 0, color: 'rgba(203, 213, 225, 0.85)', fontSize: '0.95rem', fontWeight: 500 }}>
-                  Explore. Discover. Grow.
-                </p>
-              </div>
-
-              <Link
-                href="/city"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '0.65rem',
-                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                  color: '#ffffff', padding: '1rem 2.2rem',
-                  borderRadius: '999px', fontSize: '1rem', fontWeight: 700,
-                  textDecoration: 'none',
-                  boxShadow: '0 8px 24px rgba(37, 99, 235, 0.45)',
-                  transition: 'transform 0.15s ease',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Enter the City
-                <span style={{ fontSize: '1.1rem' }}>→</span>
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ════════════════════════════════════════════
-            FOOTER
-            ════════════════════════════════════════════ */}
-        <footer
-          style={{
-            background: '#ffffff',
-            borderTop: '1px solid rgba(226, 232, 240, 0.8)',
-            padding: 'clamp(2rem, 4vh, 3rem) clamp(1.2rem, 5vw, 3.5rem)',
-          }}
-        >
+          {/* Bottom Row */}
           <div
-            className="home-footer-inner"
             style={{
-              maxWidth: '1340px', margin: '0 auto',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              flexWrap: 'wrap', gap: '1.5rem',
+              paddingTop: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+              fontSize: '0.8rem',
+              color: '#94a3b8',
             }}
           >
-            {/* Brand */}
-            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none' }}>
-              <div style={{ width: 32, height: 32, borderRadius: '9px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 20V10L10 6V20M10 20V4L18 8V20M4 20H20" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <span style={{ font: '700 1.15rem var(--f-display)', color: '#0f172a' }}>NEXTOWN</span>
-            </Link>
-
-            {/* Footer links */}
-            <nav className="home-footer-nav" style={{ display: 'flex', gap: '1.8rem', flexWrap: 'wrap' }}>
-              {[['Explore City', '/city'], ['Properties', '/buy'], ['FAQ', '/faq'], ['About', '/about'], ['Contact', '/contact']].map(([label, href]) => (
-                <Link key={href} href={href} style={{ fontSize: '0.88rem', fontWeight: 500, color: '#64748b', textDecoration: 'none' }}>
-                  {label}
-                </Link>
-              ))}
-            </nav>
-
-            {/* Social icons */}
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              {[
-                { icon: '💬', label: 'Discord' },
-                { icon: '▶', label: 'YouTube' },
-                { icon: '✕', label: 'Twitter/X' },
-                { icon: '🌐', label: 'Web' },
-              ].map(({ icon, label }) => (
-                <div
-                  key={label}
-                  style={{
-                    width: 36, height: 36, borderRadius: '50%',
-                    background: 'rgba(241, 245, 249, 0.9)',
-                    border: '1px solid rgba(226, 232, 240, 0.8)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 15, cursor: 'pointer', transition: 'background 0.2s',
-                    color: '#475569',
-                  }}
-                  title={label}
-                >
-                  {icon}
-                </div>
-              ))}
-            </div>
+            <span>© 2026 THE CITY. All rights reserved.</span>
+            <span style={{ fontWeight: 600, color: '#64748b' }}>Explore • Connect • Grow</span>
           </div>
-
-          {/* Copyright */}
-          <div
-            className="home-footer-copyright"
-            style={{
-              maxWidth: '1340px', margin: '1.5rem auto 0',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              borderTop: '1px solid rgba(226, 232, 240, 0.6)',
-              paddingTop: '1rem', flexWrap: 'wrap', gap: '0.5rem',
-            }}
-          >
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-              © 2025 Nextown. All rights reserved.
-            </span>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>
-              Build. Explore. Live Your City.
-            </span>
-          </div>
-        </footer>
-      </div>
-    </>
+        </div>
+      </footer>
+    </div>
   );
 }
