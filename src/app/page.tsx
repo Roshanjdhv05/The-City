@@ -142,9 +142,10 @@ export default function Home() {
             <Image
               src="/images/home/pill-store.png"
               alt="Discover Businesses"
-              width={26}
-              height={26}
-              style={{ objectFit: 'contain', borderRadius: '6px' }}
+              width={34}
+              height={34}
+              quality={95}
+              style={{ objectFit: 'contain' }}
             />
             <span>Discover<br /><strong>Businesses</strong></span>
           </Link>
@@ -153,9 +154,10 @@ export default function Home() {
             <Image
               src="/images/home/pill-people.png"
               alt="Meet People"
-              width={26}
-              height={26}
-              style={{ objectFit: 'contain', borderRadius: '6px' }}
+              width={34}
+              height={34}
+              quality={95}
+              style={{ objectFit: 'contain' }}
             />
             <span>Meet<br /><strong>People</strong></span>
           </Link>
@@ -164,9 +166,10 @@ export default function Home() {
             <Image
               src="/images/home/pill-rocket.png"
               alt="Explore Opportunities"
-              width={26}
-              height={26}
-              style={{ objectFit: 'contain', borderRadius: '6px' }}
+              width={34}
+              height={34}
+              quality={95}
+              style={{ objectFit: 'contain' }}
             />
             <span>Explore<br /><strong>New Opportunities</strong></span>
           </Link>
@@ -175,9 +178,10 @@ export default function Home() {
             <Image
               src="/images/home/pill-globe.png"
               alt="Be Part of Community"
-              width={26}
-              height={26}
-              style={{ objectFit: 'contain', borderRadius: '6px' }}
+              width={34}
+              height={34}
+              quality={95}
+              style={{ objectFit: 'contain' }}
             />
             <span>Be Part of a<br /><strong>Growing Community</strong></span>
           </Link>
@@ -255,8 +259,8 @@ export default function Home() {
             <div className="home-why-card">
               <div
                 style={{
-                  width: '92px',
-                  height: '86px',
+                  width: '96px',
+                  height: '90px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -267,9 +271,10 @@ export default function Home() {
                 <Image
                   src="/images/home/icon-store-3d.png"
                   alt="Discover Businesses"
-                  width={90}
-                  height={86}
-                  style={{ objectFit: 'contain' }}
+                  width={140}
+                  height={140}
+                  quality={95}
+                  style={{ width: '92px', height: 'auto', objectFit: 'contain' }}
                 />
               </div>
               <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#202720', margin: '0 0 6px' }}>
@@ -284,8 +289,8 @@ export default function Home() {
             <div className="home-why-card">
               <div
                 style={{
-                  width: '92px',
-                  height: '86px',
+                  width: '96px',
+                  height: '90px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -296,9 +301,10 @@ export default function Home() {
                 <Image
                   src="/images/home/icon-people-3d.png"
                   alt="Meet People"
-                  width={92}
-                  height={86}
-                  style={{ objectFit: 'contain' }}
+                  width={140}
+                  height={140}
+                  quality={95}
+                  style={{ width: '92px', height: 'auto', objectFit: 'contain' }}
                 />
               </div>
               <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#202720', margin: '0 0 6px' }}>
@@ -313,8 +319,8 @@ export default function Home() {
             <div className="home-why-card">
               <div
                 style={{
-                  width: '92px',
-                  height: '86px',
+                  width: '96px',
+                  height: '90px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -325,9 +331,10 @@ export default function Home() {
                 <Image
                   src="/images/home/icon-rocket-3d.png"
                   alt="Explore Opportunities"
-                  width={90}
-                  height={86}
-                  style={{ objectFit: 'contain' }}
+                  width={140}
+                  height={140}
+                  quality={95}
+                  style={{ width: '92px', height: 'auto', objectFit: 'contain' }}
                 />
               </div>
               <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#202720', margin: '0 0 6px' }}>
@@ -342,8 +349,8 @@ export default function Home() {
             <div className="home-why-card">
               <div
                 style={{
-                  width: '92px',
-                  height: '86px',
+                  width: '96px',
+                  height: '90px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -354,9 +361,10 @@ export default function Home() {
                 <Image
                   src="/images/home/icon-handshake-3d.png"
                   alt="Be Part of Community"
-                  width={92}
-                  height={86}
-                  style={{ objectFit: 'contain' }}
+                  width={140}
+                  height={140}
+                  quality={95}
+                  style={{ width: '92px', height: 'auto', objectFit: 'contain' }}
                 />
               </div>
               <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#202720', margin: '0 0 6px' }}>
@@ -743,9 +751,10 @@ export default function Home() {
                 <Image
                   src="/images/home/market-saas.png"
                   alt="SaaS Market"
-                  width={90}
-                  height={84}
-                  style={{ objectFit: 'contain' }}
+                  width={140}
+                  height={140}
+                  quality={95}
+                  style={{ width: '92px', height: 'auto', objectFit: 'contain' }}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px' }}>
@@ -762,9 +771,10 @@ export default function Home() {
                 <Image
                   src="/images/home/market-web.png"
                   alt="Web Development"
-                  width={90}
-                  height={84}
-                  style={{ objectFit: 'contain' }}
+                  width={140}
+                  height={140}
+                  quality={95}
+                  style={{ width: '92px', height: 'auto', objectFit: 'contain' }}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px' }}>
@@ -781,9 +791,10 @@ export default function Home() {
                 <Image
                   src="/images/home/market-ai.png"
                   alt="AI"
-                  width={90}
-                  height={84}
-                  style={{ objectFit: 'contain' }}
+                  width={140}
+                  height={140}
+                  quality={95}
+                  style={{ width: '92px', height: 'auto', objectFit: 'contain' }}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px' }}>
@@ -800,9 +811,10 @@ export default function Home() {
                 <Image
                   src="/images/home/market-mobile.png"
                   alt="Mobile App"
-                  width={90}
-                  height={84}
-                  style={{ objectFit: 'contain' }}
+                  width={140}
+                  height={140}
+                  quality={95}
+                  style={{ width: '92px', height: 'auto', objectFit: 'contain' }}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px' }}>
@@ -819,9 +831,10 @@ export default function Home() {
                 <Image
                   src="/images/home/market-windows.png"
                   alt="Windows App"
-                  width={90}
-                  height={84}
-                  style={{ objectFit: 'contain' }}
+                  width={140}
+                  height={140}
+                  quality={95}
+                  style={{ width: '92px', height: 'auto', objectFit: 'contain' }}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px' }}>
@@ -891,11 +904,12 @@ export default function Home() {
             <span className="anim-sparkle" style={{ bottom: '24px', left: '26px', fontSize: '0.85rem', animationDelay: '1.5s', pointerEvents: 'none' }}>✨</span>
 
             {/* 3D Gift Box Ribbon */}
-            <div className="anim-gift" style={{ position: 'relative', width: '74px', height: '62px', margin: '0 auto 6px' }}>
+            <div className="anim-gift" style={{ position: 'relative', width: '84px', height: '84px', margin: '0 auto 6px' }}>
               <Image
                 src="/images/home/gift-icon.png"
-                alt="Gift Ribbon"
+                alt="Free Building Gift"
                 fill
+                quality={95}
                 style={{ objectFit: 'contain' }}
               />
             </div>
