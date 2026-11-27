@@ -19,9 +19,38 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
   // Do not show on the full-screen 3D city canvas which uses HUD
   if (path === '/city') return null;
   const [admin, setAdmin] = useState(false), [open, setOpen] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
+
   useEffect(() => { init(); }, [init]);
   useEffect(() => { let on = true; isAdmin(user).then(v => on && setAdmin(v)).catch(() => {}); return () => { on = false; }; }, [user]);
   useEffect(() => { setOpen(false); }, [path]);
+
+  // Hide on scroll down, show on scroll up
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      setScrolled(currentScrollY > 20);
+
+      if (currentScrollY <= 25) {
+        // At the very top of the page -> always show
+        setVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 60) {
+        // Scrolling DOWN -> hide navbar
+        setVisible(false);
+        setOpen(false); // close mobile menu if scrolling down
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling UP -> show navbar
+        setVisible(true);
+      }
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <div
@@ -31,31 +60,33 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
         top: '1.2rem',
         left: '1.2rem',
         right: '1.2rem',
-        zIndex: 50,
+        zIndex: 100,
         display: 'flex',
         justifyContent: 'center',
         pointerEvents: 'none',
+        transform: visible ? 'translateY(0)' : 'translateY(-140%)',
+        transition: 'transform 0.38s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
       <header
         className="home-nav-header"
         style={{
           width: '100%',
-          maxWidth: '1280px',
-          height: '68px',
-          background: 'rgba(255, 255, 255, 0.88)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
+          maxWidth: '1360px',
+          height: '64px',
+          background: scrolled ? 'rgba(255, 255, 255, 0.82)' : 'transparent',
+          backdropFilter: scrolled ? 'blur(16px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
           borderRadius: '999px',
-          padding: '0 1.2rem 0 1.6rem',
+          padding: '0 1.2rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          boxShadow: '0 12px 36px -10px rgba(15, 35, 25, 0.12), 0 2px 8px rgba(0,0,0,0.04)',
-          border: '1px solid rgba(255, 255, 255, 0.95)',
+          boxShadow: scrolled ? '0 10px 30px rgba(0, 0, 0, 0.08)' : 'none',
+          border: scrolled ? '1px solid rgba(255, 255, 255, 0.7)' : 'none',
           pointerEvents: 'auto',
           position: 'relative',
-          transition: 'all 0.3s ease',
+          transition: 'background 0.3s ease, box-shadow 0.3s ease, border 0.3s ease',
         }}
       >
         {/* Brand */}
@@ -65,26 +96,43 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
               width: '36px',
               height: '36px',
               borderRadius: '10px',
-              background: '#e8f5e9',
+              background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
+              boxShadow: '0 2px 8px rgba(2, 132, 199, 0.35)',
               flexShrink: 0,
+              color: '#ffffff',
+              fontWeight: 900,
+              fontSize: '1.2rem',
             }}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path d="M4 20V10L10 6V20M10 20V4L18 8V20M4 20H20" stroke="#1b4d2e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="19" cy="17" r="2.5" fill="#2e7d32" />
-            </svg>
+            C
           </div>
-          <span style={{ font: '700 1.35rem var(--f-display)', color: '#0f2918', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
-            The<span style={{ color: '#2e7d32' }}>City</span>
+          <span
+            style={{
+              font: '800 1.35rem var(--f-display)',
+              color: '#000000',
+              letterSpacing: '-0.02em',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            THE CITY
           </span>
         </Link>
 
-        {/* Center Navigation Links (Desktop) */}
-        <nav className="nav-desktop-links" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        {/* Center Navigation Links (Desktop) - In air with no enclosing box */}
+        <nav
+          className="nav-desktop-links"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+          }}
+        >
           {LINKS.map(([h, l, icon]) => {
             const active = path === h;
             return (
@@ -95,14 +143,16 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  fontSize: '0.88rem',
-                  fontWeight: active ? '700' : '500',
-                  color: active ? '#0f172a' : '#475569',
+                  fontSize: '0.9rem',
+                  fontWeight: active ? '700' : '600',
+                  color: '#000000',
                   textDecoration: 'none',
-                  padding: '0.42rem 0.95rem',
+                  padding: '0.45rem 1.15rem',
                   borderRadius: '999px',
-                  background: active ? '#f1f5f9' : 'transparent',
+                  background: active ? '#ffffff' : 'transparent',
+                  boxShadow: active ? '0 2px 10px rgba(0, 0, 0, 0.1)' : 'none',
                   transition: 'all 0.2s ease',
+                  opacity: active ? 1 : 0.9,
                 }}
               >
                 {active && <span>{icon}</span>}
@@ -114,13 +164,14 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
             <Link
               href="/admin"
               style={{
-                fontSize: '0.88rem',
-                fontWeight: (path as string) === '/admin' ? '700' : '500',
-                color: (path as string) === '/admin' ? '#0f172a' : '#475569',
+                fontSize: '0.9rem',
+                fontWeight: (path as string) === '/admin' ? '700' : '600',
+                color: '#000000',
                 textDecoration: 'none',
-                padding: '0.42rem 0.95rem',
+                padding: '0.45rem 1.15rem',
                 borderRadius: '999px',
-                background: (path as string) === '/admin' ? '#f1f5f9' : 'transparent',
+                background: (path as string) === '/admin' ? '#ffffff' : 'transparent',
+                boxShadow: (path as string) === '/admin' ? '0 2px 10px rgba(0, 0, 0, 0.1)' : 'none',
               }}
             >
               Admin
@@ -137,20 +188,21 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '0.45rem 1.15rem',
+                padding: '0.45rem 1.25rem',
                 borderRadius: '999px',
-                border: '1px solid #cbd5e1',
+                border: '1px solid rgba(0, 0, 0, 0.08)',
                 background: '#ffffff',
-                color: '#0f172a',
+                color: '#000000',
                 fontSize: '0.86rem',
-                fontWeight: 600,
+                fontWeight: 700,
                 textDecoration: 'none',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                 transition: 'all 0.2s ease',
               }}
             >
               <span style={{ fontSize: '0.9rem' }}>👤</span>
               <span>{user ? (user.email.split('@')[0]) : 'Login'}</span>
+              <span style={{ fontSize: '0.85rem' }}>›</span>
             </Link>
           </div>
 
@@ -162,9 +214,9 @@ export default function Nav({ overlay = false, floating = false }: { overlay?: b
             aria-label={open ? 'Close navigation menu' : 'Open navigation menu with 3 lines'}
             title="Navigation Menu"
           >
-            <span className={`nav-bar-line top ${open ? 'active' : ''}`} />
-            <span className={`nav-bar-line mid ${open ? 'active' : ''}`} />
-            <span className={`nav-bar-line bot ${open ? 'active' : ''}`} />
+            <span className={`nav-bar-line top ${open ? 'active' : ''}`} style={{ background: '#000000' }} />
+            <span className={`nav-bar-line mid ${open ? 'active' : ''}`} style={{ background: '#000000' }} />
+            <span className={`nav-bar-line bot ${open ? 'active' : ''}`} style={{ background: '#000000' }} />
           </button>
         </div>
 
